@@ -286,6 +286,22 @@ territory and may be the authoritative business starting point. Two more points 
 | G-09 | A current official LGD block and urban-body export to repeat the name test (the test used a 2023 mirror). *(Update 2026-10-15, Phase 0E: the test was repeated statewide, without the territory constraint, on the block and district reports. Candidate sets only, no reviewer decision. The urban-body export is still missing. See [geographic-crosswalk-review.md](geographic-crosswalk-review.md), section 6.)* | Final match rates |
 | G-10 | Business answer on whether Kolkata and Kalimpong are in scope (B-20). *Requester preference recorded 2026-10-15: map all of West Bengal. It is a preference, not a formal approval.* | Whether geography needs Kolkata wards or Kalimpong blocks at all |
 
+> **Pointer, added 2026-10-16 (documentation only).** Four further LGD exports were audited read-only in [lgd-bundle-audit.md](lgd-bundle-audit.md). The table above is kept as written on 2026-10-15. This pointer changes no conclusion in this document and creates no join. The G-04 and G-09 updates above remain accurate as dated records of 2026-10-15.
+>
+> **Verified in that audit**
+>
+> - G-04 and G-09: sub-district, urban local body (with wards) and village to Gram Panchayat exports were received, generated `Oct 16, 2026, 11:16 AM`, and agree with the two 15 Oct exports on every shared district, block and village code and name.
+> - The independent block list carries the same 345 blocks. It is evidence about the block list, not a statement of the official count.
+>
+> **Unresolved (unchanged by that audit)**
+>
+> - G-04: effective date still unverified, and the manifest for the four new files records no hashes.
+> - G-09: the urban-body export has no parent district, block or sub-district, and no source for that link has been identified. The name test was not extended to a join.
+> - G-02 and G-03: no file contains ward, Gram Panchayat or any other polygons or coordinates.
+> - G-05: the ward counts in the new export (Kolkata 144, Howrah 66) differ from the earlier notifications (209 and 68), and the file does not say which is current.
+> - G-06: licence and reuse terms are still unverified.
+> - Allocation states are unchanged. Vacant and Unallocated are never inferred from a missing record; a unit with no workbook row stays Data Missing / Unknown.
+
 ## Sources
 
 Access date for all: 2026-10-15. **read** = page read directly. **search-only** =

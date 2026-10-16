@@ -954,6 +954,22 @@ Phase 0E stops here. What remains needs decisions, evidence or further official 
 | 8 | Whether Kolkata and Kalimpong are in scope. The 4 Kalimpong blocks are no row's candidate; Kolkata has no block. | Sponsor. B-20. |
 | 9 | Verified block and ward geometry. The two reports contain none. | Not addressed here. Gate 2b is unchanged and still **not met**. |
 
+> **Pointer, added 2026-10-16 (documentation only).** Four further LGD exports (blocks, sub-districts, urban local bodies with wards, village to Gram Panchayat) were audited read-only in [lgd-bundle-audit.md](lgd-bundle-audit.md). The table above is kept as written on 2026-10-15. This pointer changes no count, candidate tier, row status or conclusion in this document, and creates no join and no crosswalk row. A candidate is still not a match.
+>
+> **Verified in that audit**
+>
+> - Sub-district, urban local body and ward lists were received (row 2 above), and all six exports are readable. They agree on every shared code and name: the same 345 block codes, the same 41,006 village codes and the same 23 district codes (audit section 4).
+> - The independent block list carries the same 345 blocks as the block-with-villages report, so the block count is not an artefact of village rows (row 3). It does not show that 345 is the official West Bengal count.
+> - The workbook still has no code column. Name overlap against the new lists is a candidate diagnostic only (audit section 8).
+>
+> **Unresolved (unchanged by that audit)**
+>
+> - No file links an urban local body to a district, block or sub-district, so the 12 urban-looking rows (row 4) are still not typed or matched. The received urban export has no borough level, and the urban parent link has no source (audit sections 5.4, 8 and 9.2).
+> - Effective date (row 1) and licence (B-18, G-06): neither is established. The manifest for the four new files records no hashes.
+> - Ward vintage: that export lists Kolkata 144 and Howrah 66 wards, against 209 and 68 in the earlier notifications. The file does not say which is current (audit section 5.4).
+> - Geometry (row 9): none of the six files has polygons or coordinates. Gate 2b is unchanged and still **not met**.
+> - Allocation states are unchanged. A unit or ward with no workbook row stays Data Missing / Unknown. Vacant and Unallocated are never inferred from a missing record.
+
 ### 10.2 Licensing and access
 
 | # | Question | Needs |
