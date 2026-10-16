@@ -1,0 +1,132 @@
+@import "tailwindcss";
+
+/*
+ * TerritoryIQ design tokens.
+ *
+ * Two surface families:
+ *   - "navy"  : the dark map workspace and the top navigation bar.
+ *   - "light" : analytics surfaces (KPI cards, context panel, page canvas).
+ *
+ * Contrast notes (WCAG 2.x, verified numerically):
+ *   - accent (#14B8A6) is used on navy (7.5:1) and as a fill/graphic only.
+ *   - On light surfaces, teal *text* must use accent-ink (#0F766E, 5.5:1 on white).
+ *   - gold is a selection highlight only: gold-400 on navy (10:1), gold-700 on light (5.3:1).
+ *   - ink-subtle is for white / surface-muted backgrounds only, never on the canvas.
+ */
+@theme {
+  /* Primary navy scale */
+  --color-navy-950: #0b1220;
+  --color-navy-900: #111a2e;
+  --color-navy-800: #18233b;
+  --color-navy-700: #223152;
+
+  /* Teal accent */
+  --color-accent: #14b8a6;
+  --color-accent-ink: #0f766e;
+  --color-accent-soft: #e6f7f5;
+
+  /* Gold: restrained, reserved for selected highlights */
+  --color-gold-400: #e2b93b;
+  --color-gold-700: #8a6508;
+  --color-gold-50: #fbf5e4;
+
+  /* Light analytics surfaces */
+  --color-canvas: #f4f6fa;
+  --color-surface: #ffffff;
+  --color-surface-muted: #f8fafc;
+  --color-line: #e2e8f0;
+  --color-line-strong: #cbd5e1;
+
+  /* Text on light surfaces */
+  --color-ink: #0b1220;
+  --color-ink-muted: #475569;
+  --color-ink-subtle: #64748b;
+
+  /* Text on navy surfaces */
+  --color-on-navy: #ffffff;
+  --color-on-navy-muted: #cbd5e1;
+  --color-on-navy-subtle: #94a3b8;
+
+  /* Molten Orange: selected regions and representative-pin accents only. 5.5:1 on navy-950. */
+  --color-ember: #e8622a;
+  --color-ember-soft: #f08a5d;
+
+  --shadow-card: 0 1px 2px rgb(11 18 32 / 0.05), 0 1px 3px rgb(11 18 32 / 0.06);
+}
+
+/*
+ * The map workspace is a navy surface inside the light page. Utilities such as bg-surface, text-ink and
+ * border-line read these variables, so redefining them on the map frame re-themes everything inside it (toolbar,
+ * search, controls, legend, notices) without a second set of classes. Contrast on navy-900 (#111a2e):
+ * ink 16:1, ink-muted 9:1, ink-subtle 6:1, accent text 7:1.
+ */
+.map-theme {
+  --color-surface: #111a2e;
+  --color-surface-muted: #18233b;
+  --color-line: #25324f;
+  --color-line-strong: #3a4a70;
+  --color-ink: #f1f5fb;
+  --color-ink-muted: #b9c5da;
+  --color-ink-subtle: #8c9bb7;
+  --color-accent-ink: #2dd4bf;
+  --color-accent-soft: rgb(20 184 166 / 0.16);
+  color-scheme: dark;
+  color: var(--color-ink);
+}
+
+/* Font variables are injected on <html> by next/font, so reference them inline. */
+@theme inline {
+  --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, monospace;
+}
+
+:root {
+  /* The analytics surfaces are light by design; the map workspace is dark. */
+  color-scheme: light;
+}
+
+html {
+  background-color: var(--color-canvas);
+}
+
+body {
+  background-color: var(--color-canvas);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  text-rendering: optimizeLegibility;
+}
+
+/* One consistent, visible keyboard focus treatment across light and navy surfaces. */
+:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+}
+
+/* A representative pin settling into place. The positioned wrapper is not animated, only the glyph inside it. */
+@keyframes pin-in {
+  from {
+    opacity: 0;
+    transform: translateY(-8px) scale(0.85);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.pin-in {
+  animation: pin-in 220ms ease-out both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pin-in {
+    animation: none;
+  }
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

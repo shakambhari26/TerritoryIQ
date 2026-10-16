@@ -1,0 +1,76 @@
+/**
+ * Loads the Google Maps JavaScript API once, on request, and only when a key is configured.
+ *
+ * This is the one place the app asks an outside host for a script. Everything else about the map
+ * (outlines, labels, selection) is drawn locally; Google supplies only the basemap tiles. What Google
+ * receives is what any page with a map sends: the visitor's address, the key, the page's origin and the
+ * area being viewed. No workbook, staff or allocation data is passed to it.
+ *
+ * The key is read from NEXT_PUBLIC_GOOGLE_MAPS_API_KEY, which Next.js writes into the browser bundle, so it
+ * is not a secret. Restrict it in Google Cloud Console. docs/security-notes.md has no entry for this yet; add one
+ * before this file is used.
+ */
+
+const SCRIPT_URL = "https://maps.googleapis.com/maps/api/js";
+const CALLBACK = "__territoryiqGoogleMapsReady";
+
+/** The key from the environment, or null when the Google basemap is not configured. */
+export const GOOGLE_MAPS_KEY: string | null = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY?.trim() || null;
+
+type AuthListener = (reason: string) => void;
+
+declare global {
+  interface Window {
+    /** Called by the Maps API when it rejects the key (wrong referrer, API not enabled, billing, ...). */
+    gm_authFailure?: () => void;
+    [CALLBACK]?: () => void;
+  }
+}
+
+const authListeners = new Set<AuthListener>();
+let loading: Promise<void> | null = null;
+
+/** Tells the caller when Google refuses the key after the script loaded. Returns the unsubscribe function. */
+export function onGoogleAuthFailure(listener: AuthListener): () => void {
+  authListeners.add(listener);
+  return () => authListeners.delete(listener);
+}
+
+export function googleScriptUrl(key: string): string {
+  const query = new URLSearchParams({ key, v: "quarterly", loading: "async", language: "en", region: "IN", callback: CALLBACK });
+  return `${SCRIPT_URL}?${query.toString()}`;
+}
+
+function inject(key: string): Promise<void> {
+  return new Promise<void>((resolve, reject) => {
+    window.gm_authFailure = () =>
+      authListeners.forEach((listener) =>
+        listener("Google did not accept the API key. Check that the Maps JavaScript API is enabled for it, that billing is on, and that the key allows this address."),
+      );
+    // With loading=async the API finishes setting itself up after the script's own load event, so only
+    // the callback says `google.maps.importLibrary` can be used.
+    window[CALLBACK] = () => resolve();
+    const script = document.createElement("script");
+    script.src = googleScriptUrl(key);
+    script.async = true;
+    script.onerror = () => {
+      script.remove();
+      reject(new Error("The Google Maps script could not be loaded (offline, blocked, or the service is unreachable)."));
+    };
+    document.head.appendChild(script);
+  });
+}
+
+/** Resolves once `google.maps` and its core `maps` library are ready; rejects with a readable reason. */
+export function loadGoogleMaps(key: string): Promise<typeof google.maps> {
+  if (!loading) {
+    loading = inject(key).then(async () => {
+      await google.maps.importLibrary("maps");
+    });
+    // A failed load may be retried (the user can switch the basemap back on once they are online again).
+    loading.catch(() => {
+      loading = null;
+    });
+  }
+  return loading.then(() => google.maps);
+}
