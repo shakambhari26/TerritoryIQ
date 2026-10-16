@@ -553,9 +553,10 @@ export function GeoMap({
     if (SINGLE_KEY_SHORTCUTS.has(event.key) && (event.ctrlKey || event.metaKey || event.altKey || altGraph)) return;
     switch (event.key) {
       // Alt, Ctrl or Cmd with Left or Right is the browser's or the platform's (Back and Forward, word and tab moves):
-      // leave it alone and do not prevent it. Up and Down are not guarded.
-      case "ArrowLeft": if (event.altKey || event.ctrlKey || event.metaKey) return; panView(KEY_PAN, 0); break;
-      case "ArrowRight": if (event.altKey || event.ctrlKey || event.metaKey) return; panView(-KEY_PAN, 0); break;
+      // leave it alone and do not prevent it. AltGraph with Left or Right is the same (a layout's own key use, not the
+      // map's), so it is left alone too. Up and Down are not guarded.
+      case "ArrowLeft": if (event.altKey || event.ctrlKey || event.metaKey || altGraph) return; panView(KEY_PAN, 0); break;
+      case "ArrowRight": if (event.altKey || event.ctrlKey || event.metaKey || altGraph) return; panView(-KEY_PAN, 0); break;
       case "ArrowUp": panView(0, KEY_PAN); break;
       case "ArrowDown": panView(0, -KEY_PAN); break;
       case "+": case "=": zoomBy(1.4); break;

@@ -289,6 +289,51 @@ describe("coordinate grid toggle and selection glow in a real browser", { skip: 
     await context.close();
   });
 
+  it("AltGraph with ArrowLeft or ArrowRight does not pan the map and the key is not prevented (synthetic events: this proves the getModifierState path, not a real layout)", async () => {
+    const { page, context } = await open();
+    await page.locator('[data-testid="geo-map"]').focus();
+    await recordKeys(page);
+    const start = await translateOf(page);
+    /** Dispatches one keydown on the focused map, as a keyboard would, with the given modifier state. */
+    const press = (key: string, init: { altGraph?: boolean; ctrlKey?: boolean; altKey?: boolean; shiftKey?: boolean }) =>
+      page.evaluate(
+        ([k, i]) => {
+          const el = document.querySelector('[data-testid="geo-map"]')!;
+          el.dispatchEvent(
+            new KeyboardEvent("keydown", { key: k, bubbles: true, cancelable: true, modifierAltGraph: !!i.altGraph, ctrlKey: !!i.ctrlKey, altKey: !!i.altKey, shiftKey: !!i.shiftKey }),
+          );
+        },
+        [key, init] as const,
+      );
+    const probe = await page.evaluate(() => new KeyboardEvent("keydown", { modifierAltGraph: true }).getModifierState("AltGraph"));
+    assert.equal(probe, true, "the browser reports AltGraph through getModifierState for these events");
+    for (const [label, init] of [
+      ["AltGraph only", { altGraph: true }],
+      ["AltGraph and Shift", { altGraph: true, shiftKey: true }],
+      ["AltGraph reported as Ctrl and Alt (Windows)", { altGraph: true, ctrlKey: true, altKey: true }],
+    ] as const) {
+      for (const key of ["ArrowLeft", "ArrowRight"]) {
+        await press(key, init);
+        await page.waitForTimeout(150);
+        const last = await lastKey(page);
+        assert.equal(last.key, key, `${label}: ${key} reached the page`);
+        assert.equal(last.prevented, false, `${label}: ${key} was not default-prevented`);
+        assert.deepEqual(await translateOf(page), start, `${label}: ${key} did not pan the map`);
+      }
+    }
+    // The same events without AltGraph still pan, and are the map's (prevented).
+    await press("ArrowLeft", {});
+    await page.waitForTimeout(150);
+    assert.ok((await translateOf(page)).x > start.x, "ArrowLeft without AltGraph still pans");
+    assert.equal((await lastKey(page)).prevented, true);
+    await press("ArrowRight", { shiftKey: true });
+    await page.waitForTimeout(150);
+    const back = await translateOf(page);
+    assert.ok(Math.abs(back.x - start.x) < 1e-6 && Math.abs(back.y - start.y) < 1e-6, "Shift+ArrowRight without AltGraph pans back by the same step");
+    assert.equal((await lastKey(page)).prevented, true);
+    await context.close();
+  });
+
   it("plain and Shift arrow keys still pan, in the same directions, and are the map's (prevented); Up and Down are unchanged", async () => {
     const { page, context } = await open();
     await page.locator('[data-testid="geo-map"]').focus();
