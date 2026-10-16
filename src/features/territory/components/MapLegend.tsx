@@ -1,3 +1,6 @@
+"use client";
+
+import { useId, useState } from "react";
 import { EMBER, PIN_COLOR, legendItems, type MapLayerMode } from "../map-style";
 import type { BoundaryLayerMeta } from "../types";
 
@@ -24,11 +27,12 @@ function PinSwatch() {
 }
 
 /**
- * Legend and notices under the map, in three tiers: what the colours mean (read first), what the markers are, and
- * the provisional-boundary and coverage warnings (quieter, never removed). The legend follows the layer on the
- * map and is built from the same specs the map draws. The attribution is required by the OpenStreetMap licence
- * (ODbL) and stays visible whenever a layer is shown. The coverage line says how much of the official geography
- * has an outline and what has none, so the map never reads as complete.
+ * The strip under the map: what the colours and markers mean, one line saying the outlines are provisional with the
+ * source attribution, and a disclosure for the full wording. The legend follows the layer on the map and is built
+ * from the same specs the map draws. The attribution is required by the OpenStreetMap licence (ODbL) and stays
+ * visible whenever a layer is shown, as does the statement that the outlines are provisional. The disclosure is
+ * collapsed by default and holds the longer notices: how the outlines were tied to official blocks, what a pin is,
+ * and how much of the official geography has an outline and what has none, so the map never reads as complete.
  */
 export function MapLegend({
   meta,
@@ -42,33 +46,33 @@ export function MapLegend({
   pins?: PinLegend | null;
 }) {
   const items = legendItems(layerMode);
+  const [open, setOpen] = useState(false);
+  const panelId = useId();
   return (
-    <div className="space-y-2 px-3 py-2.5 text-[0.6875rem] leading-4 text-ink-muted sm:px-4 sm:text-xs sm:leading-5" data-testid="map-legend">
-      <ul className="flex flex-wrap items-center gap-x-4 gap-y-1.5" aria-label="Map legend" data-testid="legend-items">
+    <div className="space-y-1 px-3 py-1.5 text-[0.6875rem] leading-4 text-ink-muted sm:px-4" data-testid="map-legend">
+      <ul className="flex flex-wrap items-center gap-x-3.5 gap-y-1" aria-label="Map legend" data-testid="legend-items">
         {items.map((item) => (
           <li key={item.key} className="flex items-center gap-1.5" title={item.title}>
-            <span aria-hidden="true" className="inline-block h-3 w-4 shrink-0 rounded-sm border border-white/25" style={{ background: item.swatch }} />
+            <span aria-hidden="true" className="inline-block h-2.5 w-3.5 shrink-0 rounded-sm ring-1 ring-white/20" style={{ background: item.swatch }} />
             <span className="font-medium text-ink">{item.label}</span>
           </li>
         ))}
         <li className="flex items-center gap-1.5">
-          <span aria-hidden="true" className="inline-block h-3 w-4 shrink-0 rounded-sm border-2" style={{ borderColor: EMBER, background: "rgba(232,98,42,0.16)" }} />
+          <span aria-hidden="true" className="inline-block h-2.5 w-3.5 shrink-0 rounded-sm border-[1.5px]" style={{ borderColor: EMBER, background: "rgba(232,98,42,0.16)" }} />
           <span className="font-medium text-ink">Selected</span>
         </li>
         {pins ? (
-          <li className="flex items-center gap-1.5" data-testid="legend-pins">
+          <li className="flex items-center gap-1.5" data-testid="legend-pins" title={`${pins.count} pins, each at a provisional position`}>
             <PinSwatch />
             <span className="font-medium text-ink">
               {pins.kind === "territory" ? "ASM pin, one per sales territory" : "Representative pin, one per block"}
             </span>
-            <span className="text-ink-subtle">({pins.count}, provisional position)</span>
           </li>
         ) : null}
       </ul>
-      <div className="space-y-1 border-t border-line pt-2 text-ink-muted">
-        <p>
-          Outlines are <strong className="font-semibold text-ink">provisional</strong>: each links an official block to a community-drawn boundary
-          by exact name, and none has been reviewed. They are indicative, not an authoritative depiction of any border.{" "}
+      <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1">
+        <p data-testid="map-attribution" className="min-w-0">
+          <strong className="font-semibold text-ink">Outlines are provisional.</strong>{" "}
           {meta ? (
             <span>
               {meta.attribution} ({meta.licence}); snapshot {[...new Set(meta.snapshots.map((s) => s.slice(0, 10)))].join(", ")}.
@@ -76,6 +80,25 @@ export function MapLegend({
           ) : (
             <span>No boundary layer is loaded, so no geography is drawn.</span>
           )}
+        </p>
+        <button
+          type="button"
+          aria-expanded={open}
+          aria-controls={panelId}
+          onClick={() => setOpen((on) => !on)}
+          data-testid="map-about-toggle"
+          className="inline-flex shrink-0 items-center gap-1 rounded text-accent-ink underline-offset-2 hover:underline"
+        >
+          About these outlines
+          <svg aria-hidden="true" focusable="false" viewBox="0 0 20 20" width="12" height="12" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ transform: open ? "rotate(180deg)" : undefined }}>
+            <path d="m5 8 5 5 5-5" />
+          </svg>
+        </button>
+      </div>
+      <div id={panelId} hidden={!open} data-testid="map-about" className="space-y-1 border-t border-line pt-1.5 text-xs leading-5">
+        <p>
+          Each outline links an official block to a community-drawn boundary by exact name, and none has been reviewed. They are
+          indicative, not an authoritative depiction of any border.
         </p>
         {pins ? (
           <p data-testid="legend-pins-note">

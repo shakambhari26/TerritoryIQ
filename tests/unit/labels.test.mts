@@ -3,9 +3,9 @@ import { existsSync } from "node:fs";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { describe, it } from "node:test";
-import { estimateWidth, leaderEnd, placeLabels, wrapLabel, type LabelRequest, type PlacedLabel, type Rect } from "../../src/features/geo/labels.ts";
-import { fitBounds, toScreen, unionBounds, type Bounds } from "../../src/features/geo/viewport.ts";
-import { controlObstacles, districtFontSize } from "../../src/features/territory/map-layout.ts";
+import { LEADER_MIN, estimateWidth, leaderEnd, outlineRects, parseOutline, placeLabels, wrapLabel, type LabelRequest, type PlacedLabel, type Point2, type Rect } from "../../src/features/geo/labels.ts";
+import { toScreen, unionBounds, type Bounds } from "../../src/features/geo/viewport.ts";
+import { controlObstacles, districtFontSize, fitClear } from "../../src/features/territory/map-layout.ts";
 import type { BoundaryLayer, TerritoryDataset } from "../../src/features/territory/types.ts";
 import { ROOT } from "../../scripts/lib/sources.ts";
 
@@ -127,6 +127,102 @@ describe("placeLabels (inside)", () => {
   });
 });
 
+const near = (box: Rect, p: Point2) => Math.hypot(p.x - Math.min(Math.max(p.x, box.x), box.x + box.width), p.y - Math.min(Math.max(p.y, box.y), box.y + box.height));
+
+/** Whether the segment a-b passes through the rectangle: sampled finely, which is plenty for pixel-sized boxes. */
+function segmentTouches(a: Point2, b: Point2, rect: Rect) {
+  for (let i = 0; i <= 200; i++) {
+    const x = a.x + ((b.x - a.x) * i) / 200;
+    const y = a.y + ((b.y - a.y) * i) / 200;
+    if (x > rect.x && x < rect.x + rect.width && y > rect.y && y < rect.y + rect.height) return true;
+  }
+  return false;
+}
+
+function segmentsCross(a: Point2, b: Point2, c: Point2, d: Point2) {
+  const side = (p: Point2, q: Point2, r: Point2) => (q.x - p.x) * (r.y - p.y) - (q.y - p.y) * (r.x - p.x);
+  return side(a, b, c) * side(a, b, d) < 0 && side(c, d, a) * side(c, d, b) < 0;
+}
+
+describe("leader lines", () => {
+  const crowd = Array.from({ length: 14 }, (_, i) => request(`D${i}`, 150 + ((i * 29) % 110), 100 + ((i * 41) % 110), `District ${i}`, 8 + i));
+  const obstacles: Rect[] = [{ x: 170, y: 120, width: 50, height: 40 }];
+  const options = { area: { width: 400, height: 300 }, fontSize: 11, mode: "free" as const, obstacles };
+
+  it("draws a leader only for a name that moved away from its anchor, or sits where another anchor makes it unclear", () => {
+    const { placed } = placeLabels(crowd, options);
+    assert.ok(placed.length > 0);
+    for (const p of placed) {
+      const away = near(p.box, p.anchor);
+      if (p.leader) assert.ok(away > 0, `${p.id} has a leader but sits on its anchor`);
+      else {
+        // Without a line the name is on its anchor or right beside it, and nothing else is near enough to confuse.
+        assert.ok(away <= LEADER_MIN, `${p.id} is ${away.toFixed(1)} px from its anchor with no leader`);
+        if (away > 0) for (const q of placed) if (q.id !== p.id) assert.ok(Math.hypot(q.anchor.x - p.anchor.x, q.anchor.y - p.anchor.y) >= 2 * LEADER_MIN, `${p.id} is unclear next to ${q.id}`);
+      }
+    }
+  });
+
+  it("never lets a leader cross another leader, run through another name or a control, or lie under a name", () => {
+    const { placed } = placeLabels(crowd, options);
+    const lines = placed.filter((p) => p.leader).map((p) => ({ id: p.id, a: p.anchor, b: leaderEnd(p) }));
+    assert.ok(lines.length > 0, "the crowd needs at least one leader for this test to mean anything");
+    for (const [i, l] of lines.entries()) {
+      for (const m of lines.slice(i + 1)) assert.ok(!segmentsCross(l.a, l.b, m.a, m.b), `${l.id} crosses ${m.id}`);
+      for (const p of placed.filter((q) => q.id !== l.id)) assert.ok(!segmentTouches(l.a, l.b, p.box), `${l.id} runs through ${p.id}`);
+      for (const o of obstacles) if (!(l.a.x >= o.x && l.a.x <= o.x + o.width && l.a.y >= o.y && l.a.y <= o.y + o.height)) assert.ok(!segmentTouches(l.a, l.b, o), `${l.id} runs through a control`);
+    }
+  });
+
+  it("omits a name that would need a leader longer than the limit, and draws it when the limit allows", () => {
+    const wall: Rect[] = [{ x: 100, y: 50, width: 200, height: 200 }];
+    const lone = [request("Boxed", 200, 150, "Boxed in", 30)];
+    const loose = placeLabels(lone, { area, fontSize: 11, mode: "free", obstacles: wall });
+    assert.equal(loose.placed.length, 1, "free to go as far as it needs");
+    assert.ok(near(loose.placed[0].box, loose.placed[0].anchor) > 40);
+    const capped = placeLabels(lone, { area, fontSize: 11, mode: "free", obstacles: wall, maxLeader: 40 });
+    assert.deepEqual([capped.placed.length, capped.omitted], [0, ["Boxed"]]);
+  });
+
+  it("keeps a name off an area to avoid, while its leader may cross it", () => {
+    const outline: Rect[] = [{ x: 150, y: 120, width: 100, height: 60 }];
+    const { placed, omitted } = placeLabels([request("Under", 200, 150, "Under the line", 30)], { area, fontSize: 11, mode: "free", avoid: outline });
+    assert.deepEqual(omitted, []);
+    assert.ok(!overlap(placed[0].box, outline[0]), "the name is not on the avoided area");
+    assert.equal(placed[0].leader, true, "it moved clear of it, with a line back to its anchor");
+    assert.ok(segmentTouches(placed[0].anchor, leaderEnd(placed[0]), outline[0]), "and the line is allowed to cross it");
+  });
+});
+
+describe("districtFontSize", () => {
+  it("shrinks with the map, and by a point when the whole state is drawn small, but never below 9", () => {
+    assert.ok(districtFontSize(1300) > districtFontSize(700) && districtFontSize(700) > districtFontSize(356));
+    assert.equal(districtFontSize(700, 279), districtFontSize(700) - 1);
+    assert.equal(districtFontSize(700, 600), districtFontSize(700), "a state drawn large keeps the full size");
+    assert.equal(districtFontSize(356, 200), 9);
+  });
+});
+
+describe("outline sampling", () => {
+  it("reads the layer's own path data into absolute rings", () => {
+    assert.deepEqual(parseOutline("M10 10l5 0 0 5-5 0z"), [[[10, 10], [15, 10], [15, 15], [10, 15]]]);
+    assert.deepEqual(parseOutline("M0 0l4 0 0 4zM100 100l-3 0 0 -3z"), [[[0, 0], [4, 0], [4, 4]], [[100, 100], [97, 100], [97, 97]]]);
+    assert.deepEqual(parseOutline(""), []);
+  });
+
+  it("covers every stretch of the outline, only inside the map, and is the same each time", () => {
+    const square = parseOutline("M20 20l60 0 0 60-60 0z");
+    const view = { scale: 1, tx: 0, ty: 0 };
+    const rects = outlineRects([square], view, { width: 200, height: 200 }, 10);
+    const inside = (x: number, y: number) => rects.some((r) => x >= r.x && x < r.x + r.width && y >= r.y && y < r.y + r.height);
+    for (let t = 0; t <= 60; t += 3) for (const [x, y] of [[20 + t, 20], [80, 20 + t], [80 - t, 80], [20, 80 - t]]) assert.ok(inside(x, y), `${x},${y} is covered`);
+    assert.ok(!inside(50, 50), "the inside of the shape is not an obstacle");
+    assert.deepEqual(outlineRects([square], view, { width: 200, height: 200 }, 10), rects);
+    assert.deepEqual(outlineRects([square], { scale: 1, tx: 1000, ty: 1000 }, { width: 200, height: 200 }, 10), [], "an outline that is off screen costs nothing");
+    assert.equal(outlineRects([square], view, { width: 200, height: 200 }, 10, 5).length, 5, "capped");
+  });
+});
+
 /** The statewide overview of the real layer, at the real map sizes: every district gets a legible, unobstructed name. */
 const layerPath = path.join(ROOT, "data", "generated", "boundaries.json");
 const datasetPath = path.join(ROOT, "data", "generated", "dataset.json");
@@ -149,7 +245,7 @@ describe("district labels on the real statewide overview", { skip: built ? false
       const districts = layer.shapes.filter((s) => s.featureId.startsWith("GD-"));
       assert.equal(districts.length, 23);
       const bounds = unionBounds(districts.map((s) => s.bbox as Bounds))!;
-      const viewport = fitBounds(bounds, { width, height });
+      const viewport = fitClear(bounds, { width, height });
       const requests = districts.map((s) => {
         const p = toScreen(viewport, s.anchor![0], s.anchor![1]);
         return { id: s.featureId, text: nameOf.get(s.featureId)!, x: p.x, y: p.y, r: s.anchor![2] * viewport.scale, priority: s.anchor![2] };

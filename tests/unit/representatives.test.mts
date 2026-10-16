@@ -9,6 +9,8 @@ import {
   PROVISIONAL_NOTICE,
   blockPins,
   clusterPins,
+  type MarkerGeometry,
+  type PinCluster,
   pinSetFor,
   pinsFor,
   slotLabel,
@@ -188,9 +190,17 @@ describe("clusterPins", () => {
     contested: false,
   });
   const identity = (x: number, y: number) => ({ x, y });
+  /** 20 by 20 markers, tip at the anchor; a group badge 24 by 24, centred on it. */
+  const marker: MarkerGeometry = { pin: () => ({ width: 20, height: 20 }), group: { width: 24, height: 24 }, gap: 0 };
+  const rectOf = (c: PinCluster) =>
+    c.pins.length > 1
+      ? { x: c.screen.x - 12, y: c.screen.y - 12, width: 24, height: 24 }
+      : { x: c.screen.x - 10, y: c.screen.y - 20, width: 20, height: 20 };
+  const touching = (a: ReturnType<typeof rectOf>, b: ReturnType<typeof rectOf>) =>
+    a.x < b.x + b.width && b.x < a.x + a.width && a.y < b.y + b.height && b.y < a.y + a.height;
 
-  it("keeps distant pins apart and groups close ones, at a member's own anchor", () => {
-    const clusters = clusterPins([pin("RP-A", 0, 0), pin("RP-B", 10, 0), pin("RP-C", 12, 3), pin("RP-D", 500, 500)], identity, 30);
+  it("keeps distant pins apart and groups overlapping ones, at a member's own anchor", () => {
+    const clusters = clusterPins([pin("RP-A", 0, 0), pin("RP-B", 10, 0), pin("RP-C", 12, 3), pin("RP-D", 500, 500)], identity, marker);
     assert.equal(clusters.length, 2);
     const group = clusters.find((c) => c.pins.length === 3)!;
     assert.deepEqual(group.pins.map((p) => p.id), ["RP-A", "RP-B", "RP-C"]);
@@ -198,15 +208,40 @@ describe("clusterPins", () => {
     assert.equal(clusters.find((c) => c.pins.length === 1)!.id, "RP-D");
   });
 
+  it("groups by the markers' rectangles, not by the distance between anchors", () => {
+    // 15 px apart sideways: the 20 px wide markers overlap. 25 px apart: they do not, even though the anchors are close.
+    assert.equal(clusterPins([pin("RP-A", 0, 0), pin("RP-B", 15, 0)], identity, marker).length, 1);
+    assert.equal(clusterPins([pin("RP-A", 0, 0), pin("RP-B", 25, 0)], identity, marker).length, 2);
+    // Straight above one another the marker is 20 px tall, so 25 px clears and 15 px does not.
+    assert.equal(clusterPins([pin("RP-A", 0, 0), pin("RP-B", 0, 25)], identity, marker).length, 2);
+    assert.equal(clusterPins([pin("RP-A", 0, 0), pin("RP-B", 0, 15)], identity, marker).length, 1);
+    // A wide marker overlaps further out than a narrow one.
+    const wide: MarkerGeometry = { ...marker, pin: () => ({ width: 40, height: 20 }) };
+    assert.equal(clusterPins([pin("RP-A", 0, 0), pin("RP-B", 35, 0)], identity, wide).length, 1);
+    assert.equal(clusterPins([pin("RP-A", 0, 0), pin("RP-B", 35, 0)], identity, marker).length, 2);
+  });
+
+  it("leaves no two markers overlapping, even when a group's badge reaches a third pin", () => {
+    // 40 scattered pins: groups form, and a group's badge can reach a pin that touched none of its members alone.
+    const crowd = Array.from({ length: 40 }, (_, i) => pin(`RP-${String(i).padStart(2, "0")}`, (i * 37) % 200, (i * 53) % 120));
+    const clusters = clusterPins(crowd, identity, marker);
+    assert.equal(clusters.reduce((n, c) => n + c.pins.length, 0), 40, "every pin is in exactly one marker");
+    for (const [i, a] of clusters.entries()) {
+      for (const b of clusters.slice(i + 1)) assert.ok(!touching(rectOf(a), rectOf(b)), `${a.id} overlaps ${b.id}`);
+    }
+  });
+
   it("is deterministic whatever order the pins arrive in", () => {
     const pins = [pin("RP-A", 0, 0), pin("RP-B", 10, 0), pin("RP-C", 400, 0)];
-    assert.deepEqual(clusterPins(pins, identity, 30).map((c) => c.id), clusterPins([...pins].reverse(), identity, 30).map((c) => c.id));
+    assert.deepEqual(clusterPins(pins, identity, marker).map((c) => c.id), clusterPins([...pins].reverse(), identity, marker).map((c) => c.id));
+    const crowd = Array.from({ length: 40 }, (_, i) => pin(`RP-${i}`, (i * 37) % 200, (i * 53) % 120));
+    assert.deepEqual(clusterPins(crowd, identity, marker).map((c) => c.id), clusterPins([...crowd].reverse(), identity, marker).map((c) => c.id));
   });
 
   it("splits as the map zooms in, and ignores a pin that projects to a non-finite point", () => {
     const pins = [pin("RP-A", 0, 0), pin("RP-B", 10, 0)];
-    assert.equal(clusterPins(pins, (x, y) => ({ x: x * 1, y }), 30).length, 1);
-    assert.equal(clusterPins(pins, (x, y) => ({ x: x * 10, y }), 30).length, 2);
-    assert.equal(clusterPins(pins, (x, y) => (x === 0 ? { x: NaN, y } : { x, y }), 30).length, 1);
+    assert.equal(clusterPins(pins, (x, y) => ({ x: x * 1, y }), marker).length, 1);
+    assert.equal(clusterPins(pins, (x, y) => ({ x: x * 10, y }), marker).length, 2);
+    assert.equal(clusterPins(pins, (x, y) => (x === 0 ? { x: NaN, y } : { x, y }), marker).length, 1);
   });
 });

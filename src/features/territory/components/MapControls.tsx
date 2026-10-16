@@ -28,12 +28,10 @@ interface MapControlsProps {
   onZoomIn: () => void;
   onZoomOut: () => void;
   onFitState: () => void;
-  onFitDistrict: () => void;
-  onFitBlock: () => void;
+  onFitView: () => void;
   onReset: () => void;
-  /** Names for the tooltips; null when there is nothing of that kind to fit. */
-  districtName: string | null;
-  blockName: string | null;
+  /** What Fit view would fit now (the selected block, else the selected district), for its tooltip; null when nothing is selected to fit. */
+  fitViewTarget: string | null;
   resetLabel: string;
   /** The coordinate grid is off until asked for: a toggle, not a state of the map. */
   gridOn: boolean;
@@ -41,19 +39,20 @@ interface MapControlsProps {
 }
 
 /**
- * Zoom and fit. Zoom only scales the current view. The three fit buttons move
- * the view to a geographic extent (the whole state, the selected district, the
- * selected block) without changing what is selected. Choosing a district or a
+ * Zoom and fit. Zoom only scales the current view. The two fit buttons move the
+ * view to a geographic extent without changing what is selected: the whole
+ * state, or "Fit view", which is context-aware (the selected block if it has an
+ * outline, else the selected district, else disabled). Choosing a district or a
  * block is a selection, not a zoom.
  */
-export function MapControls({ onZoomIn, onZoomOut, onFitState, onFitDistrict, onFitBlock, onReset, districtName, blockName, resetLabel, gridOn, onToggleGrid }: MapControlsProps) {
+export function MapControls({ onZoomIn, onZoomOut, onFitState, onFitView, onReset, fitViewTarget, resetLabel, gridOn, onToggleGrid }: MapControlsProps) {
   const divider = <span aria-hidden="true" className="mx-1.5 my-0.5 block h-px bg-line-strong" />;
   return (
     <div
       role="group"
       aria-label="Map controls"
       data-testid="map-controls"
-      className="absolute right-3 top-3 z-10 flex flex-col rounded-xl border border-line-strong bg-surface/90 p-0.5 shadow-lg backdrop-blur max-sm:right-3"
+      className="absolute right-3 top-3 z-10 flex flex-col rounded-xl border border-line bg-surface/90 p-0.5 shadow-md backdrop-blur"
       {...keepOffMap}
     >
       <button type="button" className={button} onClick={onZoomIn} aria-label="Zoom in" title="Zoom in (+)">
@@ -71,22 +70,11 @@ export function MapControls({ onZoomIn, onZoomOut, onFitState, onFitDistrict, on
       <button
         type="button"
         className={button}
-        onClick={onFitDistrict}
-        disabled={districtName === null}
-        aria-label="Fit selected district"
-        title={districtName ? `Fit ${districtName} to the map` : "No district selected"}
-      >
-        <Icon>
-          <path d="M4 6.5 9 3l7 3.5-1 7L9.5 17 4 13.5Z" />
-        </Icon>
-      </button>
-      <button
-        type="button"
-        className={button}
-        onClick={onFitBlock}
-        disabled={blockName === null}
-        aria-label="Fit selected block"
-        title={blockName ? `Fit ${blockName} to the map` : "No block with an outline is selected"}
+        onClick={onFitView}
+        disabled={fitViewTarget === null}
+        aria-label="Fit view"
+        data-testid="fit-view"
+        title={fitViewTarget ? `Fit ${fitViewTarget} to the map` : "Nothing selected to fit"}
       >
         <Icon>
           <circle cx="10" cy="10" r="4.5" />
@@ -128,7 +116,7 @@ export function PanControls({ onPan, compact = false }: { onPan: (dx: number, dy
       <path d="M10 16V4M5 9l5-5 5 5" />
     </svg>
   );
-  const cell = cn(button, "border border-line-strong bg-surface/90 shadow-lg backdrop-blur");
+  const cell = cn(button, "bg-surface/90 shadow-md backdrop-blur");
   const up = (
     <button type="button" className={cell} onClick={() => onPan(0, KEY_PAN)} aria-label="Pan up" title="Pan up (↑)">
       {arrow(0)}

@@ -102,7 +102,15 @@ describe("territory workspace in a real browser", { skip: skipReason }, () => {
     assert.equal(await page.locator("path[data-fid]").count(), layer.shapes.length);
     assert.equal(await page.locator('path[data-fid^="GD-"]').count(), 23);
     assert.match(await page.locator('[data-testid="map-legend"]').innerText(), /OpenStreetMap contributors/);
-    assert.match(await page.locator('[data-testid="map-legend"]').innerText(), /provisional/i);
+    assert.match(await page.locator('[data-testid="map-legend"]').innerText(), /provisional/i, "the legend always says so, with the attribution");
+    assert.match(await page.locator('[data-testid="map-provisional"]').innerText(), /Provisional boundaries/, "and the chip on the map is always there");
+    // The full coverage wording is a disclosure: collapsed until asked for, and an accessible button opens it.
+    const toggle = page.locator('[data-testid="map-about-toggle"]');
+    assert.equal(await toggle.getAttribute("aria-expanded"), "false");
+    assert.equal(await page.locator('[data-testid="map-coverage"]').isVisible(), false, "collapsed by default");
+    assert.equal(await toggle.getAttribute("aria-controls"), await page.locator('[data-testid="map-about"]').getAttribute("id"));
+    await toggle.click();
+    assert.equal(await toggle.getAttribute("aria-expanded"), "true");
     const coverage = await page.locator('[data-testid="map-coverage"]').innerText();
     assert.match(coverage, /Coverage is not complete/);
     assert.match(coverage, new RegExp(`${layer.shapes.filter((s) => s.featureId.startsWith("GD-")).length} of 23 districts`));
@@ -247,9 +255,10 @@ describe("territory workspace in a real browser", { skip: skipReason }, () => {
     assert.notEqual(before, after);
     assert.equal(Math.abs((await scale()) - fit) < fit * 0.001, true);
     await page.locator('[data-testid="details-empty"]').waitFor();
-    // The district and block fits are disabled until there is a district or a block with an outline to fit.
-    assert.equal(await page.getByRole("button", { name: "Fit selected district" }).isDisabled(), true);
-    assert.equal(await page.getByRole("button", { name: "Fit selected block" }).isDisabled(), true);
+    // Fit view is disabled until there is a district or a block with an outline to fit.
+    assert.equal(await page.getByRole("button", { name: "Fit view", exact: true }).isDisabled(), true);
+    assert.equal(await page.getByRole("button", { name: "Fit view", exact: true }).getAttribute("title"), "Nothing selected to fit");
+    assert.equal(await page.locator('[data-testid="map-controls"] button').count(), 6, "zoom in and out, fit state, fit view, reset, grid");
     await context.close();
   });
 
@@ -331,14 +340,25 @@ describe("territory workspace in a real browser", { skip: skipReason }, () => {
     const revealed = await scale();
     assert.ok(revealed > fit * 5, `list selection: ${fit} -> ${revealed}`);
 
-    // Fit selected block is available, and Fit entire state returns to the whole map.
-    assert.equal(await page.getByRole("button", { name: "Fit selected block" }).isDisabled(), false);
+    // Fit view is available, and Fit entire state returns to the whole map.
+    assert.equal(await page.getByRole("button", { name: "Fit view", exact: true }).isDisabled(), false);
     await page.getByRole("button", { name: "Fit entire state" }).click();
     await page.waitForTimeout(600);
-    assert.ok(Math.abs((await scale()) - fit) < fit * 0.02);
-    await page.getByRole("button", { name: "Fit selected block" }).click();
+    // The whole state again. Not the very same scale as at first: inside a district the toolbar has a second row (a
+    // Back button and a longer breadcrumb), so the map is a little shorter and the fitted state a little smaller.
+    const whole = await page.evaluate(() => {
+      const map = document.querySelector('[data-testid="geo-map"]')!.getBoundingClientRect();
+      const boxes = [...document.querySelectorAll('path[data-fid^="GD-"]')].map((p) => p.getBoundingClientRect());
+      const top = Math.min(...boxes.map((b) => b.top));
+      const bottom = Math.max(...boxes.map((b) => b.bottom));
+      return { inside: top >= map.top - 1 && bottom <= map.bottom + 1, share: (bottom - top) / map.height };
+    });
+    assert.equal(whole.inside, true, "every district is on the map");
+    assert.ok(whole.share > 0.85, `the state fills the map height (${whole.share.toFixed(2)})`);
+    assert.ok((await scale()) < revealed / 5 && Math.abs((await scale()) - fit) < fit * 0.1, "and it is the overview scale, give or take the map's height");
+    await page.getByRole("button", { name: "Fit view", exact: true }).click();
     await page.waitForTimeout(600);
-    assert.ok(Math.abs((await scale()) - revealed) < revealed * 0.02, "Fit selected block returns to the block");
+    assert.ok(Math.abs((await scale()) - revealed) < revealed * 0.02, "Fit view returns to the selected block");
     await context.close();
   });
 

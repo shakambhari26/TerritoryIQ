@@ -24,7 +24,7 @@ run the command.
 | `map-drilldown.test.mts` | The district-to-block rules on the real build: level from selection, click actions, breadcrumbs, back and Escape, which blocks are drawn, duplicate block names in search, geographic confidence, and the district and block label plans |
 | `representatives.test.mts` | The representative-pin rules on the real build: pins sit exactly on stored anchors, one ASM pin per supported territory, no pin for unmatched, weak, ambiguous or excluded rows or for a block with no outline or only vacant markers, co-located rows grouped and not merged, implied information marked, grouping is deterministic and uses a real anchor, and pins follow local changes |
 | `scale-bar.test.mts` | The scale bar's ground distance against a known real-world length, round lengths, Mercator stretch, and refusing a view it cannot measure |
-| `viewport.test.mts` | Fit, zoom about a point, zoom limits, invalid zoom factors, zero-size containers, pan |
+| `viewport.test.mts` | Fit, zoom about a point, zoom limits, invalid zoom factors, zero-size containers, pan; and `fitClear`, the map's own fit: whole extent on the map, uniform scale, clear of every control and notice at desktop, laptop, tablet and phone sizes |
 | `model-allocation.test.mts` | The four allocation states, official-unit states, local changes, validation, summary counts (synthetic data) |
 | `selection-layer.test.mts` | Selection by ID and URL hash, layer validation (provenance and the provisional status), wording helpers |
 | `data-integrity.test.mts` | The real build: counts against the Phase 0E audit, crosswalk rules, boundary provenance and shapes, no email or salary data, source hashes. Skipped, not failed, if `data:build` has not been run |
@@ -44,6 +44,17 @@ layouts, 24 px targets, and axe with the panel open.
 operation (Enter, Space, the G key, Tab order), the grid not disturbing pins or the scale bar, the selection glow's
 layering and legibility (glow under the wash, casing and orange line), no glow without a selection, the taller
 control column inside the map at phone, tablet and wide sizes, and axe with the grid on.
+`map-visual.test.mts`: visual and layout regression for the map, as measurements, at a 1440 x 900 desktop (details panel
+open), a 1280 x 720 laptop, an 820 x 1180 tablet and a 390 x 844 phone. At each size: the map's height and the share of it
+the state fills (minimums sit just under the redesign's figures, so shrinking either fails), the state's on-screen aspect
+equal to the data's, all 23 districts named or marked with a dot, and no overlap between names, between markers, between
+a name and a marker, or between either and a control, the scale bar or the provisional chip; no control or chip over drawn
+geography; the legend not clipped and the page not scrolling sideways; the permanent "Provisional boundaries" chip; the
+coverage disclosure collapsed by default; the grid hidden with its toggle unpressed; no request off the app's own host.
+Also a Bankura drill-down at desktop and phone width (no name over the selected outline, none under a control), and the
+disclosure opening and closing from the keyboard with the attribution still shown. Run it alone with
+`npm run build` first, then `node --test --test-concurrency=1 tests/e2e/map-visual.test.mts` (it starts its own server on
+`127.0.0.1:3199`, or set `E2E_BASE_URL`).
 `harness.mts` starts the server and the browser.
 
 ## `guardrails.test.ts` and the removed Gate P0 tests

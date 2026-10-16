@@ -2,22 +2,25 @@
 
 import type { Rect } from "@/features/geo/labels";
 import { PIN_COLOR } from "../map-style";
-import type { PinCluster, RepresentativePin } from "../representatives";
+import type { MarkerGeometry, PinCluster, RepresentativePin } from "../representatives";
 
 /**
- * Marker sizes in screen pixels. The tip of a pin is the anchor; a cluster is centred on its anchor. A block pin is
- * a teardrop; a territory pin is a compact "ASM" tag with a pointer, so the word sits inside the marker and the
- * marker stays narrow enough not to cover its neighbours.
+ * Marker sizes in screen pixels. The tip of a pin is the anchor; a group badge is centred on its anchor. A block pin is
+ * a teardrop; a territory pin is the same orange body as a compact "ASM" tag with a pointer, so the word sits inside
+ * the marker and the marker stays narrow enough not to cover its neighbours. A group is a different shape and colour
+ * (a navy disc with an orange halo and a count), so a count is never mistaken for a person. All are at least 24
+ * pixels on each side.
  */
-const PIN_W = 28;
-const PIN_H = 36;
-const TAG_W = 40;
-const TAG_H = 30;
-const CLUSTER = 36;
-/** Pins whose markers would overlap closer than this join one group. */
-export const CLUSTER_RADIUS = 36;
+const PIN_W = 24;
+const PIN_H = 30;
+const TAG_W = 38;
+const TAG_H = 27;
+const CLUSTER = 30;
 
 const sizeOf = (pin: RepresentativePin) => (pin.kind === "territory" ? { width: TAG_W, height: TAG_H } : { width: PIN_W, height: PIN_H });
+
+/** What the clustering needs to know to group pins whose markers would overlap (see `clusterPins`). */
+export const MARKER_GEOMETRY: MarkerGeometry = { pin: sizeOf, group: { width: CLUSTER, height: CLUSTER }, gap: 4 };
 
 /** Never lets a press reach the map underneath: it would start a drag or clear the selection. */
 const keepOffMap = {
@@ -48,7 +51,7 @@ function PinGlyph({ pin, active }: { pin: RepresentativePin; active: boolean }) 
   const { width, height } = sizeOf(pin);
   const fill = active ? PIN_COLOR.bodyHover : PIN_COLOR.body;
   const stroke = pin.contested ? PIN_COLOR.contested : PIN_COLOR.ring;
-  const strokeWidth = pin.contested ? 2.4 : 1.8;
+  const strokeWidth = pin.contested ? 2 : 1.4;
   return (
     <svg
       viewBox={`0 0 ${width} ${height}`}
@@ -57,19 +60,19 @@ function PinGlyph({ pin, active }: { pin: RepresentativePin; active: boolean }) 
       aria-hidden="true"
       focusable="false"
       className="block overflow-visible"
-      style={{ filter: `drop-shadow(0 0 ${active ? 9 : 5}px ${PIN_COLOR.glow})` }}
+      style={{ filter: active ? `drop-shadow(0 0 7px ${PIN_COLOR.glow})` : "drop-shadow(0 1px 1.5px rgba(5, 9, 18, 0.7))" }}
     >
       {pin.kind === "territory" ? (
         <>
-          <path d="M11.5 1H28.5A10.5 10.5 0 0 1 28.5 22H24L20 29L16 22H11.5A10.5 10.5 0 0 1 11.5 1Z" fill={fill} stroke={stroke} strokeWidth={strokeWidth} strokeLinejoin="round" />
-          <text x="20" y="11.5" textAnchor="middle" dominantBaseline="central" fontSize="10.5" fontWeight="800" letterSpacing="0.4" fill={PIN_COLOR.core}>
+          <path d="M11 1H27A10 10 0 0 1 27 21H22L19 26L16 21H11A10 10 0 0 1 11 1Z" fill={fill} stroke={stroke} strokeWidth={strokeWidth} strokeLinejoin="round" />
+          <text x="19" y="11" textAnchor="middle" dominantBaseline="central" fontSize="10" fontWeight="800" letterSpacing="0.4" fill={PIN_COLOR.core}>
             ASM
           </text>
         </>
       ) : (
         <>
-          <path d="M14 35C14 35 3 22.5 3 13.5a11 11 0 1 1 22 0C25 22.5 14 35 14 35Z" fill={fill} stroke={stroke} strokeWidth={strokeWidth} strokeLinejoin="round" />
-          <circle cx="14" cy="13.5" r="4.2" fill={PIN_COLOR.core} />
+          <path d="M12 29C12 29 1.5 18.2 1.5 11A10.5 10.5 0 1 1 22.5 11C22.5 18.2 12 29 12 29Z" fill={fill} stroke={stroke} strokeWidth={strokeWidth} strokeLinejoin="round" />
+          <circle cx="12" cy="11" r="3.6" fill={PIN_COLOR.core} />
         </>
       )}
     </svg>
@@ -86,8 +89,8 @@ interface RepresentativePinsProps {
 }
 
 /**
- * The markers, as real buttons over the map: reachable by keyboard, with an accessible name, a 28 by 36 pixel
- * target (40 by 30 for an ASM tag, 36 for a group), and a visible focus ring. Each sits exactly on a verified area anchor (see
+ * The markers, as real buttons over the map: reachable by keyboard, with an accessible name, a 24 by 30 pixel
+ * target (38 by 27 for an ASM tag, 30 for a group), and a visible focus ring. Each sits exactly on a verified area anchor (see
  * representatives.ts); this component only draws where it is told.
  */
 export function RepresentativePins({ clusters, openIds, hidden, onOpen }: RepresentativePinsProps) {
@@ -130,12 +133,12 @@ export function RepresentativePins({ clusters, openIds, hidden, onOpen }: Repres
               {grouped ? (
                 <span
                   aria-hidden="true"
-                  className="flex h-full w-full items-center justify-center rounded-full border-2 text-sm font-bold tabular-nums"
+                  className="flex h-full w-full items-center justify-center rounded-full border-2 text-xs font-bold tabular-nums"
                   style={{
                     background: PIN_COLOR.core,
                     borderColor: PIN_COLOR.body,
                     color: "#ffd9c6",
-                    boxShadow: `0 0 ${active ? 14 : 8}px ${PIN_COLOR.glow}`,
+                    boxShadow: `0 0 0 ${active ? 4 : 3}px rgba(232, 98, 42, ${active ? 0.38 : 0.24}), 0 1px 3px rgba(5, 9, 18, 0.7)`,
                   }}
                 >
                   {cluster.pins.length}

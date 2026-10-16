@@ -341,35 +341,77 @@ export interface PinCluster {
   at: readonly [number, number];
 }
 
+/** What a marker covers on screen. A single pin stands with its tip on the anchor; a group is centred on its anchor. */
+export interface MarkerGeometry {
+  /** Size of the marker of one pin, which is anchored at the bottom middle. */
+  pin: (pin: RepresentativePin) => { width: number; height: number };
+  /** Size of the badge that stands for a group. */
+  group: { width: number; height: number };
+  /** Clear space kept between two markers, in pixels. */
+  gap: number;
+}
+
+interface Group {
+  items: Array<{ pin: RepresentativePin; x: number; y: number }>;
+  /** The member whose anchor the marker is drawn at: the one nearest the group's middle. */
+  centre: { pin: RepresentativePin; x: number; y: number };
+}
+
+function centreOf(items: Group["items"]): Group["centre"] {
+  const cx = items.reduce((s, i) => s + i.x, 0) / items.length;
+  const cy = items.reduce((s, i) => s + i.y, 0) / items.length;
+  return [...items].sort((a, b) => Math.hypot(a.x - cx, a.y - cy) - Math.hypot(b.x - cx, b.y - cy) || a.pin.id.localeCompare(b.pin.id))[0];
+}
+
 /**
- * Groups pins whose markers would overlap on screen. Greedy and deterministic: pins are taken in id order and
- * join the first group whose seed is within `radius` pixels. The group is drawn at the member nearest its
- * middle, never at an averaged point that is no anchor.
+ * Groups pins whose markers would overlap on screen. Two markers overlap when their rectangles (the pin's own, or
+ * the group badge's, widened by half the gap on each side) intersect. Deterministic: pins are taken in id order, the
+ * first overlapping pair is merged and the group's badge is checked again, until no two markers overlap. The group
+ * is drawn at the member nearest its middle, never at an averaged point that is no anchor.
  */
 export function clusterPins(
   pins: readonly RepresentativePin[],
   project: (x: number, y: number) => { x: number; y: number },
-  radius: number,
+  marker: MarkerGeometry,
 ): PinCluster[] {
-  type Item = { pin: RepresentativePin; x: number; y: number };
-  const groups: Item[][] = [];
+  const groups: Group[] = [];
   for (const pin of [...pins].sort((a, b) => a.id.localeCompare(b.id))) {
     const point = project(pin.at[0], pin.at[1]);
     if (!Number.isFinite(point.x) || !Number.isFinite(point.y)) continue;
     const item = { pin, ...point };
-    const home = groups.find((g) => Math.hypot(g[0].x - item.x, g[0].y - item.y) <= radius);
-    if (home) home.push(item);
-    else groups.push([item]);
+    groups.push({ items: [item], centre: item });
+  }
+  const rect = (g: Group) => {
+    const { x, y } = g.centre;
+    const size = g.items.length > 1 ? marker.group : marker.pin(g.items[0].pin);
+    const half = marker.gap / 2;
+    return g.items.length > 1
+      ? { x: x - size.width / 2 - half, y: y - size.height / 2 - half, width: size.width + marker.gap, height: size.height + marker.gap }
+      : { x: x - size.width / 2 - half, y: y - size.height - half, width: size.width + marker.gap, height: size.height + marker.gap };
+  };
+  const touch = (a: ReturnType<typeof rect>, b: ReturnType<typeof rect>) =>
+    a.x < b.x + b.width && b.x < a.x + a.width && a.y < b.y + b.height && b.y < a.y + a.height;
+  // A merged badge is a new shape in a new place, so every pair is looked at again until none overlaps.
+  for (let merged = true; merged; ) {
+    merged = false;
+    for (let i = 0; i < groups.length; i++) {
+      for (let j = i + 1; j < groups.length; j++) {
+        if (!touch(rect(groups[i]), rect(groups[j]))) continue;
+        const items = [...groups[i].items, ...groups[j].items];
+        groups[i] = { items, centre: centreOf(items) };
+        groups.splice(j, 1);
+        merged = true;
+        j = i;
+      }
+    }
   }
   return groups.map((group) => {
-    const cx = group.reduce((s, i) => s + i.x, 0) / group.length;
-    const cy = group.reduce((s, i) => s + i.y, 0) / group.length;
-    const centre = [...group].sort((a, b) => Math.hypot(a.x - cx, a.y - cy) - Math.hypot(b.x - cx, b.y - cy) || a.pin.id.localeCompare(b.pin.id))[0];
+    const members = [...group.items].sort((a, b) => a.pin.id.localeCompare(b.pin.id));
     return {
-      id: group.length === 1 ? group[0].pin.id : `cluster:${group.map((i) => i.pin.id).join("+")}`,
-      pins: group.map((i) => i.pin),
-      screen: { x: centre.x, y: centre.y },
-      at: centre.pin.at,
+      id: members.length === 1 ? members[0].pin.id : `cluster:${members.map((i) => i.pin.id).join("+")}`,
+      pins: members.map((i) => i.pin),
+      screen: { x: group.centre.x, y: group.centre.y },
+      at: group.centre.pin.at,
     };
   });
 }

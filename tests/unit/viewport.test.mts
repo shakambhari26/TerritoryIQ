@@ -10,7 +10,10 @@ import {
   unionBounds,
   zoomAt,
   zoomLimits,
+  type Bounds,
 } from "../../src/features/geo/viewport.ts";
+import type { Rect } from "../../src/features/geo/labels.ts";
+import { GRAZE, controlObstacles, fitClear, fitPadding, furniture } from "../../src/features/territory/map-layout.ts";
 
 const size = { width: 800, height: 600 };
 
@@ -116,5 +119,68 @@ describe("panBy, unionBounds, padBounds", () => {
   it("pads a tiny box to a minimum span without changing a large one", () => {
     assert.deepEqual(padBounds([10, 10, 11, 11], 100), [-39.5, -39.5, 60.5, 60.5]);
     assert.deepEqual(padBounds([0, 0, 500, 500], 100), [0, 0, 500, 500]);
+  });
+});
+
+describe("fitClear (the map's fit, clear of its own controls)", () => {
+  // A state-shaped extent: taller than wide, the aspect of West Bengal on the layer (about 0.65).
+  const state: [number, number, number, number] = [0, 0, 650, 1000];
+  const wideOnes: Array<[string, number, number]> = [
+    ["desktop with the details panel open", 870, 560],
+    ["laptop with the details panel open", 710, 368],
+    ["wide desktop", 1300, 640],
+    ["tablet", 770, 826],
+  ];
+  const sizes: Array<[string, number, number]> = [...wideOnes, ["phone", 356, 590]];
+  // The extent's bounding box may graze a control's corner (it is bigger than the shape there) but not reach into it.
+  const hit = (a: Rect, b: Rect) =>
+    Math.min(a.x + a.width, b.x + b.width) - Math.max(a.x, b.x) > GRAZE && Math.min(a.y + a.height, b.y + b.height) - Math.max(a.y, b.y) > GRAZE;
+  const boxOf = (view: { scale: number; tx: number; ty: number }, b: Bounds): Rect => ({
+    x: b[0] * view.scale + view.tx,
+    y: b[1] * view.scale + view.ty,
+    width: (b[2] - b[0]) * view.scale,
+    height: (b[3] - b[1]) * view.scale,
+  });
+
+  for (const [name, width, height] of sizes) {
+    it(`at the ${name} size (${width} x ${height}) keeps the whole extent on the map and clear of every control and notice`, () => {
+      const view = fitClear(state, { width, height });
+      const box = boxOf(view, state);
+      assert.ok(box.x >= 0 && box.y >= 0 && box.x + box.width <= width && box.y + box.height <= height, "inside the map");
+      for (const f of furniture({ width, height }, 0).filter((f) => f.clearOfFit)) assert.ok(!hit(box, f.rect), `clear of the ${f.id}`);
+      // One scale for both axes: the shape is never stretched.
+      assert.ok(Math.abs(box.width / box.height - 650 / 1000) < 1e-9);
+    });
+  }
+
+  it("fills the height of a wide map: the state is as tall as the map allows, with little to spare", () => {
+    for (const [name, width, height] of wideOnes.slice(0, 3)) {
+      const box = boxOf(fitClear(state, { width, height }), state);
+      assert.ok(box.height >= height - 2 * fitPadding(width) - 1, `${name}: ${box.height.toFixed(0)} of ${height}`);
+    }
+  });
+
+  it("gives up part of the width on a phone for the zoom column, and nothing on a wide map", () => {
+    const phone = boxOf(fitClear(state, { width: 356, height: 590 }), state);
+    const zoom = furniture({ width: 356, height: 590 }, 0).find((f) => f.id === "zoom")!;
+    assert.ok(phone.x + phone.width <= zoom.rect.x, "ends before the zoom column");
+    const desktop = fitClear(state, { width: 870, height: 560 });
+    assert.ok(Math.abs(boxOf(desktop, state).x + boxOf(desktop, state).width / 2 - 435) < 1e-6, "centred on a wide map");
+  });
+
+  it("clears a wide extent too, as a district fills the map, and respects the zoom limits", () => {
+    const district: [number, number, number, number] = [0, 0, 1000, 700];
+    const view = fitClear(district, { width: 870, height: 560 });
+    const box = boxOf(view, district);
+    for (const f of furniture({ width: 870, height: 560 }, 0).filter((f) => f.clearOfFit)) assert.ok(!hit(box, f.rect), `clear of the ${f.id}`);
+    const clamped = fitClear(district, { width: 870, height: 560 }, { min: 0.1, max: 0.2 });
+    assert.equal(clamped.scale, 0.2);
+  });
+
+  it("takes the scale bar off the fit but not off the label placer", () => {
+    const flags = Object.fromEntries(furniture({ width: 870, height: 560 }).map((f) => [f.id, f.clearOfFit]));
+    assert.deepEqual(flags, { zoom: true, pan: true, chip: true, scale: false });
+    assert.ok(controlObstacles({ width: 870, height: 560 }).length === 4, "all four are obstacles for labels and markers");
+    assert.ok(furniture({ width: 356, height: 590 }).some((f) => f.id === "details"), "a phone also keeps the details button clear");
   });
 });

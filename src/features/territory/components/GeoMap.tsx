@@ -11,12 +11,11 @@ import {
   type KeyboardEvent as ReactKeyboardEvent,
   type PointerEvent as ReactPointerEvent,
 } from "react";
-import { leaderEnd } from "@/features/geo/labels";
+import { leaderEnd, outlineRects, parseOutline } from "@/features/geo/labels";
 import { graticule } from "@/features/geo/graticule";
 import { LAYER_SCALE } from "@/features/geo/layer";
 import { scaleBar } from "@/features/geo/scale-bar";
 import {
-  fitBoundsInset,
   isUsableBounds,
   isUsableViewport,
   padBounds,
@@ -31,7 +30,7 @@ import {
 } from "@/features/geo/viewport";
 import { usePrefersReducedMotion } from "@/lib/use-reduced-motion";
 import type { GeoQuality } from "../quality";
-import { COMPACT_WIDTH, controlObstacles, panPad } from "../map-layout";
+import { COMPACT_WIDTH, controlObstacles, fitClear, panPad } from "../map-layout";
 import { planLabels, type LabelAnchor } from "../map-labels";
 import { isBlockInteractive, visibleBlockIds, type MapContext } from "../map-level";
 import { ALLOCATION_FILL, MAP_BACKDROP, MAP_COLOR, PATTERNS, QUALITY_FILL, districtTint, patternUrl, type MapLayerMode, type PatternSpec } from "../map-style";
@@ -39,7 +38,7 @@ import type { TerritoryModel } from "../model";
 import { clusterPins, type PinCluster, type RepresentativePin } from "../representatives";
 import type { AllocationState, BoundaryLayer, BoundaryShape } from "../types";
 import { KEY_PAN, MapControls, PanControls } from "./MapControls";
-import { CLUSTER_RADIUS, RepresentativePins, markerRect } from "./RepresentativePins";
+import { MARKER_GEOMETRY, RepresentativePins, markerRect } from "./RepresentativePins";
 import { RepresentativesPanel } from "./RepresentativesPanel";
 
 export type LayerLoad =
@@ -77,21 +76,10 @@ export interface GeoMapProps {
 }
 
 const LIMIT_PX = 4;
+/** A change in the map's height up to this much keeps the zoom and only re-centres the view. */
+const NUDGE_PX = 16;
 /** The map's letter, digit and punctuation shortcuts: zoom in, zoom out, fit the state, toggle the grid. */
 const SINGLE_KEY_SHORTCUTS: ReadonlySet<string> = new Set(["+", "=", "-", "_", "0", "g", "G"]);
-/** Space kept clear around a fitted extent. Tighter than before, so the state fills the frame; a phone gets less. */
-const fitPadding = (width: number) => (width < COMPACT_WIDTH ? 22 : 40);
-/**
- * Space a fitted extent keeps clear of the on-screen furniture. On a phone the notices sit across the top, the pan
- * strip along the bottom and the zoom column down the right, and the state fills most of the width, so the fit
- * starts clear of all three and no pin lands on a button. Wider maps have room around the state already.
- */
-const fitInsets = (width: number) =>
-  width < COMPACT_WIDTH
-    ? { top: 40, right: 54, bottom: panPad(width).height + 22, left: 0 }
-    : width < 760
-      ? { top: 0, right: 54, bottom: 0, left: 0 }
-      : { top: 0, right: 0, bottom: 0, left: 0 };
 /** The smallest extent a fit shows, as a share of the state's width, so a tiny unit keeps some surroundings. */
 const MIN_BLOCK_SPAN = 0.07;
 const MIN_DISTRICT_SPAN = 0.05;
@@ -225,8 +213,6 @@ export function EmptyState({ title, children }: { title: string; children: strin
   );
 }
 
-type FitKind = "level" | "state" | "district" | "block";
-
 const sameView = (a: Viewport, b: Viewport) => a.scale === b.scale && a.tx === b.tx && a.ty === b.ty;
 
 export function GeoMap({
@@ -254,8 +240,10 @@ export function GeoMap({
   const [size, setSize] = useState<Size>({ width: 0, height: 0 });
   // The view is null until the map has a size and a layer; then it is always a usable viewport.
   const [view, setView] = useState<Viewport | null>(null);
-  // Which extent the view was fitted to, so a resize can fit it again. A user's own zoom or pan ends it (null).
-  const [fitted, setFitted] = useState<FitKind | null>("level");
+  // The extent the view was fitted to, so a resize fits that same extent again (and not whatever the level has become
+  // since: selecting a block must never move the map, even if the toolbar or a notice above it changes height). A
+  // user's own zoom or pan ends it (null).
+  const [fitted, setFitted] = useState<Bounds | null>(null);
   const [animate, setAnimate] = useState(false);
   const [hover, setHover] = useState<{ id: string; x: number; y: number } | null>(null);
   const suppressClick = useRef(false);
@@ -311,14 +299,13 @@ export function GeoMap({
 
   const limits = useMemo(() => {
     if (!stateBounds || size.width <= 0 || size.height <= 0) return null;
-    const probe = fitBoundsInset(stateBounds, size, fitInsets(size.width), fitPadding(size.width));
-    return zoomLimits(probe.scale);
+    return zoomLimits(fitClear(stateBounds, size).scale);
   }, [stateBounds, size]);
 
   const fit = useCallback(
     (bounds: Bounds | null): Viewport | null => {
       if (!bounds || !limits || size.width <= 0) return null;
-      const next = fitBoundsInset(bounds, size, fitInsets(size.width), fitPadding(size.width), limits);
+      const next = fitClear(bounds, size, limits);
       return isUsableViewport(next) ? next : null;
     },
     [limits, size],
@@ -327,12 +314,12 @@ export function GeoMap({
 
   /** Moves to a view, animated or not. A broken view is refused, so repeated interaction cannot corrupt the map. */
   const apply = useCallback(
-    (next: Viewport | null, animated: boolean, kind: FitKind | null) => {
+    (next: Viewport | null, animated: boolean, extent: Bounds | null) => {
       if (!isUsableViewport(next)) return;
       // With reduced motion the view jumps: nothing flies, fades or eases.
       setAnimate(animated && motion);
       setView((current) => (current && sameView(current, next) ? current : next));
-      setFitted(kind);
+      setFitted(extent);
     },
     [motion],
   );
@@ -342,7 +329,7 @@ export function GeoMap({
   if (layer !== seenLayer) {
     setSeenLayer(layer);
     setView(null);
-    setFitted("level");
+    setFitted(null);
   }
 
   // Track the container size.
@@ -363,18 +350,21 @@ export function GeoMap({
   if (levelView) {
     if (view === null) {
       setView(levelView);
+      setFitted(levelBounds);
       setSeenSize(size);
       setSeenToken(revealToken);
     } else if (revealToken !== seenToken) {
       setSeenToken(revealToken);
       setAnimate(motion);
       setView(levelView);
-      setFitted("level");
+      setFitted(levelBounds);
     } else if (size.width !== seenSize.width || size.height !== seenSize.height) {
       setSeenSize(size);
       setAnimate(false);
-      const bounds = fitted === "state" ? stateBounds : fitted === "district" ? districtBounds : fitted === "block" ? blockBounds : levelBounds;
-      if (fitted) setView(fit(bounds) ?? levelView);
+      // A few pixels of height (the toolbar above is a line taller or shorter once something is selected) only re-centre
+      // the view: it must not zoom. A real resize (a rotated phone, the disclosure opening, the panel closing) refits.
+      const nudge = size.width === seenSize.width && seenSize.height > 0 && Math.abs(size.height - seenSize.height) <= NUDGE_PX;
+      if (fitted && !nudge) setView(fit(fitted) ?? levelView);
       else if (seenSize.width > 0) setView({ ...view, tx: view.tx + (size.width - seenSize.width) / 2, ty: view.ty + (size.height - seenSize.height) / 2 });
     }
   }
@@ -404,10 +394,14 @@ export function GeoMap({
     },
     [viewport, limits, size, apply],
   );
-  const fitState = useCallback(() => apply(fit(stateBounds), true, "state"), [apply, fit, stateBounds]);
-  const fitDistrict = useCallback(() => apply(fit(districtBounds), true, "district"), [apply, fit, districtBounds]);
-  const fitBlock = useCallback(() => apply(fit(blockBounds), true, "block"), [apply, fit, blockBounds]);
-  const reset = useCallback(() => apply(levelView, true, "level"), [apply, levelView]);
+  const fitState = useCallback(() => apply(fit(stateBounds), true, stateBounds), [apply, fit, stateBounds]);
+  // One context-aware "Fit view": the selected block if it has an outline, else the selected district.
+  const fitView = useCallback(() => {
+    if (blockBounds) apply(fit(blockBounds), true, blockBounds);
+    else if (districtBounds) apply(fit(districtBounds), true, districtBounds);
+  }, [apply, fit, blockBounds, districtBounds]);
+  const fitViewTarget = blockBounds && context.blockId ? (model.featureById.get(context.blockId)?.name ?? null) : districtBounds && context.districtId ? (model.featureById.get(context.districtId)?.name ?? null) : null;
+  const reset = useCallback(() => apply(levelView, true, levelBounds), [apply, levelView, levelBounds]);
   // The arrow keys and the on-screen pan buttons share one step (KEY_PAN) and one code path.
   const panView = useCallback(
     (dx: number, dy: number) => {
@@ -511,7 +505,7 @@ export function GeoMap({
       // A marker that would sit under a button is left out until the map is moved: a covered button breaks the
       // target-size rule and a covered marker would still take keyboard focus.
       const furniture = controlObstacles(size, 2);
-      return clusterPins(pinList, (x, y) => toScreen(v, x, y), CLUSTER_RADIUS).filter((c) => {
+      return clusterPins(pinList, (x, y) => toScreen(v, x, y), MARKER_GEOMETRY).filter((c) => {
         if (!(c.screen.x > -40 && c.screen.x < size.width + 40 && c.screen.y > -40 && c.screen.y < size.height + 80)) return false;
         const r = markerRect(c);
         return !furniture.some((f) => r.x < f.x + f.width && r.x + r.width > f.x && r.y < f.y + f.height && r.y + r.height > f.y);
@@ -610,6 +604,8 @@ export function GeoMap({
   // Names are placed once per view, not per pointer move. A deferred view lets a drag or a wheel turn stay smooth.
   const labelView = useDeferredValue(viewport);
   const labelClusters = useMemo(() => clustersFor(labelView), [clustersFor, labelView]);
+  // The selected outline: a name may be moved off it but never drawn over it. Parsed once per selection.
+  const outlines = useMemo(() => [...highlighted].map((id) => pathById.get(id)).filter((d): d is string => !!d).map(parseOutline), [highlighted, pathById]);
   const labelPlan = useMemo(() => {
     if (!labelView || size.width <= 0 || !levelView) return null;
     return planLabels({
@@ -623,9 +619,11 @@ export function GeoMap({
       selectedBlockId: context.blockId,
       // Names keep clear of the buttons and of the pins, so a name is never read through a marker.
       obstacles: [...controlObstacles(size), ...labelClusters.map(markerRect)],
+      avoid: outlines.length > 0 ? outlineRects(outlines, labelView, size) : undefined,
       zoomRatio: labelView.scale / levelView.scale,
+      overviewHeight: stateBounds ? (stateBounds[3] - stateBounds[1]) * labelView.scale : undefined,
     });
-  }, [labelView, size, levelView, model, anchors, context, districtIds, interactiveBlocks, labelClusters]);
+  }, [labelView, size, levelView, model, anchors, context, districtIds, interactiveBlocks, labelClusters, outlines, stateBounds]);
 
   const grid = useMemo(() => (gridOn && viewport && size.width > 0 ? graticule(viewport, size, LAYER_SCALE) : null), [gridOn, viewport, size]);
   const bar = useMemo(() => (viewport && size.width > 0 ? scaleBar(viewport, size, LAYER_SCALE, size.width < COMPACT_WIDTH ? 72 : 110) : null), [viewport, size]);
@@ -797,11 +795,9 @@ export function GeoMap({
             onZoomIn={() => zoomBy(1.5)}
             onZoomOut={() => zoomBy(1 / 1.5)}
             onFitState={fitState}
-            onFitDistrict={fitDistrict}
-            onFitBlock={fitBlock}
+            onFitView={fitView}
             onReset={reset}
-            districtName={context.districtId && districtBounds ? (model.featureById.get(context.districtId)?.name ?? null) : null}
-            blockName={context.blockId && blockBounds ? (model.featureById.get(context.blockId)?.name ?? null) : null}
+            fitViewTarget={fitViewTarget}
             resetLabel={context.level === "state" ? "Reset to the whole state" : context.level === "district" ? "Reset to the district" : "Reset to the block"}
             gridOn={gridOn}
             onToggleGrid={() => setGridOn((on) => !on)}

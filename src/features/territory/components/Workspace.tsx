@@ -277,6 +277,39 @@ export function Workspace({ dataset }: { dataset: TerritoryDataset }) {
                 onTogglePins={() => setPinsOn((on) => !on)}
               />
             }
+            status={
+              layer ? (
+                <>
+                  {/* One line is always here, so the map is the same size whatever is selected: the hint at the state
+                      level, the district's outline coverage inside a district. */}
+                  {context.level === "state" ? (
+                    <p data-testid="map-hint">Click a district to open its blocks. Scroll or use + and − to zoom.</p>
+                  ) : districtCoverage ? (
+                    <p data-testid="map-district-coverage">
+                      {districtCoverage.blocks === 0 ? (
+                        <>
+                          <strong className="font-semibold text-ink">No block outlines.</strong> The LGD lists no development blocks for {districtName}; urban wards are not in the data, so none are drawn.
+                        </>
+                      ) : (
+                        <>
+                          <strong className="font-semibold text-ink">
+                            {districtCoverage.outlined} of {districtCoverage.blocks} block outlines.
+                          </strong>{" "}
+                          {districtCoverage.withoutOutline.length > 0
+                            ? `${districtCoverage.withoutOutline.length} without an outline show as dotted gaps: missing geography, not unallocated.`
+                            : "Every official block here has a provisional outline."}
+                        </>
+                      )}
+                    </p>
+                  ) : null}
+                  {gapNotice ? (
+                    <p role="status" data-testid="map-gap-notice" className="border-l-2 border-amber-400/60 pl-2 text-ink">
+                      {gapNotice}
+                    </p>
+                  ) : null}
+                </>
+              ) : undefined
+            }
             footer={
               <MapLegend
                 meta={layer?.meta ?? null}
@@ -311,45 +344,12 @@ export function Workspace({ dataset }: { dataset: TerritoryDataset }) {
               onShowTerritory={showTerritory}
             />
             {layer ? (
-              <div className="pointer-events-none absolute left-3 top-3 z-10 flex max-w-[calc(100%-6rem)] flex-col items-start gap-1.5">
-                <p
-                  role="status"
-                  data-testid="map-provisional"
-                  className="rounded-md border border-amber-400/40 bg-navy-950/85 px-2 py-1 text-[0.6875rem] font-medium leading-4 text-amber-200 backdrop-blur"
-                >
-                  Provisional boundaries · incomplete coverage
-                </p>
-                {context.level === "state" ? (
-                  <p data-testid="map-hint" className="max-sm:hidden rounded-md border border-line bg-navy-950/80 px-2 py-1 text-xs text-ink-muted backdrop-blur">
-                    Click a district to explore its blocks. Scroll or use + / − to zoom.
-                  </p>
-                ) : districtCoverage ? (
-                  <p data-testid="map-district-coverage" className="rounded-md border border-line bg-navy-950/80 px-2 py-1 text-xs leading-4 text-ink-muted backdrop-blur">
-                    {districtCoverage.blocks === 0 ? (
-                      <>
-                        <strong className="font-semibold text-ink">No block outlines.</strong> The LGD lists no development blocks for {districtName}; urban wards are not in the data, so none are drawn.
-                      </>
-                    ) : (
-                      <>
-                        <strong className="font-semibold text-ink">
-                          {districtCoverage.outlined} of {districtCoverage.blocks} block outlines.
-                        </strong>{" "}
-                        {districtCoverage.withoutOutline.length > 0
-                          ? `${districtCoverage.withoutOutline.length} without an outline show as dotted gaps: missing geography, not unallocated.`
-                          : "Every official block here has a provisional outline."}
-                      </>
-                    )}
-                  </p>
-                ) : null}
-              </div>
-            ) : null}
-            {gapNotice ? (
               <p
                 role="status"
-                data-testid="map-gap-notice"
-                className="absolute bottom-3 left-1/2 z-10 w-[min(32rem,calc(100%-9rem))] -translate-x-1/2 rounded-md border border-dashed border-amber-400/60 bg-navy-950/90 px-3 py-2 text-xs leading-5 text-ink shadow-lg backdrop-blur max-sm:left-3 max-sm:w-auto max-sm:translate-x-0 max-sm:bottom-[7.5rem] max-sm:right-3"
+                data-testid="map-provisional"
+                className="pointer-events-none absolute left-3 top-3 z-10 rounded-md bg-navy-950/85 px-2 py-1 text-[0.6875rem] font-medium leading-4 text-amber-200 ring-1 ring-amber-400/40 backdrop-blur"
               >
-                {gapNotice}
+                Provisional boundaries
               </p>
             ) : null}
             {selection ? (

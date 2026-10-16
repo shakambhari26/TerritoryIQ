@@ -19,7 +19,7 @@
 
 import { placeLabels, type PlacedLabel, type Rect } from "../geo/labels.ts";
 import type { Size, Viewport } from "../geo/viewport.ts";
-import { blockFontSize, districtFontSize } from "./map-layout.ts";
+import { LEADER_MAX, blockFontSize, districtFontSize } from "./map-layout.ts";
 import type { MapContext } from "./map-level.ts";
 import type { TerritoryModel } from "./model.ts";
 
@@ -57,10 +57,14 @@ export interface LabelPlanInput {
   /** Blocks whose outline is drawn and can be clicked (the focused district's). */
   blockIds: ReadonlySet<string>;
   selectedBlockId: string | null;
-  /** Screen areas the controls cover; labels keep out of them. */
+  /** Screen areas the controls and markers cover; labels keep out of them and leader lines do not cross them. */
   obstacles: readonly Rect[];
+  /** Screen areas a name must not cover but a leader line may cross: the selected outline, which a name must never hide. */
+  avoid?: readonly Rect[];
   /** Current scale over the scale that fits the focused extent. 1 when the view is as fitted. */
   zoomRatio: number;
+  /** On-screen height of the whole state in pixels, which sets the size of district names at the overview. */
+  overviewHeight?: number;
 }
 
 const MIN_BLOCK_RADIUS_PX = 4;
@@ -93,7 +97,7 @@ export function planLabels(input: LabelPlanInput): LabelPlan {
   ): string[] => {
     const list = requests.filter((r): r is NonNullable<typeof r> => r !== null);
     if (list.length === 0) return [];
-    const result = placeLabels(list, { area, fontSize, mode, obstacles });
+    const result = placeLabels(list, { area, fontSize, mode, obstacles, avoid: input.avoid, maxLeader: LEADER_MAX });
     for (const placed of result.placed) {
       labels.push({ ...placed, kind: kindOf(placed.id), tone, fontSize });
       obstacles.push(placed.box);
@@ -122,7 +126,7 @@ export function planLabels(input: LabelPlanInput): LabelPlan {
         const p = at(id);
         return request(id, nameOf(id), (p ? p.layerR : 0) + (boost.get(id) ?? 0));
       });
-      omitted = run(requests, "free", districtFontSize(size.width), "primary");
+      omitted = run(requests, "free", districtFontSize(size.width, input.overviewHeight), "primary");
       const attemptLabels = labels.splice(before);
       obstacles.length = obstacleCount;
       if (!best || omitted.length < best.omitted.length) best = { labels: attemptLabels, omitted };
