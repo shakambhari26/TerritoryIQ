@@ -6,6 +6,14 @@
 import type { Conflict, CoverageDepth, EffectiveLinkStatus } from "./state.ts";
 import type { AllocationState, MatchTier, StaffRole } from "./types.ts";
 
+/**
+ * What the block total is. The 345 blocks are the Local Government Directory extract this prototype was built from
+ * (the "current reference list"). Nobody has checked that this list is the complete official set of blocks, so the
+ * screens never call the total official and say so wherever it is the denominator.
+ */
+export const REFERENCE_LIST_NOTE =
+  "The block total is the current reference list (a Local Government Directory extract). It has not been independently verified as the complete official total.";
+
 export const STATE_MEANING: Readonly<Record<AllocationState, string>> = {
   allocated: "At least one named person is listed for this area.",
   confirmed_unallocated:

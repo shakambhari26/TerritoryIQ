@@ -114,7 +114,9 @@ describe("territory workspace in a real browser", { skip: skipReason }, () => {
     const coverage = await page.locator('[data-testid="map-coverage"]').innerText();
     assert.match(coverage, /Coverage is not complete/);
     assert.match(coverage, new RegExp(`${layer.shapes.filter((s) => s.featureId.startsWith("GD-")).length} of 23 districts`));
-    assert.match(coverage, new RegExp(`${data.features.filter((f) => f.kind === "block" && f.boundary).length} of 345 official blocks`));
+    assert.match(coverage, new RegExp(`${data.features.filter((f) => f.kind === "block" && f.boundary).length} of 345 blocks in the current reference list have provisional outlines`));
+    assert.match(await page.locator('[data-testid="map-reference-note"]').innerText(), /not been independently verified as the complete official total/);
+    assert.equal(/official blocks/i.test(coverage), false, "the 345 is never called official");
     assert.match(coverage, /No ward or urban-body boundaries/);
     assert.deepEqual(errors, []);
     await context.close();
@@ -604,7 +606,7 @@ describe("territory workspace in a real browser", { skip: skipReason }, () => {
     await page.getByLabel("Filter by allocation state").selectOption("conflicting");
     await page.getByLabel("Filter by boundary availability").selectOption("any");
     await expectCount(page, "[data-area-id]", model.summary.units.byState.conflicting);
-    await page.getByRole("button", { name: "Official blocks (345)" }).click();
+    await page.getByRole("button", { name: "Blocks (345)", exact: true }).click();
     await page.getByLabel("Filter by allocation state").selectOption("missing");
     await expectCount(page, "[data-area-id]", model.summary.blocks.byState.missing);
     await context.close();

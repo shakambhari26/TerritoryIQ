@@ -92,6 +92,9 @@ export function Workspace({ dataset }: { dataset: TerritoryDataset }) {
   const [layerMode, setLayerMode] = useState<MapLayerMode>("allocation");
   const [detailsOpen, setDetailsOpen] = useState(true);
   const [pinsOn, setPinsOn] = useState(true);
+  // The first-use hint goes once the user has acted on the map (or selected anything); a summary takes its line.
+  const [mapTouched, setMapTouched] = useState(false);
+  const onMapInteract = useCallback(() => setMapTouched(true), []);
 
   const hash = useSyncExternalStore(subscribeHash, readHash, () => "");
   const selection: Selection = useMemo(() => parseSelectionHash(hash, model), [hash, model]);
@@ -283,7 +286,13 @@ export function Workspace({ dataset }: { dataset: TerritoryDataset }) {
                   {/* One line is always here, so the map is the same size whatever is selected: the hint at the state
                       level, the district's outline coverage inside a district. */}
                   {context.level === "state" ? (
-                    <p data-testid="map-hint">Click a district to open its blocks. Scroll or use + and − to zoom.</p>
+                    mapTouched || selection !== null ? (
+                      <p data-testid="map-summary">
+                        {STATE_NAME}: {model.summary.blocks.withBoundary} of {model.summary.blocks.total} blocks in the reference list and {model.summary.districts.withBoundary} of {model.summary.districts.total} districts have provisional outlines.
+                      </p>
+                    ) : (
+                      <p data-testid="map-hint">Click a district to open its blocks. Scroll or use + and − to zoom.</p>
+                    )
                   ) : districtCoverage ? (
                     <p data-testid="map-district-coverage">
                       {districtCoverage.blocks === 0 ? (
@@ -297,7 +306,7 @@ export function Workspace({ dataset }: { dataset: TerritoryDataset }) {
                           </strong>{" "}
                           {districtCoverage.withoutOutline.length > 0
                             ? `${districtCoverage.withoutOutline.length} without an outline show as dotted gaps: missing geography, not unallocated.`
-                            : "Every official block here has a provisional outline."}
+                            : "Every block in the reference list here has a provisional outline."}
                         </>
                       )}
                     </p>
@@ -340,6 +349,7 @@ export function Workspace({ dataset }: { dataset: TerritoryDataset }) {
               onBackgroundClick={onBackgroundClick}
               onEscape={onEscape}
               pins={pins}
+              onInteract={onMapInteract}
               onShowUnit={showUnit}
               onShowTerritory={showTerritory}
             />

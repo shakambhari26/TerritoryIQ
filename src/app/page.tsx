@@ -16,7 +16,7 @@ export default function OverviewPage() {
     <>
       <PageHeader
         title="Territory Overview"
-        description="Company sales territories and their block rows, set against official Local Government Directory blocks. Allocated, confirmed unallocated, missing or unverified, and conflicting data are shown separately."
+        description="Company sales territories and their block rows, set against the blocks in the current Local Government Directory reference list (its total has not been independently verified). Allocated, confirmed unallocated, missing or unverified, and conflicting data are shown separately."
         aside={
           <div className="flex items-center gap-2">
             <Badge>Local prototype</Badge>

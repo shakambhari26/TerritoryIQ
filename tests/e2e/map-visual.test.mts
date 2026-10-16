@@ -240,4 +240,97 @@ describe("the map's cartography at desktop, laptop, tablet and phone sizes", { s
     assert.match(await page.locator('[data-testid="map-legend"]').innerText(), /OpenStreetMap contributors/, "still attributed");
     await context.close();
   });
+  it("the first-use hint gives way to a summary after the first map interaction, and the strip and the map do not change size", async () => {
+    const { page, context } = await open(1440, 900);
+    const sizes = () =>
+      page.evaluate(() => {
+        const strip = (document.querySelector('[data-testid="map-hint"], [data-testid="map-summary"]') as HTMLElement).parentElement!;
+        return { strip: strip.getBoundingClientRect().height, map: document.querySelector('[data-testid="geo-map"]')!.getBoundingClientRect().height };
+      });
+    assert.equal(await page.locator('[data-testid="map-hint"]').count(), 1, "the hint shows on first load");
+    assert.equal(await page.locator('[data-testid="map-summary"]').count(), 0);
+    const before = await sizes();
+    await page.getByRole("button", { name: "Zoom in", exact: true }).click();
+    await page.waitForTimeout(500);
+    assert.equal(await page.locator('[data-testid="map-hint"]').count(), 0, "the hint is gone once the map has been used");
+    const summary = await page.locator('[data-testid="map-summary"]').innerText();
+    assert.match(summary, /West Bengal: \d+ of 345 blocks in the reference list and \d+ of 23 districts have provisional outlines/);
+    const after = await sizes();
+    assert.ok(Math.abs(after.strip - before.strip) < 1, `the strip keeps its height (${before.strip} -> ${after.strip})`);
+    assert.ok(Math.abs(after.map - before.map) < 1, `so the map does not resize (${before.map} -> ${after.map})`);
+    await context.close();
+  });
+
+  it("a click on the map or a pan by key also retires the hint", async () => {
+    for (const how of ["click", "key"] as const) {
+      const { page, context } = await open(1440, 900);
+      assert.equal(await page.locator('[data-testid="map-hint"]').count(), 1);
+      if (how === "click") {
+        const box = (await page.locator('[data-testid="geo-map"]').boundingBox())!;
+        await page.mouse.click(box.x + 60, box.y + box.height / 2);
+      } else {
+        await page.locator('[data-testid="geo-map"]').focus();
+        await page.keyboard.press("ArrowLeft");
+      }
+      await page.waitForTimeout(400);
+      assert.equal(await page.locator('[data-testid="map-hint"]').count(), 0, `after a ${how}`);
+      assert.equal(await page.locator('[data-testid="map-summary"]').count(), 1);
+      await context.close();
+    }
+  });
+
+  it("the compact Representatives and Details controls keep their names, tooltips and a visible keyboard focus", async () => {
+    for (const [w, h] of [
+      [1440, 900],
+      [390, 844],
+    ] as const) {
+      const { page, context } = await open(w, h);
+      const reps = page.getByRole("button", { name: /^Representatives\s*\d+$/ });
+      assert.equal(await reps.count(), 1, `${w}: one button named Representatives with its count`);
+      const details = page.getByRole("button", { name: /^(Hide|Show) details$/ });
+      assert.equal(await details.count(), 1, `${w}: the details toggle keeps its name`);
+      const box = (await reps.boundingBox())!;
+      assert.ok(box.width < 100, `${w}: the control is compact (${box.width.toFixed(0)} px), so the name is not visible text`);
+      assert.match((await reps.getAttribute("title")) ?? "", /representative pins/i, `${w}: it has a tooltip`);
+      assert.match((await details.getAttribute("title")) ?? "", /details panel/i);
+
+      // Reach each from the keyboard, the way a keyboard user does, and read the focus ring the browser draws.
+      for (const [before, key, target, label] of [
+        [page.getByRole("button", { name: "Data quality", exact: true }), "Tab", "pins-toggle", "Representatives"],
+        // The map is the next stop after the toolbar, so Shift+Tab from it lands on the last toolbar control.
+        [page.locator('[data-testid="geo-map"]'), "Shift+Tab", "details-toggle", "details"],
+      ] as const) {
+        await before.focus();
+        await page.keyboard.press(key);
+        const ring = await page.evaluate(() => {
+          const el = document.activeElement as HTMLElement;
+          const cs = getComputedStyle(el);
+          const r = el.getBoundingClientRect();
+          return { id: el.getAttribute("data-testid"), style: cs.outlineStyle, width: parseFloat(cs.outlineWidth), offset: parseFloat(cs.outlineOffset), left: r.left, right: r.right, top: r.top, w: innerWidth };
+        });
+        assert.equal(ring.id, target, `${w}: Tab reaches ${label}`);
+        assert.notEqual(ring.style, "none");
+        assert.ok(ring.width >= 2, `${w}: ${label} shows a ${ring.width}px focus ring`);
+        assert.ok(ring.left - ring.offset - ring.width >= 0 && ring.right + ring.offset + ring.width <= ring.w, `${w}: the ring is not cut off by the page edge`);
+      }
+      await context.close();
+    }
+  });
+
+  it("nothing calls the block total official, and the reference-list caveat is on the map, the details panel and the overview", async () => {
+    const { page, context } = await open(1440, 900);
+    await page.locator('[data-testid="map-about-toggle"]').click();
+    const text = await page.locator("body").innerText();
+    assert.equal(/official blocks?/i.test(text.replace(/Official block · LGD code/g, "")), false, "no 'official blocks' wording on the workspace");
+    assert.match(await page.locator('[data-testid="map-reference-note"]').innerText(), /not been independently verified as the complete official total/);
+    assert.match(text, /blocks in the reference list and \d+ districts have provisional outlines/);
+    assert.match(text, /The block total has not been independently verified as the official total/);
+    assert.match(await page.getByRole("button", { name: "Blocks (345)", exact: true }).innerText(), /Blocks \(345\)/);
+    await page.goto(`${server.baseUrl}/`, { waitUntil: "networkidle" });
+    const overview = await page.locator("body").innerText();
+    assert.equal(/official blocks?/i.test(overview), false, "no 'official blocks' wording on the overview");
+    assert.match(await page.locator('[data-testid="reference-list-note"]').innerText(), /not been independently verified as the complete official total/);
+    assert.match(await page.locator('[data-testid="kpi-outlined"]').innerText(), /blocks in the current reference list/);
+    await context.close();
+  });
 });

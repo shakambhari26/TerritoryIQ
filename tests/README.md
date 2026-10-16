@@ -52,7 +52,11 @@ a name and a marker, or between either and a control, the scale bar or the provi
 geography; the legend not clipped and the page not scrolling sideways; the permanent "Provisional boundaries" chip; the
 coverage disclosure collapsed by default; the grid hidden with its toggle unpressed; no request off the app's own host.
 Also a Bankura drill-down at desktop and phone width (no name over the selected outline, none under a control), and the
-disclosure opening and closing from the keyboard with the attribution still shown. Run it alone with
+disclosure opening and closing from the keyboard with the attribution still shown. The first-use hint is replaced by a
+one-line summary after the first click, key press, zoom or pan, with the strip and the map keeping their size. The
+icon-only Representatives and Details controls keep their accessible names, tooltips and a drawn focus ring reached by Tab
+(desktop with the panel open, and phone). No screen calls the block total "official": the workspace, the disclosure and
+the overview all say "blocks in the current reference list" and that the total is not independently verified. Run it alone with
 `npm run build` first, then `node --test --test-concurrency=1 tests/e2e/map-visual.test.mts` (it starts its own server on
 `127.0.0.1:3199`, or set `E2E_BASE_URL`).
 `harness.mts` starts the server and the browser.

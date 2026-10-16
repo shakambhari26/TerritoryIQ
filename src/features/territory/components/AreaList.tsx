@@ -103,7 +103,7 @@ export function AreaList({ model, selection, shapeIds, layerReady, onSelect }: A
             {(
               [
                 ["rows", `Workbook rows (${model.dataset.units.length})`],
-                ["blocks", `Official blocks (${model.summary.blocks.total})`],
+                ["blocks", `Blocks (${model.summary.blocks.total})`],
               ] as const
             ).map(([value, label]) => (
               <button

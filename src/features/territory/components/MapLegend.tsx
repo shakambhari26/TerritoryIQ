@@ -1,6 +1,7 @@
 "use client";
 
 import { useId, useState } from "react";
+import { REFERENCE_LIST_NOTE } from "../format";
 import { EMBER, PIN_COLOR, legendItems, type MapLayerMode } from "../map-style";
 import type { BoundaryLayerMeta } from "../types";
 
@@ -31,8 +32,8 @@ function PinSwatch() {
  * source attribution, and a disclosure for the full wording. The legend follows the layer on the map and is built
  * from the same specs the map draws. The attribution is required by the OpenStreetMap licence (ODbL) and stays
  * visible whenever a layer is shown, as does the statement that the outlines are provisional. The disclosure is
- * collapsed by default and holds the longer notices: how the outlines were tied to official blocks, what a pin is,
- * and how much of the official geography has an outline and what has none, so the map never reads as complete.
+ * collapsed by default and holds the longer notices: how the outlines were tied to blocks, what a pin is,
+ * and how much of the reference list has an outline and what has none, so the map never reads as complete.
  */
 export function MapLegend({
   meta,
@@ -97,7 +98,7 @@ export function MapLegend({
       </div>
       <div id={panelId} hidden={!open} data-testid="map-about" className="space-y-1 border-t border-line pt-1.5 text-xs leading-5">
         <p>
-          Each outline links an official block to a community-drawn boundary by exact name, and none has been reviewed. They are
+          Each outline links a block in the reference list to a community-drawn boundary by exact name, and none has been reviewed. They are
           indicative, not an authoritative depiction of any border.
         </p>
         {pins ? (
@@ -109,9 +110,10 @@ export function MapLegend({
           <p data-testid="map-coverage" className="border-l-2 border-amber-400/60 pl-2">
             <strong className="font-semibold text-ink">Coverage is not complete.</strong>{" "}
             {meta
-              ? `Outlines exist for ${coverage.districtsDrawn} of ${coverage.districtsTotal} districts and ${coverage.blocksDrawn} of ${coverage.blocksTotal} official blocks; the rest show as dotted gaps, which are missing geography and not unallocated areas. `
-              : `No outlines are loaded for the ${coverage.districtsTotal} districts and ${coverage.blocksTotal} official blocks. `}
-            No ward or urban-body boundaries are drawn (Kolkata and Howrah wards have no source), and no outline has been checked against an authoritative source.
+              ? `${coverage.blocksDrawn} of ${coverage.blocksTotal} blocks in the current reference list have provisional outlines, and ${coverage.districtsDrawn} of ${coverage.districtsTotal} districts; the rest show as dotted gaps, which are missing geography and not unallocated areas. `
+              : `No outlines are loaded for the ${coverage.blocksTotal} blocks in the current reference list or its ${coverage.districtsTotal} districts. `}
+            No ward or urban-body boundaries are drawn (Kolkata and Howrah wards have no source), and no outline has been checked against an authoritative source.{" "}
+            <span data-testid="map-reference-note">{REFERENCE_LIST_NOTE}</span>
           </p>
         ) : null}
       </div>

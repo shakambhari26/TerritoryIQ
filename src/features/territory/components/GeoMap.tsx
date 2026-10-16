@@ -69,6 +69,8 @@ export interface GeoMapProps {
   onEscape: () => void;
   /** Representative pins for the current view (see representatives.ts). Empty or absent draws none. */
   pins?: readonly RepresentativePin[];
+  /** Called when the user first acts on the map itself (pointer, zoom, pan, fit, a marker), so the page can retire its first-use hint. */
+  onInteract?: () => void;
   /** Opens a workbook row in the details panel. */
   onShowUnit?: (unitId: string) => void;
   /** Selects a sales territory, which shows its blocks and their pins. */
@@ -231,6 +233,7 @@ export function GeoMap({
   onBackgroundClick,
   onEscape,
   pins,
+  onInteract,
   onShowUnit,
   onShowTerritory,
 }: GeoMapProps) {
@@ -316,12 +319,13 @@ export function GeoMap({
   const apply = useCallback(
     (next: Viewport | null, animated: boolean, extent: Bounds | null) => {
       if (!isUsableViewport(next)) return;
+      onInteract?.();
       // With reduced motion the view jumps: nothing flies, fades or eases.
       setAnimate(animated && motion);
       setView((current) => (current && sameView(current, next) ? current : next));
       setFitted(extent);
     },
-    [motion],
+    [motion, onInteract],
   );
 
   // A new layer discards the user's view of the old one.
@@ -426,6 +430,7 @@ export function GeoMap({
   }, [viewport, limits, apply]);
 
   const onPointerDown = (event: ReactPointerEvent<HTMLDivElement>) => {
+    onInteract?.();
     pointers.current.set(event.pointerId, { x: event.clientX, y: event.clientY });
     if (pointers.current.size === 1 && viewport) {
       dragStart.current = { x: event.clientX, y: event.clientY, vx: viewport.tx, vy: viewport.ty, id: event.pointerId };
@@ -524,7 +529,8 @@ export function GeoMap({
   const openCluster = useCallback((cluster: PinCluster, element: HTMLElement) => {
     trigger.current = element;
     setOpenIds(cluster.pins.map((p) => p.id));
-  }, []);
+    onInteract?.();
+  }, [onInteract]);
   const zoomToPins = useCallback(
     (group: readonly RepresentativePin[]) => {
       const points = group.map((p) => [p.at[0], p.at[1], p.at[0], p.at[1]] as Bounds);

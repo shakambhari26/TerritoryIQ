@@ -6,7 +6,7 @@ import { KpiCard } from "@/components/dashboard/KpiCard";
 import { Badge } from "@/components/ui/Badge";
 import { Card } from "@/components/ui/Card";
 import { useLocalChanges } from "@/features/allocation/overlay-store";
-import { LINK_LABEL, LINK_MEANING, formatCount, plural, shortHash } from "../format";
+import { LINK_LABEL, LINK_MEANING, REFERENCE_LIST_NOTE, formatCount, plural, shortHash } from "../format";
 import { buildModel } from "../model";
 import { ALLOCATION_STATES, ALLOCATION_STATE_LABEL, type BoundaryLayerMeta, type TerritoryDataset } from "../types";
 import { StateBar } from "./StateBar";
@@ -73,7 +73,7 @@ export function OverviewDashboard({ dataset, layerMeta }: { dataset: TerritoryDa
             <KpiCard
               label="Blocks with an outline"
               value={formatCount(s.blocks.withBoundary)}
-              caption={`of ${formatCount(s.blocks.total)} official blocks, plus ${s.districts.withBoundary} of ${s.districts.total} districts. Provisional.`}
+              caption={`of ${formatCount(s.blocks.total)} blocks in the current reference list, plus ${s.districts.withBoundary} of ${s.districts.total} districts. Provisional.`}
             />
           </div>
           <div data-testid="kpi-staffing">
@@ -92,13 +92,16 @@ export function OverviewDashboard({ dataset, layerMeta }: { dataset: TerritoryDa
           <p className="text-xs text-ink-muted">
             “Allocated” means at least one named person is listed. Coverage depth differs: {formatCount(s.units.coverage.full)} rows list both primary and secondary,{" "}
             {formatCount(s.units.coverage.partial)} are partly covered and {formatCount(s.units.coverage["asm-only"])} list an ASM only.
-            “Conflicting” rows share an official block with another row. Nothing is confirmed unallocated until someone records it with evidence.
+            “Conflicting” rows share a block with another row. Nothing is confirmed unallocated until someone records it with evidence.
           </p>
         </Panel>
-        <Panel title="Official blocks by allocation state" testId="panel-block-states">
-          <StateBar counts={s.blocks.byState} total={s.blocks.total} label="Official blocks" />
+        <Panel title="Blocks by allocation state" testId="panel-block-states">
+          <StateBar counts={s.blocks.byState} total={s.blocks.total} label="Blocks in the reference list" />
           <p className="text-xs text-ink-muted">
             A block that no workbook row is linked to is <strong>missing / unverified</strong>: its allocation is not known. It is not counted as unallocated or as white space.
+          </p>
+          <p className="text-xs text-ink-muted" data-testid="reference-list-note">
+            {REFERENCE_LIST_NOTE}
           </p>
         </Panel>
       </div>
@@ -183,10 +186,10 @@ export function OverviewDashboard({ dataset, layerMeta }: { dataset: TerritoryDa
         <Panel title="Known gaps" testId="panel-gaps">
           <ul className="list-disc space-y-2 pl-5">
             <li>
-              <strong>{formatCount(s.blocks.withoutBoundary)}</strong> official blocks have no outline: no boundary feature carries their exact name, usually a spelling difference. They stay listed and show as hatched gaps.
+              <strong>{formatCount(s.blocks.withoutBoundary)}</strong> blocks in the reference list have no outline: no boundary feature carries their exact name, usually a spelling difference. They stay listed and show as hatched gaps.
             </li>
             <li>
-              <strong>{formatCount(gaps.unlisted)}</strong> official blocks are not listed in the workbook, and nothing resembles them
+              <strong>{formatCount(gaps.unlisted)}</strong> blocks in the reference list are not listed in the workbook, and nothing resembles them
               {gaps.districtNote ? ` (${gaps.districtNote})` : ""}. Their state is missing / unverified, not unallocated.
             </li>
             {gaps.districtsWithoutBlocks.length > 0 ? (

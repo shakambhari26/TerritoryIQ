@@ -300,14 +300,14 @@ function FeatureDetails({ model, id, shapeIds, layerReady, onSelect }: DetailsPa
         <Note>
           This is an official administrative district. The company’s sales territories (the workbook’s DISTRICT labels) are a different grouping and are not joined to it.
         </Note>
-        <Section title={`Official blocks in this district (${blocks.length})`}>
+        <Section title={`Blocks in this district (${blocks.length})`}>
           {blocks.length === 0 ? (
             <p className="text-ink-muted">The LGD block report lists no block under this district. Any urban units or wards are not in the supplied data, so nothing is drawn or counted for them.</p>
           ) : (
             <>
               <StateBar counts={roll.byState} total={roll.blocks} label={`Blocks in ${feature.name}`} compact />
               <p className="text-xs text-ink-muted">
-                {roll.withBoundary} of {roll.blocks} blocks have a provisional outline. The counts roll up by official block, not by sales-territory label.
+                {roll.withBoundary} of {roll.blocks} blocks have a provisional outline. The counts roll up by block, not by sales-territory label.
               </p>
               <GeoConfidence model={model} districtId={id} shapeIds={shapeIds} />
               <ul className="max-h-64 space-y-1 overflow-y-auto pr-1">
@@ -475,10 +475,10 @@ function NothingSelected({ model }: { model: TerritoryModel }) {
       </div>
       <Section title="What you are looking at">
         <p>
-          {plural(s.units.total, "workbook row")} under {plural(model.dataset.salesTerritories.length, "sales territory", "sales territories")}, set against {plural(s.blocks.total, "official block")} from the Local Government Directory.
+          {plural(s.units.total, "workbook row")} under {plural(model.dataset.salesTerritories.length, "sales territory", "sales territories")}, set against {plural(s.blocks.total, "block")} in the current reference list (a Local Government Directory extract).
         </p>
         <p className="text-xs text-ink-muted">
-          {formatCount(s.blocks.withBoundary)} blocks and {formatCount(s.districts.withBoundary)} districts have provisional outlines. Everything else is listed without a drawn boundary rather than given an invented one.
+          {formatCount(s.blocks.withBoundary)} of {formatCount(s.blocks.total)} blocks in the reference list and {formatCount(s.districts.withBoundary)} districts have provisional outlines. Everything else is listed without a drawn boundary rather than given an invented one. The block total has not been independently verified as the official total.
         </p>
       </Section>
       <Section title="Rows by allocation state">

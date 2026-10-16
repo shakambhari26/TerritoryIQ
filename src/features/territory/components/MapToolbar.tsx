@@ -117,7 +117,7 @@ export function MapToolbar({
         aria-pressed={pinsOn}
         onClick={onTogglePins}
         data-testid="pins-toggle"
-        title={pinCount === 0 ? "No representative pins are supported by the data for this view" : "Show or hide representative pins"}
+        title={pinCount === 0 ? "No representative pins are supported by the data for this view" : `${pinsOn ? "Hide" : "Show"} the ${pinCount} representative pins`}
         className={cn(
           "inline-flex h-9 shrink-0 items-center gap-1.5 rounded-lg border px-2.5 text-xs font-medium",
           pinsOn ? "border-ember/60 bg-ember/10 text-ink" : "border-line bg-surface text-ink hover:bg-surface-muted",
@@ -137,6 +137,7 @@ export function MapToolbar({
           aria-controls={detailsId}
           onClick={onToggleDetails}
           data-testid="details-toggle"
+          title={detailsOpen ? "Hide the details panel" : "Show the details panel"}
           className="inline-flex h-9 shrink-0 items-center gap-1.5 rounded-lg border border-line bg-surface px-2.5 text-xs font-medium text-ink hover:bg-surface-muted"
         >
           <svg aria-hidden="true" focusable="false" viewBox="0 0 20 20" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
