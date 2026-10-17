@@ -1,13 +1,20 @@
 # Globe prototype
 
-Status as of 2026-10-17: committed locally as `2c01cee` on the integration branch `integrate/globe-prototype`, on top of
-local `main` `c4d1b1c` (the 2D map redesign, itself one commit ahead of `origin/main` 3acb994), and awaiting review. The
-branch has **not been pushed, published, merged or approved**; `main` and `origin/main` are untouched. It is
-**not linked from the navigation and is not the default entry**: `/globe-prototype` is reached only by its address, and
-the globe commit leaves the Territory Workspace and its map unchanged. Still unverified: rendering on a real GPU (every
-WebGL run so far used software WebGL) and keyboard input from a physical AltGr key. The outlines are provisional and
-unofficial OpenStreetMap geometry. Written for the people reviewing it before any decision to make it the entry
-experience.
+Status as of 2026-10-17: **merged into `main`** through [pull request #1](https://github.com/shakambhari26/TerritoryIQ/pull/1),
+merge commit `9b5a7f4`. The prototype's own commit is `2c01cee` (PR head `b7dff5e`); it was built on the 2D map redesign
+(`c4d1b1c`, on top of `3acb994`). Being merged is not an approval of the geography or a decision to make the
+globe the entry experience. The prototype is available at `/globe-prototype` and is
+**not linked from the navigation and is not the default entry**: the root page is still the Territory Overview, the
+route is reached only by its address, and the globe leaves the Territory Workspace and its map unchanged. The outlines
+are provisional, unofficial OpenStreetMap geometry; **no official approval of the geographic data has been given**.
+Still limited or unverified:
+
+- Rendering on a real GPU: every WebGL run so far used software WebGL.
+- Keyboard input from a physical AltGr key.
+- Reproducing the outline data from a clean checkout: `data/` and `data-source/` are git-ignored, so regeneration needs
+  the locally supplied source inputs (see "Reproducing the outline data").
+
+Written for the people deciding whether the globe should become the entry experience.
 
 Product direction (decided): the globe is meant to become the **geographic entry experience**; the existing 2D
 Territory Workspace stays for detailed operational analysis. Neither is replaced or modified in this prototype phase.
