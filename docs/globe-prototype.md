@@ -3,13 +3,13 @@
 Status as of 2026-10-17: **merged into `main`** through [pull request #1](https://github.com/shakambhari26/TerritoryIQ/pull/1),
 merge commit `9b5a7f4` (the prototype's own commit is `2c01cee`, PR head `b7dff5e`, built on the 2D map redesign `c4d1b1c`,
 on top of `3acb994`), with a status correction in pull request #2 (`0505fce`). The branch
-`feat/globe-navigation-integration` adds **Phase 1 of the navigation integration**; at the time of writing it was local
-only (not pushed, no pull request, not merged). With it the globe lives at **`/globe`** and is **linked from the primary
+`feat/globe-navigation-integration` adds **Phase 1 of the navigation integration**; it is not merged into `main` and
+not approved for deployment. With it the globe lives at **`/globe`** and is **linked from the primary
 navigation as a locally integrated prototype**; `/globe-prototype` redirects to it (temporary, 307); and a selected place
 offers an "Open in 2D workspace" link (see "Navigation and hand-off to the 2D workspace"). The root page is still the
 Territory Overview (the globe is not the default entry), and the Territory Workspace and its map are unchanged.
-**Phase 2**, on the branch `feat/globe-home-entry` (stacked on Phase 1, local only: not pushed, no pull request, not merged),
-adds an "Explore on the globe" entry card to that Overview (see "Homepage entry card (Phase 2)"); it does not change the
+**Phase 2**, on the branch `feat/globe-home-entry` (stacked on Phase 1, so it contains both phases; not merged into `main`
+and not approved for deployment), adds an "Explore on the globe" entry card to that Overview (see "Homepage entry card (Phase 2)"); it does not change the
 default homepage.
 
 What this does **not** mean:
