@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useId, useMemo, useRef, useState, type KeyboardEvent } from "react";
 import { cn } from "@/lib/cn";
 import { slotLabel } from "@/features/territory/representatives";
@@ -8,6 +9,7 @@ import { drawnClause, type OutlinesStatus } from "../outline-gate";
 import { searchTargets, type Target } from "../targets";
 import type { GlobeManifest, Level, ManifestBlock, ManifestDistrict, UnitState } from "../types";
 import { BLOCK_STYLE, DISTRICT_STYLE } from "../styles";
+import { targetForSelection, workspaceHref } from "../workspace-link";
 
 const stateChip: Record<UnitState, { label: string; className: string }> = {
   represented: { label: "Provisional representative link", className: "border-orange-300/50 bg-orange-400/15 text-orange-200" },
@@ -23,6 +25,23 @@ export function StateChip({ state, kind }: { state: UnitState; kind: "district" 
   const chip = stateChip[state];
   const label = kind === "district" && state === "represented" ? "Has provisional representative links" : chip.label;
   return <span className={cn("inline-flex items-center rounded-full border px-2 py-0.5 text-[0.6875rem] font-medium", chip.className)}>{label}</span>;
+}
+
+/**
+ * The hand-off to the 2D workspace: a plain link to a URL built from validated IDs (workspace-link.ts). It is not
+ * disabled while the globe flies or when the outlines or textures failed, because it needs neither.
+ */
+function WorkspaceLink({ href, label = "Open in 2D workspace", testId = "globe-open-workspace" }: { href: string; label?: string; testId?: string }) {
+  return (
+    <Link
+      href={href}
+      data-testid={testId}
+      className="inline-flex items-center gap-1.5 rounded-md border border-accent/40 bg-accent-soft px-3 py-1.5 text-xs font-semibold text-ink hover:border-accent"
+    >
+      {label}
+      <span aria-hidden="true">{"→"}</span>
+    </Link>
+  );
 }
 
 interface SearchProps {
@@ -142,6 +161,8 @@ export function GlobeDetails({ overlay, level, district, block, onSelectBlock, o
     () => (district ? overlay.blocks.filter((b) => b.districtId === district.id).sort((a, b) => a.name.localeCompare(b.name)) : []),
     [overlay.blocks, district],
   );
+  const target = targetForSelection(level, district, block);
+  const href = target ? workspaceHref(overlay, target) : null;
 
   return (
     <section aria-label="Details" className="space-y-3 text-sm">
@@ -168,6 +189,7 @@ export function GlobeDetails({ overlay, level, district, block, onSelectBlock, o
               target box {overlay.state.bbox[0].toFixed(2)}E to {overlay.state.bbox[2].toFixed(2)}E, {overlay.state.bbox[1].toFixed(2)}N to {overlay.state.bbox[3].toFixed(2)}N
             </p>
           ) : null}
+          {href ? <WorkspaceLink href={href} /> : null}
         </div>
       ) : null}
 
@@ -175,6 +197,7 @@ export function GlobeDetails({ overlay, level, district, block, onSelectBlock, o
         <div className="space-y-2">
           <h2 className="text-base font-semibold text-ink">{district.name}</h2>
           <StateChip state={district.state} kind="district" />
+          {href ? <WorkspaceLink href={href} /> : null}
           <p className="text-ink-muted">{district.reason}</p>
           <p className="text-xs text-ink-subtle">
             {district.drawnBlockCount} of {district.blockCount} blocks in the current reference list have a validated outline here.
@@ -212,6 +235,7 @@ export function GlobeDetails({ overlay, level, district, block, onSelectBlock, o
             </p>
           ) : null}
           <StateChip state={block.state} kind="block" />
+          {href ? <WorkspaceLink href={href} /> : null}
           <p className="text-ink-muted">{block.reason}</p>
           {block.contested ? (
             <p className="rounded-md border border-amber-300/40 bg-amber-400/10 px-2 py-1.5 text-xs text-amber-100">
@@ -246,6 +270,14 @@ export function GlobeDetails({ overlay, level, district, block, onSelectBlock, o
                   ) : (
                     <p className="mt-1 text-xs text-ink-subtle">The row lists no names.</p>
                   )}
+                  {(() => {
+                    const rowHref = workspaceHref(overlay, { kind: "row", id: record.unitId });
+                    return rowHref ? (
+                      <div className="mt-2">
+                        <WorkspaceLink href={rowHref} label="Open this row in 2D workspace" testId="globe-open-workspace-row" />
+                      </div>
+                    ) : null;
+                  })()}
                 </div>
               ))}
               <p className="text-[0.6875rem] text-ink-subtle">Names are the text written in the workbook. A sales territory label is not an administrative district.</p>

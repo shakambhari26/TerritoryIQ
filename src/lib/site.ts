@@ -12,6 +12,7 @@ export const SITE = {
  * is a planned module and must not link anywhere until it is built.
  */
 export const NAV_ITEMS: readonly NavItem[] = [
+  { label: "Globe", href: "/globe", status: "available" },
   { label: "Overview", href: "/", status: "available" },
   { label: "Workspace", href: "/workspace", status: "available" },
   { label: "Allocation", status: "planned" },

@@ -29,6 +29,7 @@ run the command.
 | `selection-layer.test.mts` | Selection by ID and URL hash, layer validation (provenance and the provisional status), wording helpers |
 | `data-integrity.test.mts` | The real build: counts against the Phase 0E audit, crosswalk rules, boundary provenance and shapes, no email or salary data, source hashes. Skipped, not failed, if `data:build` has not been run |
 | `local-boundary.test.mts` | The localhost-only boundary: `-H 127.0.0.1` on `dev` and `start`, the loopback Host check, no data in `public/`, no client import of the dataset, provisional and attributed layer, the only network request the app makes, the fetch script's limits, no write to `data-source/`, and the public-asset scanner itself on synthetic builds |
+| `globe-workspace-link.test.mts` | The globe-to-workspace hand-off: state, district, block and workbook-row URLs, encoding, unknown, empty and wrong-kind IDs, and, on the real build, that every district, block and row the globe lists gives a hash the workspace's own parser accepts and a map level that agrees with the globe |
 
 ## `tests/e2e/` (the built app in Chrome)
 
@@ -59,6 +60,8 @@ icon-only Representatives and Details controls keep their accessible names, tool
 the overview all say "blocks in the current reference list" and that the total is not independently verified. Run it alone with
 `npm run build` first, then `node --test --test-concurrency=1 tests/e2e/map-visual.test.mts` (it starts its own server on
 `127.0.0.1:3199`, or set `E2E_BASE_URL`).
+`globe.test.mts`: the 3D globe at `/globe` in Chrome with software WebGL (flight, arrival, outlines revealed after arrival, selection by search, pointer and keyboard, reduced motion, no WebGL, failed textures, failed or refused outline data, the real outline route, axe, phone, leaving and returning).
+`globe-integration.test.mts`: Phase 1 of the globe integration. `/globe` loads the globe with the local-prototype badge and the provisional-outline notice; `/globe-prototype` answers 307 to `/globe`; the navigation is Globe, Overview, Workspace and the planned modules with exactly one `aria-current` link on `/`, `/workspace`, `/globe` and `/globe-prototype`, and the Globe link is on screen at 390px; "Open in 2D workspace" for the state, a district, a block and a workbook row opens the workspace at the matching level with the matching `#feature=` or `#unit=` ID (and a second block after going back shows the second block); the link is present without WebGL and when the outline request is aborted; a hand-off URL works when opened or reloaded directly; `/` is still the Territory Overview and neither `/` nor `/workspace` downloads Three.js (with `/globe` as the positive control); the workspace opens at the state overview and `/geo/boundaries.json` and `/geo/globe-boundaries.json` serve their own validated bytes.
 `harness.mts` starts the server and the browser.
 
 ## `guardrails.test.ts` and the removed Gate P0 tests

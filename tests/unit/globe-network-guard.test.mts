@@ -37,7 +37,7 @@ describe("network guard: the real source tree", () => {
   });
 
   it("the globe's allowed file is the only globe file that can request, and it asks for the globe's URL, not the workspace's", () => {
-    const globe = Object.keys(sources).filter((f) => f.startsWith("src/features/globe/") || f.startsWith("src/app/globe-prototype/"));
+    const globe = Object.keys(sources).filter((f) => f.startsWith("src/features/globe/") || f.startsWith("src/app/globe/"));
     const requesting = globe.filter((f) => /\bfetch\s*\(|XMLHttpRequest|\bWebSocket\b|\bEventSource\b|sendBeacon/.test(sources[f]));
     assert.deepEqual(requesting, ["src/features/globe/layer-client.ts"]);
     assert.match(sources["src/features/globe/layer-client.ts"], /const LAYER_URL = "\/geo\/globe-boundaries\.json";/);

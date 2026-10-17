@@ -51,7 +51,8 @@ Rules that keep contrast valid (ratios computed against WCAG 2.x):
 | Area | Component | Notes |
 | --- | --- | --- |
 | Page frame | `layout/AppShell` | Skip link, nav, `<main id="main">`, footer |
-| Top navigation | `layout/TopNav` | Driven by `NAV_ITEMS` in `src/lib/site.ts`. Only built routes are links; planned modules are non-interactive text |
+| Top navigation | `layout/TopNav` | Driven by `NAV_ITEMS` in `src/lib/site.ts`: Globe, Overview, Workspace, then the planned modules. Only built routes are links; planned modules are non-interactive text. `NavLink` marks the one current page with `aria-current` |
+| Globe page | `app/globe`, `features/globe/components/` | The 3D globe (lazy, browser-only). The page carries the "Local prototype · not for deployment" badge and a standing notice that outlines are provisional, unofficial OpenStreetMap geometry and not official boundaries. The details panel's "Open in 2D workspace" link hands a selected place to the workspace by URL hash. See [globe-prototype.md](globe-prototype.md) |
 | Page heading | `layout/PageHeader` | Title, description, optional aside; `compact` is one slim line (the workspace uses it so the map starts higher) |
 | KPI cards | `dashboard/KpiCard` | Omit `value` for an empty state, never fake one |
 | Map frame | `dashboard/MapWorkspace` | Navy (`.map-theme`) frame with a toolbar, a footer strip, an optional left `rail`, and the map surface as `children`; takes the viewport height under the compact page heading from `lg` |
@@ -78,12 +79,13 @@ Rules that keep contrast valid (ratios computed against WCAG 2.x):
 - An area with no boundary is a hatched gap with a stated reason, never a drawn guess. Outlines are
   always called provisional, with the OpenStreetMap attribution and the coverage line on screen.
 - The app is a localhost prototype and says so in the top bar ("Local prototype · not for
-  deployment") and on each page.
+  deployment") and on each page. The globe page repeats it and adds the provisional-outline notice; neither the badge nor the
+  notice may be dropped while the geography is unofficial and the app is not approved for deployment.
 
 ## Responsive behaviour
 
 - Navigation shares a row with the brand and status badge from `xl` (1280px).
-  Below that it takes its own row; on phones it scrolls horizontally.
+  Below that it takes its own row; on phones it scrolls horizontally. Globe comes first, so it is on screen at 390px.
 - KPI cards: 1 column, then 2 (`sm`), then 4 (`xl`).
 - Map and details panel sit side by side from `lg` (1024px), stacked below.
 

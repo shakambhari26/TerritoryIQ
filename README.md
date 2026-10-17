@@ -68,7 +68,7 @@ architecture doc (MapLibre, PostGIS/Supabase, Power BI, Excel import, authentica
 ## Layout
 
 ```text
-src/app/         Routes (/, /workspace, /geo/boundaries.json), layout, design tokens
+src/app/         Routes (/, /workspace, /globe, /geo/boundaries.json, /geo/globe-boundaries.json), layout, design tokens
 src/proxy.ts     Refuses any request whose Host header is not loopback
 src/components/  Reusable UI (layout/, ui/, dashboard/)
 src/features/    territory/ (domain, model, UI), geo/ (matching, geometry, OSM linking), allocation/ (local change log)

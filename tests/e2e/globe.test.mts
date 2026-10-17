@@ -12,7 +12,7 @@ import type { GlobeManifest, GlobeOverlay } from "../../src/features/globe/types
 import { browserPath, runAxe, skipReason, startServer, type Server } from "./harness.mts";
 
 /**
- * The globe prototype in a real browser: idle spin, flight, arrival and stillness, reveal after arrival, selection
+ * The globe (at /globe, a locally integrated prototype) in a real browser: idle spin, flight, arrival and stillness, reveal after arrival, selection
  * by search, pointer and keyboard, reset, reduced motion, no WebGL, a failed texture, no outbound request.
  * Chrome renders WebGL in software here (SwiftShader), so frame rates are low and every wait is on state, not time.
  *
@@ -117,7 +117,7 @@ describe("globe prototype in a real browser", { skip: skipReason, timeout: 600_0
       if (message.type() === "error") errors.push(message.text());
     });
     page.on("pageerror", (error) => errors.push(error.message));
-    await page.goto(`${server.baseUrl}/globe-prototype`, { waitUntil: "load" });
+    await page.goto(`${server.baseUrl}/globe`, { waitUntil: "load" });
     return { page, context, hosts, errors, dataRequests, urls };
   }
   const ready = (page: Page) => page.waitForSelector(`${ROOT_SEL}[data-status="ready"]`, { timeout: 90_000 });
@@ -779,7 +779,7 @@ describe("globe prototype in a real browser", { skip: skipReason, timeout: 600_0
     await page.waitForFunction(() => document.querySelectorAll("canvas").length === 0, undefined, { timeout: 10_000 });
     assert.equal(await page.locator(HOST_SEL).isVisible(), false, "the globe is not on screen");
     await page.goBack();
-    await page.waitForURL("**/globe-prototype");
+    await page.waitForURL("**/globe");
     await ready(page);
     assert.equal(await page.locator(`${HOST_SEL} canvas`).count(), 1, "one new canvas");
     assert.equal(await attr(page, "data-level"), "globe", "back at the whole globe, not a stale selection");
@@ -789,11 +789,11 @@ describe("globe prototype in a real browser", { skip: skipReason, timeout: 600_0
     await context.close();
   });
 
-  it("does not change the Territory Workspace or add a link to the prototype", async () => {
+  it("is linked from the navigation, and the navigation still links the Overview and the Workspace", async () => {
     const { page, context } = await open();
     await ready(page);
-    const links = await page.$$eval("header a, nav a", (anchors) => anchors.map((a) => a.getAttribute("href")));
-    assert.ok(!links.some((href) => href?.includes("globe")), "no navigation entry for the prototype");
+    const links = await page.$$eval('nav[aria-label="Primary"] a', (anchors) => anchors.map((a) => a.getAttribute("href")));
+    assert.deepEqual(links, ["/globe", "/", "/workspace"]);
     await context.close();
   });
 });
