@@ -1,12 +1,26 @@
 # Globe prototype
 
 Status as of 2026-10-17: **merged into `main`** through [pull request #1](https://github.com/shakambhari26/TerritoryIQ/pull/1),
-merge commit `9b5a7f4`. The prototype's own commit is `2c01cee` (PR head `b7dff5e`); it was built on the 2D map redesign
-(`c4d1b1c`, on top of `3acb994`). Being merged is not an approval of the geography or a decision to make the
-globe the entry experience. The prototype is available at `/globe-prototype` and is
-**not linked from the navigation and is not the default entry**: the root page is still the Territory Overview, the
-route is reached only by its address, and the globe leaves the Territory Workspace and its map unchanged. The outlines
-are provisional, unofficial OpenStreetMap geometry; **no official approval of the geographic data has been given**.
+merge commit `9b5a7f4` (the prototype's own commit is `2c01cee`, PR head `b7dff5e`, built on the 2D map redesign `c4d1b1c`,
+on top of `3acb994`), with a status correction in pull request #2 (`0505fce`). The branch
+`feat/globe-navigation-integration` adds **Phase 1 of the navigation integration**; it is not merged into `main` and
+not approved for deployment. With it the globe lives at **`/globe`** and is **linked from the primary
+navigation as a locally integrated prototype**; `/globe-prototype` redirects to it (temporary, 307); and a selected place
+offers an "Open in 2D workspace" link (see "Navigation and hand-off to the 2D workspace"). The root page is still the
+Territory Overview (the globe is not the default entry), and the Territory Workspace and its map are unchanged.
+**Phase 2**, on the branch `feat/globe-home-entry` (stacked on Phase 1, so it contains both phases; not merged into `main`
+and not approved for deployment), adds an "Explore on the globe" entry card to that Overview (see "Homepage entry card (Phase 2)"); it does not change the
+default homepage.
+
+What this does **not** mean:
+
+- **The geography is not approved.** The outlines are provisional, unofficial OpenStreetMap geometry (ODbL). **No official
+  approval of the geographic data has been given**, and every screen that shows an outline says so.
+- **The application is not approved for deployment.** It is a local prototype: it binds to `127.0.0.1`, refuses any other
+  `Host`, has no authentication, and its served pages (including `/globe`) contain staff names from the workbook
+  ([SN-5](security-notes.md)). It must stay on this machine.
+- Being merged or linked is not a decision to make the globe the entry experience.
+
 Still limited or unverified:
 
 - Rendering on a real GPU: every WebGL run so far used software WebGL.
@@ -17,7 +31,9 @@ Still limited or unverified:
 Written for the people deciding whether the globe should become the entry experience.
 
 Product direction (decided): the globe is meant to become the **geographic entry experience**; the existing 2D
-Territory Workspace stays for detailed operational analysis. Neither is replaced or modified in this prototype phase.
+Territory Workspace stays for detailed operational analysis. Phase 1 does not make the globe the entry: `/` stays the
+Territory Overview, nothing is moved to `/overview`, and neither the workspace's allocation logic nor its boundary source
+changes.
 
 ## What it is
 
@@ -39,6 +55,43 @@ WebGL: the same places, search and details with a static picture of the Earth, a
 fails to load gives an error and a "Try again" button. If the outline data cannot be loaded or validated, the globe
 still renders, turns and flies and the searchable places list works; no outline is drawn, the reason is on screen and
 "Try again" retries the outline data alone.
+
+## Navigation and hand-off to the 2D workspace (Phase 1)
+
+- **Route.** The page is `src/app/globe/page.tsx` (it was `src/app/globe-prototype/page.tsx`; same server page, same
+  `getGlobeManifest`, same `GlobeLoader`). Its heading badge reads "Local prototype · not for deployment", and a standing notice under
+  the heading says the outlines are unofficial OpenStreetMap geometry, not official boundaries, not reviewed or approved by
+  any authority, and that the prototype is not approved for deployment. The notice is on the page even when the globe
+  cannot load. The old badge "Prototype · not integrated" is gone because it was no longer true.
+- **Redirect.** `next.config.ts` redirects `/globe-prototype` and `/globe-prototype/:path*` to `/globe` with `permanent: false`
+  (307), the same convention as `/territory-map`. Old bookmarks still work. (Next.js itself first answers a trailing slash with
+  a 308 to the slash-less path.)
+- **Navigation.** `NAV_ITEMS` in `src/lib/site.ts` is now Globe, Overview, Workspace, then the three "Soon" entries. `NavLink` is
+  unchanged: exactly one link carries `aria-current="page"` (`/globe` for `/globe`, `/` only for `/`). The navigation is
+  responsive as before (own row below `xl`, scrolls on phones). The top bar still says "Local prototype · not for deployment".
+- **Three.js stays on `/globe`.** The nav link is a plain `next/link`; Three.js and the renderer are still one lazy chunk
+  loaded by `next/dynamic` with `ssr: false` inside `GlobeLoader`. A browser test downloads every script of `/` and `/workspace`
+  with the Globe link on screen and finds no Three.js (`WebGLRenderer`), and finds it on `/globe` as a control. A unit test
+  keeps every file outside `src/features/globe` and `src/app/globe` from importing the globe.
+- **Hand-off.** The "Open in 2D workspace" link is built by `src/features/globe/workspace-link.ts` (pure). The workspace
+  already keeps its selection in the URL hash and derives the map level from it (`features/territory/selection.ts`,
+  `map-level.ts`), so the link is just a URL; there is no shared store, and nothing is written to the URL while the globe is used.
+
+  | Globe selection | Link | Workspace opens |
+  | --- | --- | --- |
+  | West Bengal | `/workspace` | state overview |
+  | District (`GD-…`) | `/workspace#feature=GD-…` | district level, that district selected |
+  | Block (`GB-…`) | `/workspace#feature=GB-…` | block level, inside the block's district, that block selected |
+  | Workbook row listed in a block's details (`TU-…`) | `/workspace#unit=TU-…` | that row selected, at its block |
+
+  An ID is used only if the validated overlay lists it (a district, a block, or a row linked to a block) and is URL-encoded by
+  the workspace's own `selectionToHash`; an unknown, empty or wrong-kind ID gives no link. IDs are never built from names or
+  labels. The link is in the details panel for the current selection, so it is also in the no-WebGL view and while the outline
+  request is failing, because it needs neither. It is not shown at the whole-globe level, where nothing is selected.
+  `tests/unit/globe-workspace-link.test.mts` checks the rules and, on the real build, that every district, block and row the
+  globe lists produces a hash the workspace's own parser accepts and a map level that agrees with the globe's parent district.
+- **Not in Phase 1.** No workspace-to-globe backlink, no URL synchronisation of the globe's selection, no change to `/`.
+  Going from the workspace back to the globe starts the globe fresh.
 
 ## Loading order and failures
 
@@ -69,7 +122,7 @@ The globe and the outline data start together and are kept apart:
 npm install                                  # adds three and @types/three, pinned
 npm run data:build                           # existing step; writes data/generated/{dataset,boundaries}.json
 python -I scripts/globe/build_overlay.py     # validates; writes data/generated/globe-overlay.json and globe-boundaries.json
-npm run dev                                  # then open http://127.0.0.1:3000/globe-prototype
+npm run dev                                  # then open http://127.0.0.1:3000/globe
 ```
 
 Rebuilding the data needs a server restart (dev) or a new build (production), as for the workspace.
@@ -88,7 +141,7 @@ folder named by `GLOBE_SHOTS`).
 ## Files
 
 ```text
-src/app/globe-prototype/page.tsx            Server page: reads the overlay, hands it to the lazy loader
+src/app/globe/page.tsx                      Server page (/globe): reads the overlay, hands it to the lazy loader; badge and provisional notice
 src/app/geo/globe-boundaries.json/route.ts  GET /geo/globe-boundaries.json: the globe's own file, checked on every request
 src/features/globe/
   types.ts                                  Manifest (page props) and overlay (manifest + path data) types, the record type
@@ -104,6 +157,7 @@ src/features/globe/
   shapes.ts                                 Outline decode (reuses features/geo layer + projection), hit tests (pure)
   styles.ts                                 Colour semantics, selected and hover colours (pure)
   targets.ts                                Places, search, arrow-key order (pure)
+  workspace-link.ts                         The "Open in 2D workspace" URL for a place, from validated IDs (pure)
   shaders.ts                                Earth, cloud and atmosphere GLSL
   GlobeRenderer.ts                          Scene, textures, overlay meshes, picking, labels, frame loop, disposal
   components/GlobeLoader.tsx                next/dynamic, ssr:false, error boundary
@@ -116,13 +170,15 @@ scripts/globe/texture-manifest.json         Provenance of the textures and of th
 public/globe/*.jpg|png                      Derived textures (images only; no data files)
 docs/no-representative-record.md            Proposed reviewed-record schema (no record exists)
 docs/schemas/no-representative-record.schema.json   The same, as JSON Schema
-tests/unit/globe-{math,overlay,layer-merge,layer-integrity,outline-gate,reviewed-record,network-guard,guards}.test.mts
-tests/unit/helpers/network-guard.mts, tests/e2e/globe.test.mts
+tests/unit/globe-{math,overlay,layer-merge,layer-integrity,outline-gate,reviewed-record,network-guard,guards,workspace-link}.test.mts
+tests/unit/helpers/network-guard.mts, tests/e2e/globe.test.mts, tests/e2e/globe-integration.test.mts
 ```
 
 Outside new files the diff touches `package.json`, `package-lock.json`, one test in `tests/guardrails.test.ts` and
 the network guard in `tests/unit/local-boundary.test.mts` (widened by one named request, see "Geometry"). No application
 file of the Territory Workspace changes, and the workspace's `/geo/boundaries.json` route, file and payload are untouched.
+Phase 1 adds to that: the route moved to `src/app/globe/`, `next.config.ts` (the redirect), `src/lib/site.ts` (the nav entry),
+`GlobePanel.tsx` (the link), `workspace-link.ts`, and the tests and documents named in this file; the workspace is still untouched.
 
 ## Geometry and what it is allowed to claim
 
@@ -290,12 +346,41 @@ python -I scripts/globe/build_overlay.py     # data/generated/globe-boundaries.j
   outline is drawn, and the globe, the place list and the retry strip keep working. Never replace it with the
   workspace's layer: that is refused as another dataset.
 
+## Homepage entry card (Phase 2)
+
+- **What it is.** `src/components/dashboard/GlobeEntryCard.tsx`, rendered by `src/app/page.tsx` between the page heading and
+  `OverviewDashboard`. The heading, KPI cards, panels, territory table and the two existing "Open the workspace" links are
+  unchanged, and `/` is still the Territory Overview; the globe does not become the default page.
+- **Content.** Heading "Explore on the globe", a "Provisional outlines" badge, one sentence on exploring places on an
+  interactive 3D globe and inspecting provisional geographic outlines, and a permanent notice: the outlines use unofficial
+  OpenStreetMap geometry, are not official boundaries, and do not provide complete district or block coverage. Two links:
+  "Explore on the globe" to `/globe` and "Go to the 2D workspace" to `/workspace`. It carries no number, percentage or claim of
+  verified, confirmed, live or complete coverage, and no image or decorative SVG.
+- **Always shown.** It is a server component with no props and does not read the geographic data, so it renders when the
+  dataset is missing too (the Overview then shows its "data has not been built" state below it, and `/globe` shows its own
+  "globe data has not been built" state).
+- **Nothing globe-related loads on `/`.** The card imports only `next/link`, `Badge` and `Card`. The links keep Next.js's
+  default prefetching; a browser test observes `/` long enough for that to run (and checks it did, for `/globe` and
+  `/workspace`) and finds no Three.js, no `/globe/` texture, and no request for `/geo/globe-boundaries.json` or
+  `/geo/boundaries.json`, with `/globe` and `/workspace` as positive controls. A unit test keeps the card and the page free of
+  any `features/globe`, Three.js, loader, renderer or boundary import.
+- **Layout.** One column on a phone with full-width links at least 44 px high (the workspace link below the globe link); from
+  `lg` the text sits on the left and the two links on the right on one line, about 125 px high, so the KPI row is on screen at
+  1440 x 900. Tested at 390, 768 and 1440 px: no sideways scroll, no overlap with the KPI row.
+- **Missing data, checked by hand.** `/` is prerendered at build time, so no production-build test can show it without the
+  data. It was checked once on 2026-10-17 in a development server with `data/generated/` moved aside: `/` rendered the card
+  above the Overview's "data has not been built" state, and `/globe` showed its own "globe data has not been built" state.
+  The automated checks for the card are the unit test and the Phase 2 tests in `tests/e2e/globe-integration.test.mts`
+  (see [tests/README.md](../tests/README.md)).
+- **Not decided.** Whether the globe should become the default page is still a separate decision.
+
 ## Performance notes
 
 Measured in this environment (software WebGL, so frame rate is not representative of a real GPU).
 
 - **Lazy.** `three` and the renderer are one chunk (630 KB, 159 KB gzipped) loaded only on this route by `next/dynamic`
-  with `ssr: false`; the workspace and overview pages do not reference it. WebGL never runs on the server.
+  with `ssr: false`; the workspace and overview pages do not reference it, even with the Globe link in the navigation (tested
+  by downloading their scripts). WebGL never runs on the server.
 - **Textures.** 8k day texture 4.3 MB over the wire, about 170 MB on the GPU with mipmaps; the 4k variant (1.3 MB, about
   45 MB) is used when the GPU's maximum texture size is under 8192 or the device reports 2 GB or less of memory.
   Anisotropy is capped at 8.
@@ -325,6 +410,24 @@ Measured in this environment (software WebGL, so frame rate is not representativ
 - Status, errors and the loading state use `role="status"` / `role="alert"`. axe-core (WCAG 2.2 AA and best practice)
   reports no violations on the whole globe, on West Bengal, and on a district.
 - Reduced motion is honoured (no idle spin, no flight, no draw-in).
+
+## Verification of Phase 1 (isolated worktree from `main` at 0505fce)
+
+Run on 2026-10-17 in a separate worktree (`D:\Shakambhari\_iso\globe-nav`, branch `feat/globe-navigation-integration`) with
+`node_modules` from `npm ci` and the locally supplied `data/` and `data-source/`:
+
+| Check | Result |
+| --- | --- |
+| `npm run data:verify` | all four source files match their recorded hashes |
+| `npm run typecheck`, `npm run lint` | clean |
+| `npm test` | 365 tests, 365 pass, 0 fail, 0 skipped (349 before Phase 1, plus 16 for the workspace link) |
+| `npm run build` | passes; `/globe` is static (○), `/geo/globe-boundaries.json` dynamic (ƒ), `/geo/boundaries.json` static (○); `/globe-prototype` is a redirect, not a route |
+| `npm run verify:build` | OK: no staff name or layer dataset ID in public assets or static chunks, no data file in `public/` |
+| `npm run test:e2e` | 122 tests, 122 pass, 0 fail, 0 skipped (111 before Phase 1, plus the 11 in `globe-integration.test.mts`) |
+| `npm audit --omit=dev` | 0 vulnerabilities |
+
+Not verified here: a real GPU, the physical AltGr key, official approval of the geography, and anything about a hosted or shared
+deployment (none exists and none is approved).
 
 ## Verification (isolated copy of `origin/main`, 3acb994)
 
@@ -358,6 +461,6 @@ Still open for integration:
 
 1. Approval of the proposed record schema, and the reviewed source it would come from (it would feed `confirmation` in
    the manifest through a reviewed build step, not through the browser). Until then nothing is white.
-2. How the globe hands a selection to the workspace (for example by its hash), without changing the workspace.
+2. ~~How the globe hands a selection to the workspace.~~ Done in Phase 1 by hash, without changing the workspace (see above). Still open: a workspace-to-globe backlink, and whether the globe's own selection should be in the URL.
 3. Whether the route should keep re-reading and hashing the file on every request in an integrated build, or read it once
    at start and trade the "altered while running" check for a restart.

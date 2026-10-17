@@ -11,6 +11,9 @@ const nextConfig: NextConfig = {
     return [
       { source: "/territory-map", destination: "/workspace", permanent: false },
       { source: "/territory-map/:path*", destination: "/workspace", permanent: false },
+      // The globe started at /globe-prototype and is now at /globe. Temporary (307) while it is a local prototype.
+      { source: "/globe-prototype", destination: "/globe", permanent: false },
+      { source: "/globe-prototype/:path*", destination: "/globe", permanent: false },
     ];
   },
   turbopack: {

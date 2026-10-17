@@ -66,8 +66,11 @@ Update, later on 2026-10-15: the lock file is no longer in `data-source/`, and t
 
 ## SN-5. Staff names are present in served pages
 
-`/` and `/workspace` embed the dataset so the counts, lists and forms work in the browser. The names
-are therefore in the page HTML and payload (8 files under `.next/server` in the build of 2026-10-15),
+`/` and `/workspace` embed the dataset so the counts, lists and forms work in the browser. `/globe`
+(until the Phase 1 route move, `/globe-prototype`) embeds the globe manifest, whose block records list the workbook staff
+names for the details panel; its outline file is served separately by `/geo/globe-boundaries.json` and holds no names. The names
+are therefore in the page HTML and payload (8 files under `.next/server` in the build of 2026-10-15; 24 of 259 in the
+Phase 1 build of 2026-10-17, which counts the `/globe` pages and the route cache as well),
 not in `public/` or in any script, style, font or image (scanned: `npm run verify:build`, plus a
 browser test over what the page downloads). With the bind address and Host check, only this machine
 can read them. This is not acceptable for any shared or hosted setting: before then, send each view
@@ -96,7 +99,7 @@ only what it needs, and add authentication and access control (B-15, B-16, B-25)
 
 | Area | Position |
 | --- | --- |
-| Network | One same-origin request from the app (the boundary layer). `scripts/fetch-osm.mts` is the only project code that contacts an external service, with a generic User-Agent and a geographic query only. The details panel links to `openstreetmap.org/relation/<id>`, followed only if a person clicks it, with `noopener noreferrer`. The Next.js tooling also contacts Google Fonts (cold build) and the npm registry (build and dev); telemetry is off (SN-6) |
+| Network | Two same-origin requests from the app, each by one named file to its own literal URL: the workspace's boundary layer (`/geo/boundaries.json`) and the globe's validated outline file (`/geo/globe-boundaries.json`, only when WebGL is available); the network guard allows exactly these. `scripts/fetch-osm.mts` is the only project code that contacts an external service, with a generic User-Agent and a geographic query only. The details panel links to `openstreetmap.org/relation/<id>`, followed only if a person clicks it, with `noopener noreferrer`. The Next.js tooling also contacts Google Fonts (cold build) and the npm registry (build and dev); telemetry is off (SN-6) |
 | Binding | `127.0.0.1` only, and a loopback Host check |
 | Storage | `localStorage` for local allocation changes; no database, no cookies set |
 | Personal data | Staff names from the workbook, server side and in served pages (SN-5). No salary data. No email address anywhere in code, tests, scripts or docs (tested) |

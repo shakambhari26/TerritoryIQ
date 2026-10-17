@@ -6,7 +6,7 @@ import { describe, it } from "node:test";
 import { fileURLToPath } from "node:url";
 
 /**
- * Guards for the globe prototype (src/features/globe, src/app/globe-prototype, scripts/globe, public/globe).
+ * Guards for the globe prototype (src/features/globe, src/app/globe, scripts/globe, public/globe).
  * They keep the prototype's promises checkable: no outbound request from the app, Three.js confined to one
  * browser-only feature folder, no data in public/, honest wording, and texture files that match their provenance.
  */
@@ -23,7 +23,7 @@ function* files(directory: string): Generator<string> {
   }
 }
 const sources = (dir: string, extensions = [".ts", ".tsx", ".mts"]) => [...files(join(ROOT, dir))].filter((f) => extensions.includes(extname(f)));
-const GLOBE_SOURCES = [...sources("src/features/globe"), ...sources("src/app/globe-prototype")];
+const GLOBE_SOURCES = [...sources("src/features/globe"), ...sources("src/app/globe")];
 
 describe("globe prototype: the browser makes no outbound request", () => {
   it("the one request is the same-origin layer fetch in layer-client.ts; no XHR, socket, beacon or geolocation anywhere", () => {
@@ -82,7 +82,7 @@ describe("globe prototype: three.js stays inside one lazy, browser-only folder",
   });
 
   it("the page reaches the globe only through the lazy loader, with server rendering off", () => {
-    const page = read("src/app/globe-prototype/page.tsx");
+    const page = read("src/app/globe/page.tsx");
     assert.match(page, /GlobeLoader/);
     assert.doesNotMatch(page, /GlobeExperience|GlobeRenderer|from\s+["']three/);
     const loader = read("src/features/globe/components/GlobeLoader.tsx");
@@ -103,7 +103,7 @@ describe("globe prototype: three.js stays inside one lazy, browser-only folder",
       .filter((f) => /from\s+["'][^"']*overlay\.server["']/.test(readFileSync(f, "utf8")))
       .map(rel);
     // The page (for the manifest props) and the globe's outline route (for the integrity record). Nothing else.
-    assert.deepEqual(importers, ["src/app/geo/globe-boundaries.json/route.ts", "src/app/globe-prototype/page.tsx"]);
+    assert.deepEqual(importers, ["src/app/geo/globe-boundaries.json/route.ts", "src/app/globe/page.tsx"]);
     const clientImporters = sources("src")
       .filter((f) => /^\s*["']use client["']/m.test(readFileSync(f, "utf8")))
       .filter((f) => /overlay\.server/.test(readFileSync(f, "utf8")));
@@ -112,7 +112,7 @@ describe("globe prototype: three.js stays inside one lazy, browser-only folder",
 
   it("the Territory Workspace does not import the globe", () => {
     const offenders = sources("src")
-      .filter((f) => !f.includes(`${join("src", "features", "globe")}`) && !f.includes(join("src", "app", "globe-prototype")))
+      .filter((f) => !f.includes(`${join("src", "features", "globe")}`) && !f.includes(join("src", "app", "globe")))
       // The globe's own outline route is part of the prototype; the workspace's route (geo/boundaries.json) is not.
       .filter((f) => rel(f) !== "src/app/geo/globe-boundaries.json/route.ts")
       .filter((f) => /features\/globe|globe-prototype/.test(readFileSync(f, "utf8")))

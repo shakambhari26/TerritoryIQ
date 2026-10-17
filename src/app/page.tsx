@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { GlobeEntryCard } from "@/components/dashboard/GlobeEntryCard";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Badge } from "@/components/ui/Badge";
 import { DatasetMissing } from "@/features/territory/components/DatasetMissing";
@@ -29,6 +30,7 @@ export default function OverviewPage() {
           </div>
         }
       />
+      <GlobeEntryCard />
       {dataset ? <OverviewDashboard dataset={dataset} layerMeta={getLayerMeta()} /> : <DatasetMissing />}
     </>
   );

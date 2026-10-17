@@ -192,7 +192,7 @@ describe("the repository today: nothing is white, nothing is read from a local l
 
   it("the builder and the app never read the reviewer's browser-local log or any browser storage, and the builder never emits the state", () => {
     const code = (text: string) => text.replace(/\/\*[\s\S]*?\*\//g, "").replace(/^\s*(?:\/\/|#).*$/gm, "").replace(/"""[\s\S]*?"""/g, "");
-    const globe = [...files(join(ROOT, "src", "features", "globe")), ...files(join(ROOT, "src", "app", "globe-prototype"))];
+    const globe = [...files(join(ROOT, "src", "features", "globe")), ...files(join(ROOT, "src", "app", "globe"))];
     for (const file of globe) assert.doesNotMatch(code(readFileSync(file, "utf8")), /\b(?:localStorage|sessionStorage|indexedDB)\b/, rel(file));
     const builder = code(read("scripts/globe/build_overlay.py"));
     assert.doesNotMatch(builder, /localStorage|sessionStorage|unallocated|change[ _-]?log/i);

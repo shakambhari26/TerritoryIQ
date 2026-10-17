@@ -7,7 +7,8 @@ implementation, built from real company and Local Government Directory (LGD) dat
 
 - `/` — overview: real counts from the workbook and the LGD lists, with the four
   allocation states (allocated, confirmed unallocated, missing / unverified, conflicting)
-  kept apart.
+  kept apart. Under the heading, an "Explore on the globe" card links to `/globe` (provisional,
+  unofficial outlines) and to the 2D workspace; it is shown whether or not the data is built.
 - `/workspace` — the map and the work around it: a light state, district and block map (23 named districts, their blocks on drill-down, three layers, search), provisional OpenStreetMap outlines for 23
   districts and 309 of 345 blocks, an explicit workbook-row-to-official-unit crosswalk, a details
   panel, searchable lists of all 358 rows and 345 official blocks, and local allocation and
@@ -68,7 +69,7 @@ architecture doc (MapLibre, PostGIS/Supabase, Power BI, Excel import, authentica
 ## Layout
 
 ```text
-src/app/         Routes (/, /workspace, /geo/boundaries.json), layout, design tokens
+src/app/         Routes (/, /workspace, /globe, /geo/boundaries.json, /geo/globe-boundaries.json), layout, design tokens
 src/proxy.ts     Refuses any request whose Host header is not loopback
 src/components/  Reusable UI (layout/, ui/, dashboard/)
 src/features/    territory/ (domain, model, UI), geo/ (matching, geometry, OSM linking), allocation/ (local change log)
