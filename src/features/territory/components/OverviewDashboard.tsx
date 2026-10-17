@@ -8,7 +8,8 @@ import { Card } from "@/components/ui/Card";
 import { useLocalChanges } from "@/features/allocation/overlay-store";
 import { LINK_LABEL, LINK_MEANING, REFERENCE_LIST_NOTE, formatCount, plural, shortHash } from "../format";
 import { buildModel } from "../model";
-import { ALLOCATION_STATES, ALLOCATION_STATE_LABEL, type BoundaryLayerMeta, type TerritoryDataset } from "../types";
+import { overviewModelInput, type OverviewData } from "../overview-data";
+import { ALLOCATION_STATES, ALLOCATION_STATE_LABEL, type BoundaryLayerMeta } from "../types";
 import { StateBar } from "./StateBar";
 import { StateChip } from "./state-style";
 import { buttonClass } from "./ui";
@@ -22,7 +23,8 @@ function Panel({ title, children, testId }: { title: string; children: React.Rea
   );
 }
 
-export function OverviewDashboard({ dataset, layerMeta }: { dataset: TerritoryDataset; layerMeta: BoundaryLayerMeta | null }) {
+export function OverviewDashboard({ data, layerMeta }: { data: OverviewData; layerMeta: BoundaryLayerMeta | null }) {
+  const dataset = useMemo(() => overviewModelInput(data), [data]);
   const local = useLocalChanges();
   const model = useMemo(() => buildModel(dataset, local.changes), [dataset, local.changes]);
   const s = model.summary;

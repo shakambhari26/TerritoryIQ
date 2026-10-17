@@ -130,12 +130,12 @@ describe("homepage globe entry: the Overview is unchanged around it", () => {
     assert.ok(header >= 0 && cardAt > header && dashboard > cardAt, "PageHeader, then the card, then the dashboard");
     assert.equal((page.match(/<GlobeEntryCard/g) ?? []).length, 1);
     assert.match(page, /^\s*<GlobeEntryCard \/>\s*$/m, "its own element, not inside the dataset ternary");
-    assert.ok(cardAt < order("{dataset ?"), "rendered before the dataset condition, so it shows when the data is missing");
+    assert.ok(cardAt < order("{overview ?"), "rendered before the dataset condition, so it shows when the data is missing");
   });
 
   it("keeps the Territory Overview heading, the dashboard, the missing-data fallback and the Workspace entry", () => {
     assert.match(page, /title="Territory Overview"/);
-    assert.match(page, /<OverviewDashboard dataset=\{dataset\} layerMeta=\{getLayerMeta\(\)\} \/>/);
+    assert.match(page, /<OverviewDashboard data=\{overview\} layerMeta=\{getLayerMeta\(\)\} \/>/);
     assert.match(page, /<DatasetMissing \/>/);
     assert.match(page, /href="\/workspace"[\s\S]*?Open the workspace/);
     assert.match(page, /<Badge>Local prototype<\/Badge>/);
