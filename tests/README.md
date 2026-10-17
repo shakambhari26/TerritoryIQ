@@ -32,6 +32,7 @@ run the command.
 | `overview-data.test.mts` | The Overview's data boundary: on synthetic names, the serialised `OverviewData` and the model input rebuilt from it contain no name (however cased or escaped) and only the explicit fields; people are bare integer keys shared exactly where the model counts one name; the Overview's figures equal the full dataset's with no local changes and under every kind of local change; the one known limit (a local name equal to a workbook name counts as distinct); the homepage passes `OverviewData`, never the dataset, to the dashboard. On the real build, it reports counts only: same figures, no staff name in the serialised data, and the same scan does find them in the full dataset. Skipped, not failed, if `data:build` has not been run |
 | `local-boundary.test.mts` | The localhost-only boundary: `-H 127.0.0.1` on `dev` and `start`, the loopback Host check, no data in `public/`, no client import of the dataset, provisional and attributed layer, the only network request the app makes, the fetch script's limits, no write to `data-source/`, and the public-asset scanner itself on synthetic builds |
 | `globe-workspace-link.test.mts` | The globe-to-workspace hand-off: state, district, block and workbook-row URLs, encoding, unknown, empty and wrong-kind IDs, and, on the real build, that every district, block and row the globe lists gives a hash the workspace's own parser accepts and a map level that agrees with the globe |
+| `response-headers-config.test.mts` | The declared header rules in `next.config.ts`: `private, no-store` on `/`, `/workspace`, `/globe` and `/geo/*` only, the baseline (nosniff, referrer policy, frame-ancestors and X-Frame-Options, Permissions-Policy) on every path, no script or style CSP yet, and no feature that Permissions-Policy switches off appears in `src/`. It reads the config; the real responses are checked by `response-headers.test.mts` |
 
 ## `tests/e2e/` (the built app in Chrome)
 
@@ -39,6 +40,7 @@ run the command.
 the coverage line, no request off the app's own host, no staff name in any downloaded script,
 style, font or image, the boundary route's headers and content, a 403 for any non-loopback Host,
 the `/territory-map` redirect, accessibility (axe), phone width, and the build-output scan.
+`response-headers.test.mts`: headers on real responses from the production server (needs only `npm run build`, no browser and no dataset): `private, no-store` and the baseline on the pages, their RSC and prefetch variants and the two boundary routes, no one-year `s-maxage` left, static assets still immutable, and the loopback Host check unchanged (403 for other hosts, 200 for `localhost`, `127.0.0.1` and `[::1]`).
 `overview-privacy.test.mts`: the Territory Overview sends no staff name to the browser. The homepage HTML, its RSC payload and
 the prerendered homepage files under `.next/server/app` contain none of the dataset's names (reported as a count, never printed), with
 `/workspace` as the positive control; in Chrome the Overview shows every KPI, territory row, link count and state count the full
