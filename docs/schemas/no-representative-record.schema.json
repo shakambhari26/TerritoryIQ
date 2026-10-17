@@ -1,0 +1,65 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "no-representative-record.schema.json",
+  "title": "Reviewed record that a geographic unit has no associated representative (PROPOSED, schema version 1)",
+  "description": "One record asserts exactly one thing about exactly one unit: that no representative is associated with it, on the authority of a cited source, from an effective date, after review. It is the only thing that may turn a unit white. A missing row, a vacant marker, a failed name match or a browser-local log is never a record. No record exists yet; this schema is a proposal awaiting approval.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "recordId", "unit", "assertion", "source", "provenance", "effectiveDate", "review"],
+  "properties": {
+    "schemaVersion": { "const": 1 },
+    "recordId": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Stable ID of the record itself, never reused. Superseding a record means adding a new one that names this ID in `supersedes`; a record is not edited once approved."
+    },
+    "supersedes": { "type": "string", "minLength": 1, "description": "The recordId this record replaces, if any." },
+    "unit": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "id", "lgdCode"],
+      "description": "The unit the record is about. All three fields must agree with the unit in the generated dataset, or the record is ignored.",
+      "properties": {
+        "type": { "enum": ["district", "block"], "description": "Unit type." },
+        "id": { "type": "string", "minLength": 1, "description": "The app's stable feature ID for the unit (derived from the official LGD code)." },
+        "lgdCode": { "type": "integer", "minimum": 1, "description": "The official Local Government Directory code of the unit." }
+      }
+    },
+    "assertion": { "const": "no-representative-associated", "description": "The only assertion a record can make. It is not 'vacant', not 'unallocated' and not 'unknown'." },
+    "source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "reference", "location", "retrievedAt"],
+      "properties": {
+        "kind": { "type": "string", "minLength": 1, "description": "What sort of source this is, for example a signed register, a written confirmation from the responsible manager, or an approved master list." },
+        "reference": { "type": "string", "minLength": 1, "description": "Title, document number or message identifier that a reviewer can find again." },
+        "location": { "type": "string", "minLength": 1, "description": "Where in the source: sheet and row, page and line, paragraph." },
+        "retrievedAt": { "type": "string", "pattern": "^\\d{4}-\\d{2}-\\d{2}(T[\\d:.]+(Z|[+-]\\d{2}:\\d{2})?)?$", "description": "When the source was read." },
+        "sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$", "description": "SHA-256 of the source file as read, when it is a file. Strongly recommended." }
+      }
+    },
+    "provenance": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["recordedBy", "recordedAt"],
+      "description": "Who put the record into the repository, and when. Not the reviewer.",
+      "properties": {
+        "recordedBy": { "type": "string", "minLength": 1 },
+        "recordedAt": { "type": "string", "pattern": "^\\d{4}-\\d{2}-\\d{2}(T[\\d:.]+(Z|[+-]\\d{2}:\\d{2})?)?$" }
+      }
+    },
+    "effectiveDate": { "type": "string", "pattern": "^\\d{4}-\\d{2}-\\d{2}$", "description": "The date from which the assertion holds (YYYY-MM-DD). A record whose date is in the future is not yet in force and does not turn a unit white." },
+    "review": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["status", "reviewedBy", "reviewedAt"],
+      "description": "Only status 'approved', with a named reviewer and a review date, counts. 'pending', 'rejected' and 'superseded' never do.",
+      "properties": {
+        "status": { "enum": ["pending", "approved", "rejected", "superseded"] },
+        "reviewedBy": { "type": ["string", "null"], "description": "Required (non-empty) for 'approved'. Should be a different person from `provenance.recordedBy`." },
+        "reviewedAt": { "type": ["string", "null"], "pattern": "^\\d{4}-\\d{2}-\\d{2}(T[\\d:.]+(Z|[+-]\\d{2}:\\d{2})?)?$", "description": "Required for 'approved'." },
+        "notes": { "type": "string" }
+      }
+    }
+  }
+}

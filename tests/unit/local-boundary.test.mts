@@ -186,14 +186,26 @@ describe("outbound network", () => {
     assert.match(link, /href=\{`https:\/\/www\.openstreetmap\.org\/relation\/\$\{feature\.boundary\.relationId\}`\}[^>]*rel="noopener noreferrer"/);
   });
 
-  it("the only request the app makes is the same-origin fetch of /geo/boundaries.json", () => {
+  it("the only requests the app makes are same-origin fetches of two literal URLs, one from each of two files", () => {
     const pattern = /\bfetch\s*\(|XMLHttpRequest|\bWebSocket\b|\bEventSource\b|sendBeacon|navigator\.geolocation/;
-    const offenders = sources("src").filter((f) => pattern.test(readFileSync(f, "utf8"))).map(rel);
-    assert.deepEqual(offenders, ["src/features/territory/components/Workspace.tsx"]);
-    const workspace = read("src/features/territory/components/Workspace.tsx");
-    assert.match(workspace, /const LAYER_URL = "\/geo\/boundaries\.json";/);
-    assert.equal(workspace.match(/\bfetch\s*\(/g)?.length, 1);
-    assert.match(workspace, /fetch\(LAYER_URL,/);
+    const offenders = sources("src").filter((f) => pattern.test(readFileSync(f, "utf8"))).map(rel).sort();
+    // The Territory Workspace (its own layer), and the globe prototype's one layer client (the globe's own file).
+    // A third place, or either file asking for the other's URL, fails here (rule and its negative tests: globe-network-guard.test.mts).
+    assert.deepEqual(offenders, ["src/features/globe/layer-client.ts", "src/features/territory/components/Workspace.tsx"]);
+    const expected: Record<string, string> = {
+      "src/features/territory/components/Workspace.tsx": "/geo/boundaries.json",
+      "src/features/globe/layer-client.ts": "/geo/globe-boundaries.json",
+    };
+    for (const file of offenders) {
+      const text = read(file);
+      assert.match(text, new RegExp(`const LAYER_URL = "${expected[file].replace(/[./]/g, "\\$&")}";`), `${file}: the URL is one literal, same-origin and relative`);
+      assert.equal(text.match(/\bfetch\s*\(/g)?.length, 1, `${file}: exactly one fetch`);
+      assert.match(text, /fetch\(LAYER_URL,/, `${file}: the fetch uses that constant`);
+    }
+    const client = read("src/features/globe/layer-client.ts");
+    assert.equal(client.match(/\bLAYER_URL\b/g)?.length, 2, "declared once and used once, nothing else");
+    assert.doesNotMatch(client, /\((?:[^)]*\b)?(?:url|href|path)\b[^)]*\)\s*(?::[^{]*)?\{/i, "the layer client takes no URL argument");
+    assert.match(client, /\{ signal, cache: "no-cache" \}/, "same request options as the workspace: no credentials, headers or body");
   });
 
   it("only scripts/fetch-osm.mts reaches the network, with a generic User-Agent and no address", () => {
