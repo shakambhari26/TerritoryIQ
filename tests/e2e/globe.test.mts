@@ -687,7 +687,7 @@ describe("globe prototype in a real browser", { skip: skipReason, timeout: 600_0
     const asserted = async (status: number, code: string | null) => {
       const response = await fetch(layerUrl);
       assert.equal(response.status, status, `${code ?? "ok"}: status`);
-      assert.equal(response.headers.get("cache-control"), "no-store");
+      assert.equal(response.headers.get("cache-control"), "private, no-store");
       assert.equal(response.headers.get("x-content-type-options"), "nosniff");
       if (code === null) return response;
       const text = await response.text();
