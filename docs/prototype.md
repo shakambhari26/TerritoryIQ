@@ -45,8 +45,15 @@ data-source/LGD_..._Blocks_...xls        (read-only) ─┤                     
 data/raw/osm/*.json (fetched once)                    ─┘                          ─> data/generated/build-report.json
 
 data/generated/boundaries.json ──> src/app/geo/boundaries.json/route.ts ──> GET /geo/boundaries.json (browser, validated before drawing)
-data/generated/dataset.json    ──> server pages (/ and /workspace)       ──> page HTML and payload
+data/generated/dataset.json    ──> /workspace (full dataset)              ──> page HTML and payload (holds staff names)
+data/generated/dataset.json    ──> buildOverviewData (server) ──> / (OverviewData, no staff name) ──> page HTML and payload
 ```
+
+`/` receives an `OverviewData` (`src/features/territory/overview-data.ts`), not the dataset: row, slot and
+crosswalk structure with each person replaced by an opaque integer key, plus the geography fields and source
+provenance the page prints. The browser still recalculates every figure from it, applying the reviewer's locally
+stored change log. `/globe` is fed by the globe manifest, which is separate from this diagram and also lists
+staff names (see the limitation below).
 
 - `scripts/verify-sources.mts` and `scripts/build-data.mts` hash all four source files before and
   after, and fail if any differs from the recorded value. Nothing writes to `data-source/`, and a
@@ -260,12 +267,16 @@ from another computer. Each layer below is checked by a test (`tests/unit/local-
 | No outbound requests from the app | The app makes one request, a same-origin `fetch` of `/geo/boundaries.json`. A browser test asserts every request goes to the app's own host. `scripts/fetch-osm.mts` is the only project code that reaches the network, and a test pins what it may send | The details panel has one link to `openstreetmap.org/relation/<id>`; it makes no request until a person clicks it, and carries `noopener noreferrer` and a public relation ID only. **The Next.js build and dev tools make their own requests, listed below: this row is about the app and the project's code, not the tooling** |
 | Sources | The four files in `data-source/` are hashed before and after every build and never written | |
 
-- **Staff names are in the served pages.** `/` and `/workspace` are prerendered with the full
-  dataset so the forms and counts work in the browser, so the page HTML and payload contain the
-  names (8 files under `.next/server` in the last build). They are not in `public/` or any file the
-  page downloads as an asset. Serving them is the point of the workspace, and the bind address and
-  host check are what keep them on this machine. Sending the browser only what each view needs,
-  instead of the whole dataset, is future work; any deployment must add real access control first.
+- **Staff names are in some served pages.** `/workspace` is prerendered with the full dataset so
+  the forms and counts work in the browser, and `/globe` embeds a manifest whose block details list
+  the workbook staff names, so the HTML and payload of those two pages contain the names (the dated
+  scan counts are in [security-notes.md](security-notes.md), SN-5). They are not in `public/` or any
+  file the page downloads as an asset. Serving them is the point of the workspace, and the bind
+  address and host check are what keep them on this machine. The Overview (`/`) is the exception:
+  it receives the name-free `OverviewData`, and its homepage build files held no staff name in the
+  2026-10-17 scan. The Overview's person keys are pseudonymous, not anonymous. Sending `/workspace`
+  and `/globe` only what each view needs is future work; any deployment must add real access
+  control first.
 - Boundary data is © OpenStreetMap contributors under the ODbL. Legal review of internal
   multi-user use and of LGD reuse is **not recorded**. The data is derived from the public
   Overpass API; no staff or workbook data was sent to it.

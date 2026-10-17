@@ -29,6 +29,7 @@ run the command.
 | `selection-layer.test.mts` | Selection by ID and URL hash, layer validation (provenance and the provisional status), wording helpers |
 | `data-integrity.test.mts` | The real build: counts against the Phase 0E audit, crosswalk rules, boundary provenance and shapes, no email or salary data, source hashes. Skipped, not failed, if `data:build` has not been run |
 | `home-globe-entry.test.mts` | The homepage "Explore on the globe" card, from the source: it imports only `next/link`, `Badge` and `Card` (nothing from `features/globe`, no Three.js, loader, renderer or boundary module, no dynamic import), is not a client component and takes no props, links to exactly `/globe` and `/workspace`, keeps its provisional and unofficial wording, has no figure, percentage, coverage or official, verified, confirmed, live or integrated claim, and sits between `PageHeader` and `OverviewDashboard` outside the dataset condition, with the Overview and its Workspace links unchanged |
+| `overview-data.test.mts` | The Overview's data boundary: on synthetic names, the serialised `OverviewData` and the model input rebuilt from it contain no name (however cased or escaped) and only the explicit fields; people are bare integer keys shared exactly where the model counts one name; the Overview's figures equal the full dataset's with no local changes and under every kind of local change; the one known limit (a local name equal to a workbook name counts as distinct); the homepage passes `OverviewData`, never the dataset, to the dashboard. On the real build, it reports counts only: same figures, no staff name in the serialised data, and the same scan does find them in the full dataset. Skipped, not failed, if `data:build` has not been run |
 | `local-boundary.test.mts` | The localhost-only boundary: `-H 127.0.0.1` on `dev` and `start`, the loopback Host check, no data in `public/`, no client import of the dataset, provisional and attributed layer, the only network request the app makes, the fetch script's limits, no write to `data-source/`, and the public-asset scanner itself on synthetic builds |
 | `globe-workspace-link.test.mts` | The globe-to-workspace hand-off: state, district, block and workbook-row URLs, encoding, unknown, empty and wrong-kind IDs, and, on the real build, that every district, block and row the globe lists gives a hash the workspace's own parser accepts and a map level that agrees with the globe |
 
@@ -38,6 +39,10 @@ run the command.
 the coverage line, no request off the app's own host, no staff name in any downloaded script,
 style, font or image, the boundary route's headers and content, a 403 for any non-loopback Host,
 the `/territory-map` redirect, accessibility (axe), phone width, and the build-output scan.
+`overview-privacy.test.mts`: the Territory Overview sends no staff name to the browser. The homepage HTML, its RSC payload and
+the prerendered homepage files under `.next/server/app` contain none of the dataset's names (reported as a count, never printed), with
+`/workspace` as the positive control; in Chrome the Overview shows every KPI, territory row, link count and state count the full
+dataset gives, and still applies a reviewer's local changes to them.
 `pins.test.mts`: the representative pins in Chrome. The 21 state pins against the pin logic, no staff name readable
 or logged until a pin is opened, the panel's dialog semantics, keyboard (Tab, Enter, Escape, focus return), district
 and territory drill-down pin counts, grouping and the toggle, reduced motion and eased motion, phone, tablet and wide

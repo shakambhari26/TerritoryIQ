@@ -1,5 +1,6 @@
 import { readFile } from "node:fs/promises";
 import path from "node:path";
+import { buildOverviewData, type OverviewData } from "./overview-data";
 import type { BoundaryLayerMeta, TerritoryDataset } from "./types";
 
 /**
@@ -28,6 +29,17 @@ const dataset = await load();
 
 export function getDataset(): TerritoryDataset | null {
   return dataset;
+}
+
+/**
+ * What the Overview page may send to the browser: structure and opaque person keys, no staff name (see
+ * `overview-data.ts`). Built once with the dataset. The Overview passes this, never `getDataset()`, to its client
+ * component.
+ */
+const overviewData: OverviewData | null = dataset ? buildOverviewData(dataset) : null;
+
+export function getOverviewData(): OverviewData | null {
+  return overviewData;
 }
 
 /**

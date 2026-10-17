@@ -41,7 +41,7 @@ Observed during Gate P0, after another Claude session started work in the same d
 | --- | --- | --- |
 | `public/geo/boundaries.json` (562,281 bytes) | OpenStreetMap district and block outlines in a folder Next serves verbatim at a URL, in `next start` and in any deployment | **Moved.** The layer is `data/generated/boundaries.json` (server only) and is delivered by the route handler `src/app/geo/boundaries.json/route.ts`. The old file was byte-identical (SHA-256 `A49939B7…6CC952`) and was removed; `public/` is empty |
 | `data/raw/osm/` (about 25 MB), `data/raw/fetch-osm.log` | Raw OpenStreetMap responses | Unchanged: server only, git-ignored |
-| `data/generated/dataset.json` | Generated dataset from `AREA MAPPING.xlsx`; holds staff names (B-25 open) | Unchanged: server only. It reaches the browser only inside the pages the local server renders (SN-5) |
+| `data/generated/dataset.json` | Generated dataset from `AREA MAPPING.xlsx`; holds staff names (B-25 open) | Unchanged: server only. It reaches the browser only inside the `/workspace` page and the globe manifest the local server renders; the Overview now receives a name-free subset (SN-5) |
 | Git ignore | `/data/` and `/public/geo/` ignored, which does not stop `next start` serving `public/geo/` | The ignore entries stay as a backstop; the guard test now fails if any data file is in `public/` at all |
 
 Decision: the project's direction is a localhost-only prototype that may show provisional OpenStreetMap outlines, with attribution and a clear provisional status. The Gate P0 rule that no boundary data may exist is retired for the prototype. What the guard test protects is that data is never a static public asset, and that is kept.
@@ -66,15 +66,40 @@ Update, later on 2026-10-15: the lock file is no longer in `data-source/`, and t
 
 ## SN-5. Staff names are present in served pages
 
-`/` and `/workspace` embed the dataset so the counts, lists and forms work in the browser. `/globe`
+`/workspace` embeds the dataset so the counts, lists and forms work in the browser. `/globe`
 (until the Phase 1 route move, `/globe-prototype`) embeds the globe manifest, whose block records list the workbook staff
 names for the details panel; its outline file is served separately by `/geo/globe-boundaries.json` and holds no names. The names
-are therefore in the page HTML and payload (8 files under `.next/server` in the build of 2026-10-15; 24 of 259 in the
-Phase 1 build of 2026-10-17, which counts the `/globe` pages and the route cache as well),
+are therefore in the page HTML and payload (historical counts from earlier builds, not current: 8 files under `.next/server`
+in the build of 2026-10-15; 24 of 259 in the Phase 1 build of 2026-10-17, before the Overview change, which counted the
+`/globe` pages and the route cache as well; the current build's result is in the evidence note below),
 not in `public/` or in any script, style, font or image (scanned: `npm run verify:build`, plus a
 browser test over what the page downloads). With the bind address and Host check, only this machine
 can read them. This is not acceptable for any shared or hosted setting: before then, send each view
 only what it needs, and add authentication and access control (B-15, B-16, B-25).
+
+**Overview (`/`): minimised.** The homepage no longer carries a staff name. `OverviewDashboard` receives an `OverviewData`
+(`src/features/territory/overview-data.ts`): row, slot and crosswalk structure, the few geography fields the page prints, and
+source-file provenance, with every person replaced by an opaque integer key (the order of first appearance, not derived from
+the name). It carries no name, source row, block label, relation ID or review reason. The page still recomputes every figure
+in the browser, because the reviewer's browser-local change log is applied to all of them, and the keys keep the distinct-name
+count exact when a local change clears or overwrites a slot. `tests/unit/overview-data.test.mts` (synthetic names, and the real
+build, reporting counts only) and `tests/e2e/overview-privacy.test.mts` (homepage HTML, RSC payload, prerendered files, with
+`/workspace` as the positive control) guard it. **Known limit:** the browser cannot tell that a name a reviewer types in a
+local change equals a workbook name, so the distinct-name figure counts it as one more than the Workspace model would. Every
+other figure is identical. `/workspace` and `/globe` are unchanged and still send names; each needs its own review.
+The person keys are pseudonymous, not anonymous: they show which rows share a person and how many people a slot lists, so
+someone who also holds the workbook could re-identify people from them.
+
+**Evidence note, 2026-10-17 (independent review of the Overview change, build of that date).** Local build and scan results
+only; they are not proof that any production or hosted deployment is secure, and the app remains localhost-only with no
+authentication.
+
+- The homepage's HTML, RSC and prerendered files under `.next/server/app` contained zero matches for the 227-name detector
+  (every distinct name in the dataset; the detector also matches JSON-escaped and HTML-escaped forms and any letter case).
+- `npm run verify:assets` found zero staff names across 34 public files (`public/` and `.next/static`) and no data file in `public/`.
+- `npm run verify:build` found staff names in 16 of 259 files under `.next/server`. They were confined to the `/workspace` and
+  `/globe` route output, including their route-cache copies, as designed. None was in the homepage output.
+- `/workspace` and `/globe` therefore still expose staff names in their page data; only the Overview is name-free.
 
 ## SN-6. What the localhost boundary does not protect against
 

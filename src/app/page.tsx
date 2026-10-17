@@ -4,7 +4,7 @@ import { PageHeader } from "@/components/layout/PageHeader";
 import { Badge } from "@/components/ui/Badge";
 import { DatasetMissing } from "@/features/territory/components/DatasetMissing";
 import { OverviewDashboard } from "@/features/territory/components/OverviewDashboard";
-import { getDataset, getLayerMeta } from "@/features/territory/dataset.server";
+import { getLayerMeta, getOverviewData } from "@/features/territory/dataset.server";
 
 /**
  * Overview: real figures from the workbook and the official Local Government
@@ -12,7 +12,7 @@ import { getDataset, getLayerMeta } from "@/features/territory/dataset.server";
  * depend on boundary data, so it is complete even where no outline exists.
  */
 export default function OverviewPage() {
-  const dataset = getDataset();
+  const overview = getOverviewData();
   return (
     <>
       <PageHeader
@@ -31,7 +31,7 @@ export default function OverviewPage() {
         }
       />
       <GlobeEntryCard />
-      {dataset ? <OverviewDashboard dataset={dataset} layerMeta={getLayerMeta()} /> : <DatasetMissing />}
+      {overview ? <OverviewDashboard data={overview} layerMeta={getLayerMeta()} /> : <DatasetMissing />}
     </>
   );
 }
