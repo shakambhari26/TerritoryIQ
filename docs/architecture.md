@@ -49,7 +49,10 @@ anything marked **Proposed** is a direction, not a commitment. The prototype its
   globe opens in the 2D workspace through a URL hash built from validated IDs (`features/globe/workspace-link.ts`,
   `#feature=` for a district or block, `#unit=` for a workbook row, none for the state): no shared selection store. Three.js is
   imported only inside `features/globe` and loaded only by `/globe`. The outlines remain provisional and unofficial; see
-  [globe-prototype.md](globe-prototype.md).
+  [globe-prototype.md](globe-prototype.md). The Overview also carries an "Explore on the globe" card between its heading and
+  the dashboard (`components/dashboard/GlobeEntryCard`): a server component with no props and no import from
+  `features/globe`, so it renders whether or not the data is built and the homepage still downloads no Three.js, texture or
+  outline file. It is two plain links (`/globe`, `/workspace`) with the default Next.js prefetching and carries no figures.
 - **Selection is by internal ID only** (`TU-`, `GB-`, `GD-`, `ST-`), never by name or label.
 - **Allocation states are kept apart:** allocated, confirmed unallocated, missing / unverified,
   conflicting. A missing record is never read as unallocated. `Vacant` is a slot-level marker, not a

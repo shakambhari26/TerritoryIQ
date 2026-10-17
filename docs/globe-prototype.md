@@ -8,6 +8,9 @@ only (not pushed, no pull request, not merged). With it the globe lives at **`/g
 navigation as a locally integrated prototype**; `/globe-prototype` redirects to it (temporary, 307); and a selected place
 offers an "Open in 2D workspace" link (see "Navigation and hand-off to the 2D workspace"). The root page is still the
 Territory Overview (the globe is not the default entry), and the Territory Workspace and its map are unchanged.
+**Phase 2**, on the branch `feat/globe-home-entry` (stacked on Phase 1, local only: not pushed, no pull request, not merged),
+adds an "Explore on the globe" entry card to that Overview (see "Homepage entry card (Phase 2)"); it does not change the
+default homepage.
 
 What this does **not** mean:
 
@@ -342,6 +345,34 @@ python -I scripts/globe/build_overlay.py     # data/generated/globe-boundaries.j
 - **If the file is absent or differs** (not built, another dataset, edited) the route answers 404 or 500 with a code, no
   outline is drawn, and the globe, the place list and the retry strip keep working. Never replace it with the
   workspace's layer: that is refused as another dataset.
+
+## Homepage entry card (Phase 2)
+
+- **What it is.** `src/components/dashboard/GlobeEntryCard.tsx`, rendered by `src/app/page.tsx` between the page heading and
+  `OverviewDashboard`. The heading, KPI cards, panels, territory table and the two existing "Open the workspace" links are
+  unchanged, and `/` is still the Territory Overview; the globe does not become the default page.
+- **Content.** Heading "Explore on the globe", a "Provisional outlines" badge, one sentence on exploring places on an
+  interactive 3D globe and inspecting provisional geographic outlines, and a permanent notice: the outlines use unofficial
+  OpenStreetMap geometry, are not official boundaries, and do not provide complete district or block coverage. Two links:
+  "Explore on the globe" to `/globe` and "Go to the 2D workspace" to `/workspace`. It carries no number, percentage or claim of
+  verified, confirmed, live or complete coverage, and no image or decorative SVG.
+- **Always shown.** It is a server component with no props and does not read the geographic data, so it renders when the
+  dataset is missing too (the Overview then shows its "data has not been built" state below it, and `/globe` shows its own
+  "globe data has not been built" state).
+- **Nothing globe-related loads on `/`.** The card imports only `next/link`, `Badge` and `Card`. The links keep Next.js's
+  default prefetching; a browser test observes `/` long enough for that to run (and checks it did, for `/globe` and
+  `/workspace`) and finds no Three.js, no `/globe/` texture, and no request for `/geo/globe-boundaries.json` or
+  `/geo/boundaries.json`, with `/globe` and `/workspace` as positive controls. A unit test keeps the card and the page free of
+  any `features/globe`, Three.js, loader, renderer or boundary import.
+- **Layout.** One column on a phone with full-width links at least 44 px high (the workspace link below the globe link); from
+  `lg` the text sits on the left and the two links on the right on one line, about 125 px high, so the KPI row is on screen at
+  1440 x 900. Tested at 390, 768 and 1440 px: no sideways scroll, no overlap with the KPI row.
+- **Missing data, checked by hand.** `/` is prerendered at build time, so no production-build test can show it without the
+  data. It was checked once on 2026-10-17 in a development server with `data/generated/` moved aside: `/` rendered the card
+  above the Overview's "data has not been built" state, and `/globe` showed its own "globe data has not been built" state.
+  The automated checks for the card are the unit test and the Phase 2 tests in `tests/e2e/globe-integration.test.mts`
+  (see [tests/README.md](../tests/README.md)).
+- **Not decided.** Whether the globe should become the default page is still a separate decision.
 
 ## Performance notes
 

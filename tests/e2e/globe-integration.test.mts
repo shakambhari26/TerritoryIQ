@@ -6,7 +6,7 @@ import { after, before, describe, it } from "node:test";
 import { chromium, type Browser, type BrowserContext, type Page } from "playwright-core";
 import { mergeLayer } from "../../src/features/globe/layer-merge.ts";
 import type { GlobeManifest, GlobeOverlay } from "../../src/features/globe/types.ts";
-import { browserPath, skipReason, startServer, type Server } from "./harness.mts";
+import { browserPath, runAxe, skipReason, startServer, type Server } from "./harness.mts";
 
 /**
  * Phase 1 of the globe integration, in a real browser: the permanent /globe route, the redirect from the old
@@ -332,5 +332,179 @@ describe("globe integration (Phase 1) in a real browser", { skip: skipReason, ti
     const globeLayer = await fetch(`${server.baseUrl}/geo/globe-boundaries.json`);
     assert.equal(globeLayer.status, 200);
     assert.equal(createHash("sha256").update(Buffer.from(await globeLayer.arrayBuffer())).digest("hex"), manifest.meta.inputs["globe-boundaries.json"].sha256, "the globe's own file, validated");
+  });
+
+  // ------------------------------------------- Phase 2: the homepage entry card --
+  describe("the homepage 'Explore on the globe' card", () => {
+    const CARD = '[data-testid="globe-entry"]';
+    const PRIMARY = '[data-testid="globe-entry-primary"]';
+    const SECONDARY = '[data-testid="globe-entry-secondary"]';
+    const KPIS = ["kpi-territories", "kpi-allocated", "kpi-outlined", "kpi-staffing"];
+
+    const box = async (page: Page, selector: string) => (await page.locator(selector).first().boundingBox())!;
+    const overflow = (page: Page) => page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
+
+    /** Every request a page makes while sitting on a route, with the source of every script, for long enough to include link prefetching. */
+    async function observe(url: string, settle = 5000) {
+      const context = await browser.newContext({ viewport: { width: 1440, height: 900 } });
+      const page = await context.newPage();
+      const urls: string[] = [];
+      const scripts = new Map<string, string>();
+      const pending: Promise<void>[] = [];
+      page.on("request", (request) => void urls.push(request.url()));
+      page.on("response", (response) => {
+        if (response.request().resourceType() === "script") pending.push(response.text().then((text) => void scripts.set(new URL(response.url()).pathname, text)).catch(() => {}));
+      });
+      await page.goto(`${server.baseUrl}${url}`, { waitUntil: "networkidle" });
+      await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
+      await page.waitForTimeout(settle);
+      await page.evaluate(() => window.scrollTo(0, 0));
+      await page.waitForTimeout(1000);
+      await Promise.all(pending);
+      await context.close();
+      return { paths: urls.map((u) => new URL(u).pathname), scripts, rsc: urls.filter((u) => u.includes("_rsc=")).map((u) => new URL(u).pathname) };
+    }
+
+    it("/ is still the Territory Overview: heading, four KPI cards, the panels and all 21 territory rows", async () => {
+      const { page, context, errors } = await open("/");
+      assert.equal(await page.getByRole("heading", { level: 1 }).textContent(), "Territory Overview");
+      await page.getByTestId("overview").waitFor();
+      for (const id of KPIS) assert.equal(await page.getByTestId(id).count(), 1, id);
+      assert.equal(await page.locator('[data-testid="kpi-territories"] dd').first().innerText(), "21");
+      for (const id of ["panel-row-states", "panel-block-states", "panel-links", "panel-gaps", "territory-table"]) assert.equal(await page.getByTestId(id).count(), 1, id);
+      assert.equal(await page.locator("[data-territory-row]").count(), 21);
+      assert.equal(await page.getByRole("link", { name: "Open the workspace" }).count(), 2, "the header link and the territory table's link are both still there");
+      for (const link of await page.getByRole("link", { name: "Open the workspace" }).all()) assert.equal(await link.getAttribute("href"), "/workspace");
+      assert.deepEqual(errors, []);
+      await context.close();
+    });
+
+    it("the card renders with its heading, badge, notice and two links, in order, between the page header and the Overview", async () => {
+      const { page, context } = await open("/");
+      const card = page.locator(CARD);
+      assert.equal(await card.count(), 1);
+      assert.equal(await card.getByRole("heading", { level: 2 }).textContent(), "Explore on the globe");
+      assert.equal(await card.locator("span").filter({ hasText: /^Provisional outlines$/ }).count(), 1, "the badge");
+      const text = (await card.textContent()) ?? "";
+      assert.match(text, /interactive 3D globe/);
+      assert.match(text, /provisional geographic outlines/);
+      assert.match(await page.getByTestId("globe-entry-notice").textContent() ?? "", /unofficial OpenStreetMap geometry, are not official boundaries, and do not provide complete district or block coverage/);
+      assert.ok(!/\d/.test(text.replace(/[23]D/g, "")), `no figure in the card: ${text}`);
+      assert.ok(!/\b(verified|confirmed|live|fully integrated)\b/i.test(text), "no verified, confirmed, live or fully-integrated claim");
+      const links = await card.getByRole("link").evaluateAll((anchors) => anchors.map((a) => [a.textContent?.trim(), a.getAttribute("href")]));
+      assert.deepEqual(links, [["Explore on the globe", "/globe"], ["Go to the 2D workspace", "/workspace"]]);
+      // Between the header (h1) and the Overview (the KPI row), in the page's order.
+      const order = await page.evaluate(() => {
+        const position = (el: Element | null) => (el ? el.getBoundingClientRect().top + window.scrollY : NaN);
+        return [position(document.querySelector("h1")), position(document.querySelector('[data-testid="globe-entry"]')), position(document.querySelector('[data-testid="kpi-territories"]'))];
+      });
+      assert.ok(order[0] < order[1] && order[1] < order[2], `h1, card, KPIs: ${order}`);
+      assert.equal(await page.locator("main img, main svg, main canvas").count(), 0, "no image or canvas on the page");
+      await context.close();
+    });
+
+    it("the primary link opens /globe and the existing globe becomes ready; Back keeps the Overview, and the secondary link opens /workspace", async () => {
+      const { page, context } = await open("/");
+      await page.locator(PRIMARY).click();
+      await page.waitForURL("**/globe");
+      await ready(page);
+      assert.equal(await page.getByRole("heading", { level: 1 }).textContent(), "Globe");
+      assert.equal(await page.locator('[data-testid="globe-canvas-host"] canvas').count(), 1);
+      await page.waitForSelector(`${ROOT_SEL}[data-outlines="ready"]`);
+
+      await page.goBack();
+      await page.waitForURL((u) => u.pathname === "/");
+      assert.equal(await page.getByRole("heading", { level: 1 }).textContent(), "Territory Overview");
+      await page.getByTestId("overview").waitFor();
+      assert.equal(await page.locator("[data-territory-row]").count(), 21);
+      assert.equal(await page.locator(CARD).count(), 1);
+
+      await page.locator(SECONDARY).click();
+      await workspaceAt(page, "state");
+      assert.equal(new URL(page.url()).pathname, "/workspace");
+      await context.close();
+    });
+
+    for (const [width, height] of [[390, 844], [768, 1024], [1440, 900]] as const) {
+      it(`at ${width}px: no sideways scroll, the card stays inside the page and clear of the KPI row`, async () => {
+        const { page, context } = await open("/", { width, height });
+        await page.getByTestId("overview").waitFor();
+        assert.ok((await overflow(page)) <= 0, `overflows by ${await overflow(page)}px`);
+        const card = await box(page, CARD);
+        assert.ok(card.x >= 0 && card.x + card.width <= width, `the card is within ${width}px: ${JSON.stringify(card)}`);
+        const heading = await box(page, "h1");
+        assert.ok(card.y >= heading.y + heading.height, "the card starts below the page header");
+        const kpiTops = await Promise.all(KPIS.map(async (id) => (await box(page, `[data-testid="${id}"]`)).y));
+        assert.ok(card.y + card.height <= Math.min(...kpiTops), `the card (bottom ${card.y + card.height}) does not overlap the KPI row (top ${Math.min(...kpiTops)})`);
+        for (const selector of [PRIMARY, SECONDARY]) {
+          const link = await box(page, selector);
+          assert.ok(link.x >= card.x && link.x + link.width <= card.x + card.width, `${selector} is inside the card`);
+          assert.ok(link.y >= card.y && link.y + link.height <= card.y + card.height, `${selector} is inside the card, vertically`);
+          assert.ok(link.height >= 44, `${selector} is ${link.height}px high`);
+        }
+        const [primary, secondary] = [await box(page, PRIMARY), await box(page, SECONDARY)];
+        if (width < 640) {
+          assert.ok(primary.width >= card.width - 48, `the primary link is full width on a phone (${primary.width} of ${card.width})`);
+          assert.ok(secondary.y >= primary.y + primary.height, "the workspace link is below the primary link");
+        }
+        if (width >= 1024) {
+          const text = await box(page, `${CARD} h2`);
+          assert.ok(primary.x > text.x + text.width && secondary.x > primary.x, "text on the left, actions grouped to the right");
+          assert.ok(Math.abs(primary.y - secondary.y) < 4, "the two actions sit on one line");
+          assert.ok(card.height <= 160, `compact on a desktop (${card.height}px)`);
+          const kpi = await box(page, '[data-testid="kpi-territories"]');
+          assert.ok(kpi.y + kpi.height <= height, `the KPI row is visible without scrolling at ${width} x ${height} (bottom ${kpi.y + kpi.height})`);
+        }
+        await context.close();
+      });
+    }
+
+    it("both links are reachable by keyboard in order and show a focus ring", async () => {
+      const { page, context } = await open("/", { width: 390, height: 844 });
+      await page.locator(PRIMARY).focus();
+      assert.equal(await page.evaluate(() => document.activeElement?.getAttribute("data-testid")), "globe-entry-primary");
+      await page.keyboard.press("Tab");
+      assert.equal(await page.evaluate(() => document.activeElement?.getAttribute("data-testid")), "globe-entry-secondary");
+      const ring = await page.evaluate(() => {
+        const style = getComputedStyle(document.activeElement!);
+        return { style: style.outlineStyle, width: parseFloat(style.outlineWidth) };
+      });
+      assert.ok(ring.style !== "none" && ring.width >= 2, `a drawn focus ring after Tab: ${JSON.stringify(ring)}`);
+      await page.keyboard.press("Shift+Tab");
+      await page.keyboard.press("Enter");
+      await page.waitForURL("**/globe");
+      await context.close();
+    });
+
+    for (const [width, height] of [[390, 844], [1440, 900]] as const) {
+      it(`has no serious or critical accessibility violation at ${width}px`, async () => {
+        const { page, context } = await open("/", { width, height });
+        await page.getByTestId("overview").waitFor();
+        await page.waitForTimeout(500);
+        const violations = await runAxe(page);
+        const serious = violations.filter((v: { impact: string }) => v.impact === "serious" || v.impact === "critical");
+        assert.deepEqual(serious, [], JSON.stringify(violations));
+        await context.close();
+      });
+    }
+
+    it("opening / loads no Three.js, no globe texture, and neither boundary file, even after the default link prefetching has run", async () => {
+      // Control first: the detector sees all of it where it should be.
+      const globe = await observe("/globe", 2500);
+      assert.ok(hasThree(globe.scripts).length > 0, "control: /globe loads the renderer");
+      assert.ok(globe.paths.includes("/globe/earth-day-4k.jpg") || globe.paths.includes("/globe/earth-day-8k.jpg"), "control: /globe loads a texture");
+      assert.ok(globe.paths.includes("/geo/globe-boundaries.json"), "control: /globe loads its own outline file");
+      const workspace = await observe("/workspace", 2500);
+      assert.ok(workspace.paths.includes("/geo/boundaries.json"), "control: /workspace loads the workspace's outline file");
+
+      const home = await observe("/");
+      assert.ok(home.scripts.size > 0, "/ loads scripts");
+      assert.ok(home.rsc.includes("/globe") && home.rsc.includes("/workspace"), `the default prefetching ran and reached /globe and /workspace (${home.rsc})`);
+      assert.deepEqual(hasThree(home.scripts), [], "/ does not load Three.js, including through prefetch");
+      assert.deepEqual(home.paths.filter((p) => p.startsWith("/globe/")), [], "no globe texture or other /globe/ asset");
+      assert.equal(home.paths.includes("/geo/globe-boundaries.json"), false);
+      assert.equal(home.paths.includes("/geo/boundaries.json"), false);
+      assert.deepEqual(home.paths.filter((p) => /\/(?:three|earth-)/i.test(p)), []);
+    });
   });
 });
