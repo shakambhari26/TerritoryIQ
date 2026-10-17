@@ -14,11 +14,11 @@ import { dataset, launch, openPage, skipReason, startServer, type Server } from 
 // The thresholds sit just under what the second redesign measured (the first redesign measured 579 px and 35% on the
 // desktop and 335 px and 21% on the laptop, and the first map 517 px and 28%, 253 px and 11%), so a change that shrinks the
 // state or the map fails here. `minState` is the state's own height on screen.
-const VIEWPORTS: Array<{ name: string; width: number; height: number; minMapHeight: number; minArea: number; minState: number }> = [
-  { name: "desktop", width: 1440, height: 900, minMapHeight: 590, minArea: 0.37, minState: 540 },
-  { name: "laptop", width: 1280, height: 720, minMapHeight: 385, minArea: 0.27, minState: 340 },
-  { name: "tablet", width: 820, height: 1180, minMapHeight: 810, minArea: 0.54, minState: 730 },
-  { name: "phone", width: 390, height: 844, minMapHeight: 580, minArea: 0.54, minState: 415 },
+const VIEWPORTS: Array<{ name: string; width: number; height: number; minMapHeight: number; minArea: number; minState: number; minLabels: number }> = [
+  { name: "desktop", width: 1440, height: 900, minMapHeight: 590, minArea: 0.37, minState: 540, minLabels: 23 },
+  { name: "laptop", width: 1280, height: 720, minMapHeight: 385, minArea: 0.27, minState: 340, minLabels: 21 },
+  { name: "tablet", width: 820, height: 1180, minMapHeight: 810, minArea: 0.54, minState: 730, minLabels: 23 },
+  { name: "phone", width: 390, height: 844, minMapHeight: 580, minArea: 0.54, minState: 415, minLabels: 23 },
 ];
 
 interface R {
@@ -224,6 +224,8 @@ describe("the map's cartography at desktop, laptop, tablet and phone sizes", { s
 
       // Names, markers and furniture.
       assert.ok(m.labels + m.hidden === 23, `every district is named or marked with a dot (${m.labels} + ${m.hidden})`);
+      // Measured on the production build: the first three name every district, the laptop's short map leaves two to a dot.
+      assert.ok(m.labels >= v.minLabels, `${m.labels} district names are drawn; at least ${v.minLabels} should be`);
       assert.deepEqual(m.labelLabel, [], "names overlap each other");
       assert.deepEqual(m.labelMarker, [], "a name is under a marker");
       assert.deepEqual(m.markerMarker, [], "markers overlap each other");

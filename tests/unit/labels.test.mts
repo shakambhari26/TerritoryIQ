@@ -13,6 +13,13 @@ const overlap = (a: Rect, b: Rect) => a.x < b.x + b.width && b.x < a.x + a.width
 const area = { width: 400, height: 300 };
 const request = (id: string, x: number, y: number, text = id, r = 20, priority = r): LabelRequest => ({ id, text, x, y, r, priority });
 
+/** No leader line passes within `ANCHOR_CLEAR` of any other area's anchor dot. */
+function assertNoLineThroughDot(placed: readonly PlacedLabel[], requests: readonly LabelRequest[]) {
+  for (const p of placed.filter((q) => q.leader)) {
+    for (const other of requests.filter((r) => r.id !== p.id)) assert.ok(distanceToSegment(other, p.anchor, leaderEnd(p)) >= ANCHOR_CLEAR - 1e-6, `${p.id}'s line passes through ${other.id}'s dot`);
+  }
+}
+
 function assertTidy(placed: readonly PlacedLabel[], size: { width: number; height: number }, obstacles: readonly Rect[] = []) {
   for (const [i, a] of placed.entries()) {
     assert.ok(a.box.x >= 0 && a.box.y >= 0 && a.box.x + a.box.width <= size.width && a.box.y + a.box.height <= size.height, `${a.id} is inside the map`);
@@ -79,18 +86,34 @@ describe("placeLabels (free)", () => {
     const crowd = Array.from({ length: 8 }, (_, i) => request(`D${i}`, 200 + i * 12, 150 + (i % 2) * 14, `District ${i}`, 10 + i));
     const { placed, omitted } = placeLabels(crowd, { area, fontSize: 11, mode: "free" });
     assert.equal(placed.length + omitted.length, 8, "each name is placed or reported as omitted");
-    assert.ok(placed.length >= 6, `${placed.length} placed`);
+    // Seven of eight. The eighth name used to be placed too, but only by running a line straight through other districts'
+    // dots (four of the eight lines did); with that ruled out it has no place, and is reported rather than drawn badly.
+    assert.ok(placed.length >= 7, `${placed.length} placed`);
     assertTidy(placed, area);
+    assertNoLineThroughDot(placed, crowd);
   });
 
-  it("with anchors stacked within a few pixels, every name is placed tidily or reported, never drawn over another or given a line through a dot", () => {
+  it("with anchors a few pixels apart, most names are still placed, tidily and without a line through another's dot", () => {
+    for (const gap of [3, 4, 6, 8]) {
+      const stack = Array.from({ length: 8 }, (_, i) => request(`D${i}`, 200 + i * gap, 150 + i * gap, `District ${i}`, 10 + i));
+      const { placed, omitted } = placeLabels(stack, { area, fontSize: 11, mode: "free" });
+      assert.equal(placed.length + omitted.length, 8, `${gap} px apart: each name is placed or reported as omitted`);
+      assert.ok(placed.length >= 3, `${gap} px apart: ${placed.length} placed`);
+      assert.ok(placed.some((p) => p.leader), `${gap} px apart: the check below has lines to look at`);
+      assertTidy(placed, area);
+      assertNoLineThroughDot(placed, stack);
+    }
+  });
+
+  it("with anchors closer together than a dot is wide, no line can avoid the other dots, so the names are reported and never drawn wrongly", () => {
+    // Anchors 1.4 px apart are one blob on the map: every leader line would start inside the neighbours' dots. The names are
+    // reported (the map draws a dot and names the district on hover) instead of being given a line to the wrong dot.
     const stack = Array.from({ length: 8 }, (_, i) => request(`D${i}`, 200 + i, 150 + i, `District ${i}`, 10 + i));
     const { placed, omitted } = placeLabels(stack, { area, fontSize: 11, mode: "free" });
     assert.equal(placed.length + omitted.length, 8, "each name is placed or reported as omitted");
     assertTidy(placed, area);
-    for (const p of placed.filter((q) => q.leader)) {
-      for (const other of stack.filter((r) => r.id !== p.id)) assert.ok(distanceToSegment(other, p.anchor, leaderEnd(p)) >= ANCHOR_CLEAR - 1e-6, `${p.id}'s line passes through ${other.id}'s dot`);
-    }
+    assertNoLineThroughDot(placed, stack);
+    assert.deepEqual([...omitted].sort(), stack.map((r) => r.id).sort(), "all are reported: none is placed on a line through a neighbour's dot");
   });
 
   it("keeps clear of obstacles and of the map edge", () => {
@@ -243,6 +266,9 @@ describe("district labels on the real statewide overview", { skip: built ? false
   const sizes: Array<[string, number, number, number]> = [
     ["desktop map", 870, 600, 23],
     ["wide desktop map", 1300, 640, 23],
+    // The map a portrait tablet (820 x 1180) really gets. Every name has a place there.
+    ["portrait tablet map", 770, 826, 23],
+    // A small, wide-ish canvas: Howrah has a place only on a line longer than the map allows (see the test below).
     ["tablet map", 700, 520, 22],
     // On a phone the names that cannot fit are reported (the map marks them with a dot and names them on hover or tap).
     ["phone map", 356, 460, 15],
@@ -262,7 +288,7 @@ describe("district labels on the real statewide overview", { skip: built ? false
       });
       const obstacles = controlObstacles({ width, height });
       const fontSize = districtFontSize(width);
-      const { placed, omitted } = placeLabels(requests, { area: { width, height }, fontSize, mode: "free", obstacles });
+      const { placed, omitted } = placeLabels(requests, { area: { width, height }, fontSize, mode: "free", obstacles, maxLeader: LEADER_MAX });
       assert.equal(placed.length + omitted.length, 23, "every district is placed or reported, none is dropped silently");
       assert.ok(placed.length >= atLeast, `${placed.length} placed, ${omitted.join(", ")} omitted`);
       if (atLeast === 23) assert.deepEqual(omitted, [], "every district name has a place");
@@ -271,6 +297,30 @@ describe("district labels on the real statewide overview", { skip: built ? false
       for (const label of placed) assert.equal(label.lines.join(" "), nameOf.get(label.id));
     });
   }
+
+  // The one name the 700 x 520 canvas leaves out is Howrah, and the reason is the length cap, not overlap: with no cap it is
+  // placed on a line longer than LEADER_MAX, which reads as belonging to some other district. (The map draws a dot for it and
+  // names it on hover; at a portrait tablet's real map size it has a place.)
+  it("leaves Howrah out at 700 x 520 only because its line would be longer than the cap", async () => {
+    const layer = JSON.parse(await readFile(layerPath, "utf8")) as BoundaryLayer;
+    const data = JSON.parse(await readFile(datasetPath, "utf8")) as TerritoryDataset;
+    const nameOf = new Map(data.features.map((f) => [f.id, f.name]));
+    const [width, height] = [700, 520];
+    const districts = layer.shapes.filter((s) => s.featureId.startsWith("GD-"));
+    const viewport = fitClear(unionBounds(districts.map((s) => s.bbox as Bounds))!, { width, height });
+    const requests = districts.map((s) => {
+      const p = toScreen(viewport, s.anchor![0], s.anchor![1]);
+      return { id: s.featureId, text: nameOf.get(s.featureId)!, x: p.x, y: p.y, r: s.anchor![2] * viewport.scale, priority: s.anchor![2] };
+    });
+    const options = { area: { width, height }, fontSize: districtFontSize(width), mode: "free" as const, obstacles: controlObstacles({ width, height }) };
+    const capped = placeLabels(requests, { ...options, maxLeader: LEADER_MAX });
+    assert.deepEqual(capped.omitted.map((id) => nameOf.get(id)), ["Howrah"]);
+    const uncapped = placeLabels(requests, options);
+    assert.deepEqual(uncapped.omitted, [], "without the cap every name has a place");
+    const howrah = uncapped.placed.find((p) => nameOf.get(p.id) === "Howrah")!;
+    const end = leaderEnd(howrah);
+    assert.ok(Math.hypot(howrah.anchor.x - end.x, howrah.anchor.y - end.y) > LEADER_MAX, "and Howrah's line is longer than the cap");
+  });
 
   // The lines themselves: none crosses another, none runs through another district's dot or another name, and the few
   // that exist are short, at every size the workspace produces.

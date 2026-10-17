@@ -1,9 +1,13 @@
 # Globe prototype
 
-Status as of 2026-10-17: ported onto an integration branch cut from `origin/main` 3acb994 and awaiting review. It is
-**not linked from the navigation and is not the default entry**: `/globe-prototype` is reached only by its address, the
-Territory Workspace and its map are unchanged, and nothing here has been committed or pushed. Written for the people
-reviewing it before any decision to make it the entry experience.
+Status as of 2026-10-17: committed locally as `2c01cee` on the integration branch `integrate/globe-prototype`, on top of
+local `main` `c4d1b1c` (the 2D map redesign, itself one commit ahead of `origin/main` 3acb994), and awaiting review. The
+branch has **not been pushed, published, merged or approved**; `main` and `origin/main` are untouched. It is
+**not linked from the navigation and is not the default entry**: `/globe-prototype` is reached only by its address, and
+the globe commit leaves the Territory Workspace and its map unchanged. Still unverified: rendering on a real GPU (every
+WebGL run so far used software WebGL) and keyboard input from a physical AltGr key. The outlines are provisional and
+unofficial OpenStreetMap geometry. Written for the people reviewing it before any decision to make it the entry
+experience.
 
 Product direction (decided): the globe is meant to become the **geographic entry experience**; the existing 2D
 Territory Workspace stays for detailed operational analysis. Neither is replaced or modified in this prototype phase.
@@ -317,8 +321,9 @@ Measured in this environment (software WebGL, so frame rate is not representativ
 
 ## Verification (isolated copy of `origin/main`, 3acb994)
 
-Run on 2026-10-16 in the isolated copy (`D:\Shakambhari\_iso\globe`), after the outline-endpoint, independent-loading and
-record-schema changes:
+This table is the earlier run on the prototype alone, before it was ported onto the 2D map redesign (`c4d1b1c`); its
+counts are not those of the integrated branch. Run on 2026-10-16 in the isolated copy (`D:\Shakambhari\_iso\globe`),
+after the outline-endpoint, independent-loading and record-schema changes:
 
 | Check | Result |
 | --- | --- |
