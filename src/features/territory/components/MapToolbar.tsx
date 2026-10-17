@@ -90,7 +90,7 @@ export function MapToolbar({
             ))}
           </ol>
         </nav>
-        <span data-testid="map-level" className="text-[0.6875rem] font-medium uppercase tracking-wide text-ink-subtle @max-4xl:sr-only">
+        <span data-testid="map-level" className="text-[0.6875rem] font-medium uppercase tracking-wide text-ink-subtle @max-5xl:sr-only">
           {LEVEL_LABEL[context.level]}
         </span>
       </div>
@@ -104,7 +104,7 @@ export function MapToolbar({
             title={layer.hint}
             onClick={() => onLayerMode(layer.value)}
             className={cn(
-              "h-8 flex-1 rounded-md px-2.5 sm:flex-none",
+              "h-8 flex-auto whitespace-nowrap rounded-md px-2 @3xl:px-2.5 sm:flex-none",
               layerMode === layer.value ? "bg-navy-700 text-on-navy shadow-[inset_0_-2px_0_var(--color-ember)]" : "text-ink-muted hover:text-ink",
             )}
           >
@@ -126,7 +126,7 @@ export function MapToolbar({
         <svg aria-hidden="true" focusable="false" viewBox="0 0 28 36" width="10" height="13" className="shrink-0 overflow-visible">
           <path d="M14 35C14 35 3 22.5 3 13.5a11 11 0 1 1 22 0C25 22.5 14 35 14 35Z" fill={pinsOn ? "var(--color-ember)" : "none"} stroke="var(--color-ember)" strokeWidth="2.5" />
         </svg>
-        <span className="@max-4xl:sr-only">Representatives</span>
+        <span className="@max-5xl:sr-only">Representatives</span>
         <span className="tabular-nums text-ink-subtle">{pinCount}</span>
       </button>
       <div className="flex min-w-0 flex-1 items-start gap-2 sm:flex-none">
@@ -144,7 +144,7 @@ export function MapToolbar({
             <rect x="2.5" y="3.5" width="15" height="13" rx="2" />
             <path d="M12.5 3.5v13" />
           </svg>
-          <span className="@max-4xl:sr-only">{detailsOpen ? "Hide details" : "Show details"}</span>
+          <span className="@max-5xl:sr-only">{detailsOpen ? "Hide details" : "Show details"}</span>
         </button>
       </div>
     </div>

@@ -79,7 +79,7 @@ export function controlObstacles(size: Size, margin = 6): Rect[] {
 }
 
 /** Space kept clear around a fitted extent: tight, so the state fills the frame; a phone gets less. */
-export const fitPadding = (width: number) => (width < COMPACT_WIDTH ? 14 : 28);
+export const fitPadding = (width: number) => (width < COMPACT_WIDTH ? 12 : 22);
 
 /**
  * How far a fitted extent's bounding box may reach into a control's rectangle before the fit gives way. A bounding box
@@ -134,7 +134,7 @@ export function fitClear(bounds: Bounds, size: Size, limits?: { min: number; max
 }
 
 /** The longest leader line a district name may have. A name that would need a longer one is marked with a dot and named on hover. */
-export const LEADER_MAX = 72;
+export const LEADER_MAX = 60;
 
 /**
  * Text size for district names at the state overview: smaller on a narrow map so more of them fit, and a point smaller

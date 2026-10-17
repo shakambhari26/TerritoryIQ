@@ -17,7 +17,7 @@ inside it, so the toolbar, search, controls and legend need no second set of cla
 deep-navy canvas with a soft lifted centre (`MAP_BACKDROP`, a CSS gradient: no image, no request), an
 approximate scale bar, an optional latitude and longitude grid (hidden by default; the grid button in the map
 controls, or the G key on the map, shows it), pale names with a navy halo, subtle teal
-for assigned areas (`#14B8A6`), blue for confirmed unallocated, and navy-hatched or amber-hatched patterns
+for assigned areas (`#14B8A6`, also a faint halo around the state's outline at the overview), blue for confirmed unallocated, and navy-hatched or amber-hatched patterns
 for missing and conflicting data. **Molten Orange (`#E8622A`) is reserved for the selection and the
 representative pins**, so it means nothing else: on a selected region, a soft orange halo (two wide, faint
 strokes behind the outline, with no blur filter so zooming stays cheap), then a faint orange wash, a navy casing
@@ -52,9 +52,10 @@ Rules that keep contrast valid (ratios computed against WCAG 2.x):
 | --- | --- | --- |
 | Page frame | `layout/AppShell` | Skip link, nav, `<main id="main">`, footer |
 | Top navigation | `layout/TopNav` | Driven by `NAV_ITEMS` in `src/lib/site.ts`. Only built routes are links; planned modules are non-interactive text |
-| Page heading | `layout/PageHeader` | Title, description, optional aside |
+| Page heading | `layout/PageHeader` | Title, description, optional aside; `compact` is one slim line (the workspace uses it so the map starts higher) |
 | KPI cards | `dashboard/KpiCard` | Omit `value` for an empty state, never fake one |
-| Map frame | `dashboard/MapWorkspace` | Navy (`.map-theme`) frame with a toolbar, a footer strip, and the map surface as `children`; takes most of the viewport height from `lg` |
+| Map frame | `dashboard/MapWorkspace` | Navy (`.map-theme`) frame with a toolbar, a footer strip, an optional left `rail`, and the map surface as `children`; takes the viewport height under the compact page heading from `lg` |
+| District navigator | `features/territory/components/DistrictNavigator` | The 23 districts with outlined-block counts and a mini allocation bar. A 256 px rail in the map frame when the frame is 900 px or wider, else a list in the details panel (CSS container queries, `layout-classes.ts`); hover or focus outlines the district on the map |
 | Map toolbar | `features/territory/components/MapToolbar` | Breadcrumb, level, back, layer switch, Representatives pin toggle, district and block search (`MapSearch`), details toggle |
 | Overview | `features/territory/components/OverviewDashboard` | Counts by allocation state, territory table, link statuses, known gaps, provenance |
 | Territory map | `features/territory/components/GeoMap` | SVG map of the validated boundary layer; an explicit empty state if the layer is missing, refused or unloaded |

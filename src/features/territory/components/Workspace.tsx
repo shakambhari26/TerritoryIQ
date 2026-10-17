@@ -26,10 +26,12 @@ import { buildSearchIndex, type SearchHit } from "../search";
 import { parseSelectionHash, selectionForFeature, selectionToHash } from "../selection";
 import { AreaList } from "./AreaList";
 import { DetailsPanel } from "./DetailsPanel";
+import { DistrictNavigator, type NavigatorPins } from "./DistrictNavigator";
 import { GeoMap, type LayerLoad } from "./GeoMap";
 import { LocalChangesBar } from "./LocalChangesBar";
 import { MapLegend } from "./MapLegend";
 import { MapToolbar } from "./MapToolbar";
+import { RAIL_SHOWS_PANEL_CLOSED, RAIL_SHOWS_PANEL_OPEN } from "./layout-classes";
 
 const LAYER_URL = "/geo/boundaries.json";
 
@@ -92,6 +94,8 @@ export function Workspace({ dataset }: { dataset: TerritoryDataset }) {
   const [layerMode, setLayerMode] = useState<MapLayerMode>("allocation");
   const [detailsOpen, setDetailsOpen] = useState(true);
   const [pinsOn, setPinsOn] = useState(true);
+  // The district the pointer or keyboard is on in the navigator; the map outlines it.
+  const [navHover, setNavHover] = useState<string | null>(null);
   // The first-use hint goes once the user has acted on the map (or selected anything); a summary takes its line.
   const [mapTouched, setMapTouched] = useState(false);
   const onMapInteract = useCallback(() => setMapTouched(true), []);
@@ -175,6 +179,7 @@ export function Workspace({ dataset }: { dataset: TerritoryDataset }) {
   const pinSet = useMemo(() => pinSetFor(context, territoryBlocks), [context, territoryBlocks]);
   const allPins = useMemo(() => pinsFor(model, pinAnchors, pinSet), [model, pinAnchors, pinSet]);
   const pins = pinsOn ? allPins : [];
+  const navigatorPins: NavigatorPins | null = layer && allPins.length > 0 ? { kind: pinSet.mode === "territory" ? "territory" : "block", count: allPins.length } : null;
   const showUnit = useCallback((unitId: string) => selectAndReveal({ kind: "unit", id: unitId }), [selectAndReveal]);
   const showTerritory = useCallback((territoryId: string) => selectAndReveal({ kind: "territory", id: territoryId }), [selectAndReveal]);
 
@@ -197,6 +202,11 @@ export function Workspace({ dataset }: { dataset: TerritoryDataset }) {
       return { title: feature.name, detail: `Block · ${district} district · ${ALLOCATION_STATE_LABEL[allocation.state]} · provisional outline` };
     },
     [model],
+  );
+
+  const onPickDistrict = useCallback((districtId: string) => selectAndReveal({ kind: "feature", id: districtId }), [selectAndReveal]);
+  const renderNavigator = (variant: "rail" | "panel") => (
+    <DistrictNavigator model={model} focusedId={context.districtId} pins={navigatorPins} variant={variant} onPick={onPickDistrict} onHover={setNavHover} />
   );
 
   const onFeatureClick = useCallback((featureId: string) => perform(actionForFeatureClick(model, context, featureId)), [model, context, perform]);
@@ -251,15 +261,24 @@ export function Workspace({ dataset }: { dataset: TerritoryDataset }) {
   };
 
   return (
-    <div className="mt-4 space-y-4" data-testid="workspace">
+    <div className="mt-3 space-y-4" data-testid="workspace">
       <p role="status" className="sr-only">
         {announcement}
       </p>
 
-      <div className={cn("grid gap-4 lg:gap-6", detailsOpen ? "lg:grid-cols-[minmax(0,1fr)_26rem] xl:grid-cols-[minmax(0,1fr)_30rem]" : "lg:grid-cols-[minmax(0,1fr)]")}>
+      <div className={cn("@container grid gap-4 lg:gap-6", detailsOpen ? "lg:grid-cols-[minmax(0,1fr)_26rem] xl:grid-cols-[minmax(0,1fr)_30rem]" : "lg:grid-cols-[minmax(0,1fr)]")}>
         <div className="min-w-0 lg:col-start-1 lg:row-start-1">
           <MapWorkspace
             title="Territory map"
+            rail={
+              <aside
+                aria-label="District navigator"
+                data-testid="district-rail"
+                className={cn("hidden w-64 shrink-0 flex-col border-r border-line bg-surface/80", detailsOpen ? RAIL_SHOWS_PANEL_OPEN : RAIL_SHOWS_PANEL_CLOSED)}
+              >
+                {renderNavigator("rail")}
+              </aside>
+            }
             toolbar={
               <MapToolbar
                 crumbs={crumbs}
@@ -352,6 +371,7 @@ export function Workspace({ dataset }: { dataset: TerritoryDataset }) {
               onInteract={onMapInteract}
               onShowUnit={showUnit}
               onShowTerritory={showTerritory}
+              hoverFeatureId={navHover}
             />
             {layer ? (
               <p
@@ -385,6 +405,7 @@ export function Workspace({ dataset }: { dataset: TerritoryDataset }) {
               onSelect={selectAndReveal}
               submit={submit}
               onUndoLast={removeLastChange}
+              districtList={renderNavigator("panel")}
             />
           </div>
         </div>

@@ -3,9 +3,9 @@ import { existsSync } from "node:fs";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { describe, it } from "node:test";
-import { LEADER_MIN, estimateWidth, leaderEnd, outlineRects, parseOutline, placeLabels, wrapLabel, type LabelRequest, type PlacedLabel, type Point2, type Rect } from "../../src/features/geo/labels.ts";
+import { ANCHOR_CLEAR, LEADER_CLEAR, LEADER_MIN, estimateWidth, leaderEnd, outlineRects, parseOutline, placeLabels, wrapLabel, type LabelRequest, type PlacedLabel, type Point2, type Rect } from "../../src/features/geo/labels.ts";
 import { toScreen, unionBounds, type Bounds } from "../../src/features/geo/viewport.ts";
-import { controlObstacles, districtFontSize, fitClear } from "../../src/features/territory/map-layout.ts";
+import { LEADER_MAX, controlObstacles, districtFontSize, fitClear } from "../../src/features/territory/map-layout.ts";
 import type { BoundaryLayer, TerritoryDataset } from "../../src/features/territory/types.ts";
 import { ROOT } from "../../scripts/lib/sources.ts";
 
@@ -75,20 +75,22 @@ describe("placeLabels (free)", () => {
     }
   });
 
-  it("fans a crowd of labels around a point without any overlap", () => {
+  it("fans a crowd of labels around a point without any overlap, and reports the name it has no clean place for", () => {
     const crowd = Array.from({ length: 8 }, (_, i) => request(`D${i}`, 200 + i * 12, 150 + (i % 2) * 14, `District ${i}`, 10 + i));
     const { placed, omitted } = placeLabels(crowd, { area, fontSize: 11, mode: "free" });
-    assert.equal(omitted.length, 0);
-    assert.equal(placed.length, 8);
+    assert.equal(placed.length + omitted.length, 8, "each name is placed or reported as omitted");
+    assert.ok(placed.length >= 6, `${placed.length} placed`);
     assertTidy(placed, area);
   });
 
-  it("with anchors stacked within a few pixels, every name is placed tidily or reported, never drawn over another", () => {
+  it("with anchors stacked within a few pixels, every name is placed tidily or reported, never drawn over another or given a line through a dot", () => {
     const stack = Array.from({ length: 8 }, (_, i) => request(`D${i}`, 200 + i, 150 + i, `District ${i}`, 10 + i));
     const { placed, omitted } = placeLabels(stack, { area, fontSize: 11, mode: "free" });
     assert.equal(placed.length + omitted.length, 8, "each name is placed or reported as omitted");
-    assert.ok(placed.length >= 3);
     assertTidy(placed, area);
+    for (const p of placed.filter((q) => q.leader)) {
+      for (const other of stack.filter((r) => r.id !== p.id)) assert.ok(distanceToSegment(other, p.anchor, leaderEnd(p)) >= ANCHOR_CLEAR - 1e-6, `${p.id}'s line passes through ${other.id}'s dot`);
+    }
   });
 
   it("keeps clear of obstacles and of the map edge", () => {
@@ -137,6 +139,14 @@ function segmentTouches(a: Point2, b: Point2, rect: Rect) {
     if (x > rect.x && x < rect.x + rect.width && y > rect.y && y < rect.y + rect.height) return true;
   }
   return false;
+}
+
+function distanceToSegment(p: Point2, a: Point2, b: Point2) {
+  const dx = b.x - a.x;
+  const dy = b.y - a.y;
+  const length2 = dx * dx + dy * dy;
+  const t = length2 === 0 ? 0 : Math.min(1, Math.max(0, ((p.x - a.x) * dx + (p.y - a.y) * dy) / length2));
+  return Math.hypot(p.x - (a.x + t * dx), p.y - (a.y + t * dy));
 }
 
 function segmentsCross(a: Point2, b: Point2, c: Point2, d: Point2) {
@@ -233,7 +243,7 @@ describe("district labels on the real statewide overview", { skip: built ? false
   const sizes: Array<[string, number, number, number]> = [
     ["desktop map", 870, 600, 23],
     ["wide desktop map", 1300, 640, 23],
-    ["tablet map", 700, 520, 23],
+    ["tablet map", 700, 520, 22],
     // On a phone the names that cannot fit are reported (the map marks them with a dot and names them on hover or tap).
     ["phone map", 356, 460, 15],
   ];
@@ -259,6 +269,36 @@ describe("district labels on the real statewide overview", { skip: built ? false
       assertTidy(placed, { width, height }, obstacles);
       // Each name is complete: the lines, joined, spell the official name.
       for (const label of placed) assert.equal(label.lines.join(" "), nameOf.get(label.id));
+    });
+  }
+
+  // The lines themselves: none crosses another, none runs through another district's dot or another name, and the few
+  // that exist are short, at every size the workspace produces.
+  for (const [name, width, height] of sizes) {
+    it(`draws no crossing, hugging or long leader line at the ${name} size (${width} x ${height})`, async () => {
+      const layer = JSON.parse(await readFile(layerPath, "utf8")) as BoundaryLayer;
+      const data = JSON.parse(await readFile(datasetPath, "utf8")) as TerritoryDataset;
+      const nameOf = new Map(data.features.map((f) => [f.id, f.name]));
+      const districts = layer.shapes.filter((s) => s.featureId.startsWith("GD-"));
+      const bounds = unionBounds(districts.map((s) => s.bbox as Bounds))!;
+      const viewport = fitClear(bounds, { width, height });
+      const requests = districts.map((s) => {
+        const p = toScreen(viewport, s.anchor![0], s.anchor![1]);
+        return { id: s.featureId, text: nameOf.get(s.featureId)!, x: p.x, y: p.y, r: s.anchor![2] * viewport.scale, priority: s.anchor![2] };
+      });
+      const obstacles = controlObstacles({ width, height });
+      const { placed } = placeLabels(requests, { area: { width, height }, fontSize: districtFontSize(width), mode: "free", obstacles, maxLeader: LEADER_MAX });
+      const lines = placed.filter((p) => p.leader).map((p) => ({ id: p.id, a: p.anchor, b: leaderEnd(p) }));
+      for (const [i, l] of lines.entries()) {
+        assert.ok(Math.hypot(l.a.x - l.b.x, l.a.y - l.b.y) <= LEADER_MAX + 1, `${l.id}'s line is long`);
+        for (const m of lines.slice(i + 1)) assert.ok(!segmentsCross(l.a, l.b, m.a, m.b), `${l.id} crosses ${m.id}`);
+        for (const r of requests.filter((q) => q.id !== l.id)) assert.ok(distanceToSegment(r, l.a, l.b) >= ANCHOR_CLEAR - 1e-6, `${l.id}'s line passes through the dot of ${r.id}`);
+        for (const p of placed.filter((q) => q.id !== l.id)) assert.ok(!segmentTouches(l.a, l.b, p.box), `${l.id} runs through ${p.id}`);
+      }
+      // At the sizes with room, the lines are also kept their full clear distance apart.
+      if (width >= 800) {
+        for (const [i, l] of lines.entries()) for (const m of lines.slice(i + 1)) assert.ok(Math.min(distanceToSegment(l.a, m.a, m.b), distanceToSegment(l.b, m.a, m.b), distanceToSegment(m.a, l.a, l.b), distanceToSegment(m.b, l.a, l.b)) >= LEADER_CLEAR - 1e-6, `${l.id} and ${m.id} are too close`);
+      }
     });
   }
 });

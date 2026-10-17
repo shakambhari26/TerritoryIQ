@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { after, before, describe, it } from "node:test";
 import type { Browser, Page } from "playwright-core";
+import { LEADER_MAX } from "../../src/features/territory/map-layout.ts";
 import { dataset, launch, openPage, skipReason, startServer, type Server } from "./harness.mts";
 
 /**
@@ -10,13 +11,14 @@ import { dataset, launch, openPage, skipReason, startServer, type Server } from 
  * desktop with the details panel open, a laptop, a portrait tablet and a phone.
  */
 
-// The thresholds sit just under what the redesign measured (and well over the old map: 517 px and 28% on the desktop,
-// 253 px and 11% on the laptop), so a change that shrinks the state or the map fails here.
-const VIEWPORTS: Array<{ name: string; width: number; height: number; minMapHeight: number; minArea: number }> = [
-  { name: "desktop", width: 1440, height: 900, minMapHeight: 560, minArea: 0.34 },
-  { name: "laptop", width: 1280, height: 720, minMapHeight: 320, minArea: 0.19 },
-  { name: "tablet", width: 820, height: 1180, minMapHeight: 800, minArea: 0.52 },
-  { name: "phone", width: 390, height: 844, minMapHeight: 560, minArea: 0.53 },
+// The thresholds sit just under what the second redesign measured (the first redesign measured 579 px and 35% on the
+// desktop and 335 px and 21% on the laptop, and the first map 517 px and 28%, 253 px and 11%), so a change that shrinks the
+// state or the map fails here. `minState` is the state's own height on screen.
+const VIEWPORTS: Array<{ name: string; width: number; height: number; minMapHeight: number; minArea: number; minState: number }> = [
+  { name: "desktop", width: 1440, height: 900, minMapHeight: 590, minArea: 0.37, minState: 540 },
+  { name: "laptop", width: 1280, height: 720, minMapHeight: 385, minArea: 0.27, minState: 340 },
+  { name: "tablet", width: 820, height: 1180, minMapHeight: 810, minArea: 0.54, minState: 730 },
+  { name: "phone", width: 390, height: 844, minMapHeight: 580, minArea: 0.54, minState: 415 },
 ];
 
 interface R {
@@ -119,6 +121,71 @@ async function measure(page: Page, onlyFid?: string) {
   }, onlyFid);
 }
 
+/**
+ * Every leader line on the map, read from the DOM, and what is wrong with it: a line that crosses another, runs through a
+ * name or a marker, passes through another district's dot, or is long. The names on the map are placed so that none of
+ * these happens; this measures what was drawn.
+ */
+async function auditLeaders(page: Page, maxLength: number) {
+  return page.evaluate((max) => {
+    interface P {
+      x: number;
+      y: number;
+    }
+    const lines = [...document.querySelectorAll("[data-leader-line]")].map((el) => {
+      const svg = (el as SVGElement).ownerSVGElement!.getBoundingClientRect();
+      const n = (name: string) => Number(el.getAttribute(name));
+      return { id: el.getAttribute("data-leader-line")!, a: { x: svg.left + n("x1"), y: svg.top + n("y1") }, b: { x: svg.left + n("x2"), y: svg.top + n("y2") } };
+    });
+    const dots = [...document.querySelectorAll("[data-label-id] circle, [data-hidden-label]")].map((el) => {
+      const svg = (el as SVGElement).ownerSVGElement!.getBoundingClientRect();
+      const id = el.getAttribute("data-hidden-label") ?? el.closest("[data-label-id]")!.getAttribute("data-label-id")!;
+      return { id, x: svg.left + Number(el.getAttribute("cx")), y: svg.top + Number(el.getAttribute("cy")) };
+    });
+    const boxes = [...document.querySelectorAll("[data-label-id]")].flatMap((g) =>
+      [...g.querySelectorAll("text")].map((t) => {
+        const r = t.getBoundingClientRect();
+        return { id: g.getAttribute("data-label-id")!, x: r.left, y: r.top, r: r.right, b: r.bottom };
+      }),
+    );
+    const markers = [...document.querySelectorAll('[data-testid="representative-pin"], [data-testid="pin-cluster"]')].map((el) => {
+      const r = el.getBoundingClientRect();
+      return { id: el.getAttribute("data-pin-id") ?? "cluster", x: r.left, y: r.top, r: r.right, b: r.bottom };
+    });
+    const cross = (a: P, b: P, c: P, d: P) => {
+      const side = (p: P, q: P, r: P) => (q.x - p.x) * (r.y - p.y) - (q.y - p.y) * (r.x - p.x);
+      return side(a, b, c) * side(a, b, d) < 0 && side(c, d, a) * side(c, d, b) < 0;
+    };
+    const near = (p: P, a: P, b: P) => {
+      const dx = b.x - a.x;
+      const dy = b.y - a.y;
+      const l = dx * dx + dy * dy;
+      const t = l === 0 ? 0 : Math.min(1, Math.max(0, ((p.x - a.x) * dx + (p.y - a.y) * dy) / l));
+      return Math.hypot(p.x - (a.x + t * dx), p.y - (a.y + t * dy));
+    };
+    const through = (a: P, b: P, r: { x: number; y: number; r: number; b: number }) => {
+      for (let i = 0; i <= 120; i++) {
+        const x = a.x + ((b.x - a.x) * i) / 120;
+        const y = a.y + ((b.y - a.y) * i) / 120;
+        if (x > r.x + 1 && x < r.r - 1 && y > r.y + 1 && y < r.b - 1) return true;
+      }
+      return false;
+    };
+    const out = { lines: lines.length, crossing: [] as string[], throughName: [] as string[], throughMarker: [] as string[], throughDot: [] as string[], long: [] as string[] };
+    lines.forEach((l, i) => {
+      if (Math.hypot(l.a.x - l.b.x, l.a.y - l.b.y) > max) out.long.push(l.id);
+      for (const m of lines.slice(i + 1)) if (cross(l.a, l.b, m.a, m.b)) out.crossing.push(`${l.id} / ${m.id}`);
+      for (const box of boxes) if (box.id !== l.id && through(l.a, l.b, box)) out.throughName.push(`${l.id} / ${box.id}`);
+      // A marker that holds the line's own anchor is the district's own (a pin sits on a block's label point, and a district's
+      // can fall under it); the name keeps clear of it all the same.
+      const holds = (r: { x: number; y: number; r: number; b: number }, p: P) => p.x >= r.x && p.x <= r.r && p.y >= r.y && p.y <= r.b;
+      for (const marker of markers) if (!holds(marker, l.a) && through(l.a, l.b, marker)) out.throughMarker.push(`${l.id} / ${marker.id}`);
+      for (const dot of dots) if (dot.id !== l.id && near(dot, l.a, l.b) < 3) out.throughDot.push(`${l.id} / ${dot.id}`);
+    });
+    return out;
+  }, maxLength);
+}
+
 describe("the map's cartography at desktop, laptop, tablet and phone sizes", { skip: skipReason }, () => {
   let server: Server;
   let browser: Browser;
@@ -151,6 +218,7 @@ describe("the map's cartography at desktop, laptop, tablet and phone sizes", { s
       // Scale and shape.
       assert.ok(m.map.h >= v.minMapHeight, `the map is ${m.map.h.toFixed(0)} px tall; it should be at least ${v.minMapHeight}`);
       assert.ok(m.area >= v.minArea, `the state covers ${(m.area * 100).toFixed(1)}% of the map; it should cover at least ${v.minArea * 100}%`);
+      assert.ok(m.state.h >= v.minState, `the state is ${m.state.h.toFixed(0)} px tall; it should be at least ${v.minState}`);
       assert.ok(m.insideMap, "the whole state is on the map");
       assert.ok(Math.abs(m.aspectScreen / m.aspectWorld - 1) < 0.005, `the state is not stretched (${m.aspectScreen.toFixed(3)} on screen, ${m.aspectWorld.toFixed(3)} in the data)`);
 
@@ -165,6 +233,14 @@ describe("the map's cartography at desktop, laptop, tablet and phone sizes", { s
       assert.ok(m.furnitureInside, "controls and the chip stay inside the map");
       assert.deepEqual(m.under.slice(0, 5), [], "a control or the chip sits over drawn geography");
       assert.ok(m.markers > 0);
+
+      // Leader lines: none crosses another, runs through a name, a marker or another district's dot, or is long.
+      const leaders = await auditLeaders(page, LEADER_MAX + 1);
+      assert.deepEqual(leaders.crossing, [], "leader lines cross each other");
+      assert.deepEqual(leaders.throughName, [], "a leader line runs through a name");
+      assert.deepEqual(leaders.throughMarker, [], "a leader line runs through a marker");
+      assert.deepEqual(leaders.throughDot, [], "a leader line passes through another district's dot");
+      assert.deepEqual(leaders.long, [], "a leader line is long");
 
       // The legend, the notices and the page.
       assert.equal(m.legendClipped, false, "the legend is not clipped");
@@ -312,6 +388,47 @@ describe("the map's cartography at desktop, laptop, tablet and phone sizes", { s
         assert.notEqual(ring.style, "none");
         assert.ok(ring.width >= 2, `${w}: ${label} shows a ${ring.width}px focus ring`);
         assert.ok(ring.left - ring.offset - ring.width >= 0 && ring.right + ring.offset + ring.width <= ring.w, `${w}: the ring is not cut off by the page edge`);
+      }
+      await context.close();
+    }
+  });
+
+  it("a pin is a small orange teardrop and a group is a neutral stacked card: different shape, size and hue, both with a 24 px target", async () => {
+    for (const [w, h] of [
+      [1440, 900],
+      [390, 844],
+    ] as const) {
+      const { page, context } = await open(w, h);
+      const pins = await page.locator('[data-testid="representative-pin"]').evaluateAll((els) =>
+        els.map((el) => {
+          const box = el.getBoundingClientRect();
+          const glyph = el.querySelector("svg")!.getBoundingClientRect();
+          return { w: box.width, h: box.height, glyphW: glyph.width, glyphH: glyph.height, text: el.textContent?.trim() ?? "" };
+        }),
+      );
+      const groups = await page.locator('[data-testid="pin-cluster"]').evaluateAll((els) =>
+        els.map((el) => {
+          const box = el.getBoundingClientRect();
+          // Every colour the badge draws (fills and borders), as the browser resolves them.
+          const colours = [...el.querySelectorAll("*")].flatMap((n) => {
+            const cs = getComputedStyle(n);
+            return [cs.backgroundColor, cs.borderTopColor, cs.color];
+          });
+          return { w: box.width, h: box.height, colours, label: el.textContent?.trim() };
+        }),
+      );
+      assert.ok(pins.length > 0 && groups.length > 0, `${w}: the overview has single pins and groups`);
+      for (const p of pins) {
+        assert.ok(p.w >= 23.99 && p.h >= 23.99, `${w}: a pin keeps a 24 px target (${p.w} x ${p.h})`);
+        assert.ok(p.glyphW <= 16 && p.glyphH <= 21, `${w}: the drawn pin is small (${p.glyphW} x ${p.glyphH}), where the old tag was 38 x 27`);
+        assert.equal(p.text, "", `${w}: a pin carries no text`);
+      }
+      const ember = "rgb(232, 98, 42)";
+      for (const g of groups) {
+        assert.ok(g.w >= 23.99 && g.h >= 23.99, `${w}: a group keeps a 24 px target`);
+        assert.ok(!g.colours.includes(ember), `${w}: a group badge uses no Molten Orange, which means one representative or the selection`);
+        assert.match(g.label ?? "", /^\d+$/, `${w}: the badge is its count`);
+        assert.ok(g.w !== pins[0].w || g.h !== pins[0].h, `${w}: and it is not the pin's size`);
       }
       await context.close();
     }

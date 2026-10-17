@@ -5,13 +5,15 @@ interface PageHeaderProps {
   description?: string;
   /** Optional trailing content, e.g. a status badge. */
   aside?: ReactNode;
+  /** A single slim line, for a page whose content (a map) should start as high as possible. */
+  compact?: boolean;
 }
 
-export function PageHeader({ title, description, aside }: PageHeaderProps) {
+export function PageHeader({ title, description, aside, compact = false }: PageHeaderProps) {
   return (
-    <div className="flex flex-wrap items-start justify-between gap-x-6 gap-y-2">
+    <div className={compact ? "flex flex-wrap items-center justify-between gap-x-6 gap-y-1" : "flex flex-wrap items-start justify-between gap-x-6 gap-y-2"}>
       <div className="min-w-0">
-        <h1 className="text-2xl font-semibold tracking-tight text-ink sm:text-3xl">
+        <h1 className={compact ? "text-xl font-semibold tracking-tight text-ink sm:text-2xl" : "text-2xl font-semibold tracking-tight text-ink sm:text-3xl"}>
           {title}
         </h1>
         {description ? (

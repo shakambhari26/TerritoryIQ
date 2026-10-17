@@ -558,9 +558,12 @@ describe("territory workspace in a real browser", { skip: skipReason }, () => {
       await page.goto(`${server.baseUrl}/workspace`, { waitUntil: "networkidle" });
       const width = async () => (await page.locator('[data-testid="geo-map"]').boundingBox())!.width;
       const open = await width();
+      assert.equal(await page.locator('[data-testid="district-rail"]').isVisible(), false, "with the panel open there is no room for the rail");
       await page.locator('[data-testid="details-toggle"]').click();
       assert.equal(await page.locator('[data-testid="details-panel"]').isVisible(), false);
-      assert.ok((await width()) > open + 300);
+      // The freed width (the panel and its gap, 504 px) is shared by the map and the district rail that appears (256 px).
+      assert.equal(await page.locator('[data-testid="district-rail"]').isVisible(), true, "the district rail takes the room");
+      assert.ok((await width()) > open + 200, "and the map still gains width");
       await page.locator('[data-testid="details-toggle"]').click();
       assert.equal(await page.locator('[data-testid="details-panel"]').isVisible(), true);
       await context.close();

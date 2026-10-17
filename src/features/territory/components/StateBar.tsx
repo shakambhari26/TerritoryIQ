@@ -14,12 +14,15 @@ export function StateBar({
   className,
   label,
   compact = false,
+  stacked = false,
 }: {
   counts: StateCounts;
   total: number;
   className?: string;
   label: string;
   compact?: boolean;
+  /** One legend entry per line, for a narrow column. */
+  stacked?: boolean;
 }) {
   return (
     <div className={className} data-testid="state-bar">
@@ -38,7 +41,7 @@ export function StateBar({
           ) : null,
         )}
       </div>
-      <ul className={cn("mt-2 grid gap-x-4 gap-y-1 text-xs text-ink-muted", compact ? "grid-cols-2" : "sm:grid-cols-2")}>
+      <ul className={cn("mt-2 grid gap-x-4 gap-y-1 text-xs text-ink-muted", stacked ? "grid-cols-1" : compact ? "grid-cols-2" : "sm:grid-cols-2")}>
         {ALLOCATION_STATES.map((state) => (
           <li key={state} className="flex items-center justify-between gap-2" data-state-count={state}>
             <span className="flex items-center gap-1.5">

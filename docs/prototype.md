@@ -150,6 +150,18 @@ searchable, filterable list of all 358 rows and all 345 official blocks, and loc
 Selection is by internal ID (`TU-…`, `GB-…`, `GD-…`, `ST-…`), kept in the URL hash, and the geographic
 level is derived from the selection, so a shared link restores both.
 
+**District navigator.** All 23 districts are listed A to Z with their outlined blocks (`20/22`), a thin bar of their blocks
+by allocation state, and the same counts the details panel uses. Picking a row opens that district on the map (a
+selection, like a click), and hovering or focusing a row outlines the district on the map. Where it appears depends on
+the room, chosen in CSS by container queries on the workspace grid (no script, no layout shift): when the map frame is at
+least 900 px wide (details panel closed, or a window of about 1470 px and more with it open) it is a 256 px rail inside the
+map frame, with a summary of the current view (outline coverage, allocation bar, pin count) above the list; otherwise the
+same list is in the details panel while nothing is selected.
+
+**Names.** District names go beside their district; a name that does not fit gets a short leader line (60 px at most) only
+if the line stays clear of every other name, line, marker and district dot. A name with no clean place becomes a dot and is
+named on hover. Every district is named or dotted, and none is dropped.
+
 | Level | What the map shows | How you get there |
 | --- | --- | --- |
 | State | The 23 district outlines, each named; with the allocation or data-quality layer, every outlined block shaded lightly (not clickable) | Start, "West Bengal" in the breadcrumb, Escape, Back |
@@ -213,7 +225,10 @@ A pin shows who the workbook lists for an area, on the map. It never shows where
   anchor, nothing is pinned.
 - **Not pinned:** a row that is ambiguous, weak, unlisted or excluded; a block with no outline; a block with
   only `Vacant` markers or no names. Nothing is guessed.
-- **Grouping.** Markers that would overlap within 36 px join one numbered group, drawn at the member nearest the
+- **Look.** A pin is a small Molten Orange teardrop (15 by 20 px drawn, 24 by 28 px target, no text; an amber ring and dot
+  mark a contested one). A group is a different shape and hue: a neutral slate "stacked card" with the count in white and
+  no orange, so a count is never read as a person and orange keeps meaning one representative or the selection.
+- **Grouping.** Markers whose 24 by 28 px targets would overlap join one numbered group, drawn at the member nearest the
   group's middle (always a real anchor), and split as the map zooms. Rows that share one block are one pin with
   both records, flagged, and never merged. A marker that would sit under a map button is left out until the map
   is moved, so no button is covered and no covered marker takes focus.
