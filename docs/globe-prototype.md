@@ -2,15 +2,15 @@
 
 Status as of 2026-10-17: **merged into `main`** through [pull request #1](https://github.com/shakambhari26/TerritoryIQ/pull/1),
 merge commit `9b5a7f4` (the prototype's own commit is `2c01cee`, PR head `b7dff5e`, built on the 2D map redesign `c4d1b1c`,
-on top of `3acb994`), with a status correction in pull request #2 (`0505fce`). The branch
-`feat/globe-navigation-integration` adds **Phase 1 of the navigation integration**; it is not merged into `main` and
-not approved for deployment. With it the globe lives at **`/globe`** and is **linked from the primary
-navigation as a locally integrated prototype**; `/globe-prototype` redirects to it (temporary, 307); and a selected place
-offers an "Open in 2D workspace" link (see "Navigation and hand-off to the 2D workspace"). The root page is still the
-Territory Overview (the globe is not the default entry), and the Territory Workspace and its map are unchanged.
-**Phase 2**, on the branch `feat/globe-home-entry` (stacked on Phase 1, so it contains both phases; not merged into `main`
-and not approved for deployment), adds an "Explore on the globe" entry card to that Overview (see "Homepage entry card (Phase 2)"); it does not change the
-default homepage.
+on top of `3acb994`), with a status correction in pull request #2 (`0505fce`). The combined **Phase 1 (navigation
+integration, `0c8c75e`) and Phase 2 (homepage entry card, `6ce600d`)** implementation was then **merged into `main`**
+through [pull request #3](https://github.com/shakambhari26/TerritoryIQ/pull/3), merge commit `d0675d1`. The merge is not
+approval for deployment. The globe lives at **`/globe`** and is **linked from the primary navigation as a locally
+integrated prototype**; `/globe-prototype` redirects to it (temporary, 307); and a selected place offers an "Open in 2D
+workspace" link (see "Navigation and hand-off to the 2D workspace"). The homepage (`/`) is still the **Territory
+Overview**, which now carries an "Explore on the globe" card linking to `/globe` (see "Homepage entry card (Phase 2)");
+the globe is not the default entry. **`/workspace`** remains available for detailed 2D analysis, and the Territory
+Workspace and its map are unchanged.
 
 What this does **not** mean:
 
@@ -18,8 +18,10 @@ What this does **not** mean:
   approval of the geographic data has been given**, and every screen that shows an outline says so.
 - **The application is not approved for deployment.** It is a local prototype: it binds to `127.0.0.1`, refuses any other
   `Host`, has no authentication, and its served pages (including `/globe`) contain staff names from the workbook
-  ([SN-5](security-notes.md)). It must stay on this machine.
-- Being merged or linked is not a decision to make the globe the entry experience.
+  ([SN-5](security-notes.md)). It must stay on this machine. The merge into `main` does not authorize production
+  deployment.
+- Being merged or linked is not a decision to make the globe the entry experience, and the merge does not stand in for
+  official approval of the geographic data.
 
 Still limited or unverified:
 
@@ -30,10 +32,11 @@ Still limited or unverified:
 
 Written for the people deciding whether the globe should become the entry experience.
 
-Product direction (decided): the globe is meant to become the **geographic entry experience**; the existing 2D
-Territory Workspace stays for detailed operational analysis. Phase 1 does not make the globe the entry: `/` stays the
-Territory Overview, nothing is moved to `/overview`, and neither the workspace's allocation logic nor its boundary source
-changes.
+Product direction (decided): the intended direction is for the globe to become the **geographic entry experience in a
+future phase**; the existing 2D Territory Workspace stays for detailed operational analysis. That has not happened: the
+current default homepage is still the Territory Overview, nothing is moved to `/overview`, and neither the workspace's
+allocation logic nor its boundary source changes. Phases 1 and 2 only add the navigation link, the hand-off and the entry
+card.
 
 ## What it is
 
@@ -372,7 +375,8 @@ python -I scripts/globe/build_overlay.py     # data/generated/globe-boundaries.j
   above the Overview's "data has not been built" state, and `/globe` showed its own "globe data has not been built" state.
   The automated checks for the card are the unit test and the Phase 2 tests in `tests/e2e/globe-integration.test.mts`
   (see [tests/README.md](../tests/README.md)).
-- **Not decided.** Whether the globe should become the default page is still a separate decision.
+- **Not part of this change.** Making the globe the default page is a future phase and a separate decision; for now `/`
+  stays the Territory Overview.
 
 ## Performance notes
 
@@ -411,10 +415,12 @@ Measured in this environment (software WebGL, so frame rate is not representativ
   reports no violations on the whole globe, on West Bengal, and on a district.
 - Reduced motion is honoured (no idle spin, no flight, no draw-in).
 
-## Verification of Phase 1 (isolated worktree from `main` at 0505fce)
+## Verification of Phase 1 (historical run, isolated worktree from `main` at 0505fce)
 
-Run on 2026-10-17 in a separate worktree (`D:\Shakambhari\_iso\globe-nav`, branch `feat/globe-navigation-integration`) with
-`node_modules` from `npm ci` and the locally supplied `data/` and `data-source/`:
+A historical run, made before the merge: it describes the Phase 1 branch as it was then, not the merged `main` (`d0675d1`),
+and has not been repeated on the merged tree. Run on 2026-10-17 in a separate worktree (`D:\Shakambhari\_iso\globe-nav`,
+branch `feat/globe-navigation-integration`) with `node_modules` from `npm ci` and the locally supplied `data/` and
+`data-source/`:
 
 | Check | Result |
 | --- | --- |
@@ -429,10 +435,10 @@ Run on 2026-10-17 in a separate worktree (`D:\Shakambhari\_iso\globe-nav`, branc
 Not verified here: a real GPU, the physical AltGr key, official approval of the geography, and anything about a hosted or shared
 deployment (none exists and none is approved).
 
-## Verification (isolated copy of `origin/main`, 3acb994)
+## Verification of the prototype (historical run, isolated copy of `origin/main`, 3acb994)
 
 This table is the earlier run on the prototype alone, before it was ported onto the 2D map redesign (`c4d1b1c`); its
-counts are not those of the integrated branch. Run on 2026-10-16 in the isolated copy (`D:\Shakambhari\_iso\globe`),
+counts are not those of the later integrated tree or of the current `main`. Run on 2026-10-16 in the isolated copy (`D:\Shakambhari\_iso\globe`),
 after the outline-endpoint, independent-loading and record-schema changes:
 
 | Check | Result |
@@ -449,15 +455,16 @@ after the outline-endpoint, independent-loading and record-schema changes:
 The NASA source downloads themselves were kept outside the project and are no longer on this machine, so their hashes in the
 manifest were not re-checked against the files in this pass; the derived textures that are served were.
 
-## Open questions for integration
+## Open questions after the merge
 
 Decided on 2026-10-16 and reflected above: white stays in the legend with no white polygon until a reviewed source record
 exists (the local change log is not read); the outlines come from a dedicated same-origin route,
 `/geo/globe-boundaries.json`, that serves only the validated globe dataset, and the network guard allows exactly that
-one extra request; the outline data and the textures load independently; no higher-resolution imagery; the globe is the
-entry experience and the 2D workspace stays for detailed analysis.
+one extra request; the outline data and the textures load independently; no higher-resolution imagery; the intended
+direction is for the globe to become the geographic entry experience in a future phase, with the 2D workspace staying for
+detailed analysis (the default homepage is still the Territory Overview).
 
-Still open for integration:
+Still open:
 
 1. Approval of the proposed record schema, and the reviewed source it would come from (it would feed `confirmation` in
    the manifest through a reviewed build step, not through the browser). Until then nothing is white.
