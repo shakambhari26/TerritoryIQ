@@ -64,6 +64,20 @@ export const PIN_COLOR = {
   contested: "#f2b84b",
 } as const;
 
+/**
+ * A group of pins is neutral slate, never orange: orange means one representative (or the selection), so a count on a
+ * badge cannot be read as a person. The badge is also a different shape (a stacked card, not a teardrop).
+ */
+export const CLUSTER_COLOR = {
+  face: "#16233f",
+  back: "#1c2a49",
+  backEdge: "#3a4a70",
+  edge: "#9fb2d9",
+  edgeActive: "#e6eeff",
+  ink: "#eef3fb",
+  glow: "rgba(159, 178, 217, 0.35)",
+} as const;
+
 // ------------------------------------------------------------- patterns ----
 
 export interface PatternSpec {

@@ -19,6 +19,7 @@ export default function WorkspacePage() {
     <>
       <PageHeader
         title="Territory Workspace"
+        compact
         aside={<Badge>Local prototype</Badge>}
       />
       {dataset ? <Workspace dataset={dataset} /> : <DatasetMissing />}

@@ -61,7 +61,7 @@ export function MapSearch({ index, districtId, districtName, onPick }: MapSearch
   };
 
   return (
-    <div className="relative w-full min-w-0 sm:w-64" data-testid="map-search">
+    <div className="relative w-full min-w-0 sm:w-40 @3xl:w-56 @5xl:w-64" data-testid="map-search">
       <label htmlFor={`${uid}-q`} className="sr-only">
         Search districts and blocks
       </label>
@@ -79,8 +79,8 @@ export function MapSearch({ index, districtId, districtName, onPick }: MapSearch
           aria-autocomplete="list"
           aria-activedescendant={showList && activeHit ? `${uid}-opt-${activeHit.id}` : undefined}
           autoComplete="off"
-          placeholder={scoped && districtName ? `Search blocks in ${districtName}` : "Search district or block"}
-          className="block h-9 w-full rounded-lg border border-line-strong bg-surface pl-8 pr-2 text-sm text-ink placeholder:text-ink-subtle focus:border-accent-ink"
+          placeholder={scoped && districtName ? `Blocks in ${districtName}…` : "District or block…"}
+          className="block h-9 w-full rounded-lg border border-line-strong bg-surface pl-8 pr-2 text-[0.8125rem] text-ink placeholder:text-ink-subtle focus:border-accent-ink"
           value={query}
           onChange={(e) => {
             setQuery(e.target.value);

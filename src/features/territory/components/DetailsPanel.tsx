@@ -20,6 +20,7 @@ import { GEO_QUALITIES, GEO_QUALITY_LABEL, GEO_QUALITY_MEANING, districtQuality 
 import type { Selection, StaffSlot } from "../types";
 import { ROLE_CAPACITY, STAFF_ROLES } from "../types";
 import { ChangeList, LinkReviewForm, StaffForm, UnallocatedForm, type SubmitChange } from "./forms";
+import { PANEL_LIST_HIDES_FOR_RAIL } from "./layout-classes";
 import { StateBar } from "./StateBar";
 import { StateChip } from "./state-style";
 import { Note, Section, buttonClass } from "./ui";
@@ -34,6 +35,8 @@ interface DetailsPanelProps {
   onSelect: (selection: Selection) => void;
   submit: SubmitChange;
   onUndoLast: () => void;
+  /** The district list shown when nothing is selected. It steps aside by itself when the map frame shows the same list as a rail. */
+  districtList?: ReactNode;
 }
 
 function Disclosure({ summary, children, testId }: { summary: string; children: ReactNode; testId?: string }) {
@@ -465,7 +468,7 @@ function TerritoryDetails({ model, id, shapeIds, onSelect }: DetailsPanelProps &
   );
 }
 
-function NothingSelected({ model }: { model: TerritoryModel }) {
+function NothingSelected({ model, districtList }: { model: TerritoryModel; districtList?: ReactNode }) {
   const s = model.summary;
   return (
     <div className="space-y-4" data-testid="details-empty">
@@ -484,6 +487,12 @@ function NothingSelected({ model }: { model: TerritoryModel }) {
       <Section title="Rows by allocation state">
         <StateBar counts={s.units.byState} total={s.units.total} label="Workbook rows" compact />
       </Section>
+      {districtList ? (
+        <Section title="Districts" className={PANEL_LIST_HIDES_FOR_RAIL}>
+          <p className="text-xs text-ink-muted">Pick a district to open it on the map. Each row shows its blocks with provisional outlines.</p>
+          {districtList}
+        </Section>
+      ) : null}
     </div>
   );
 }
@@ -510,7 +519,7 @@ export function DetailsPanel(props: DetailsPanelProps) {
       </header>
       <div className="p-5">
         {!selection || !valid ? (
-          <NothingSelected model={model} />
+          <NothingSelected model={model} districtList={props.districtList} />
         ) : selection.kind === "unit" ? (
           <UnitDetails {...props} id={selection.id} />
         ) : selection.kind === "feature" ? (

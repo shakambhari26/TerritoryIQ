@@ -33,7 +33,7 @@ import type { GeoQuality } from "../quality";
 import { COMPACT_WIDTH, controlObstacles, fitClear, panPad } from "../map-layout";
 import { planLabels, type LabelAnchor } from "../map-labels";
 import { isBlockInteractive, visibleBlockIds, type MapContext } from "../map-level";
-import { ALLOCATION_FILL, MAP_BACKDROP, MAP_COLOR, PATTERNS, QUALITY_FILL, districtTint, patternUrl, type MapLayerMode, type PatternSpec } from "../map-style";
+import { ALLOCATION_FILL, MAP_BACKDROP, MAP_COLOR, TEAL, PATTERNS, QUALITY_FILL, districtTint, patternUrl, type MapLayerMode, type PatternSpec } from "../map-style";
 import type { TerritoryModel } from "../model";
 import { clusterPins, type PinCluster, type RepresentativePin } from "../representatives";
 import type { AllocationState, BoundaryLayer, BoundaryShape } from "../types";
@@ -75,6 +75,8 @@ export interface GeoMapProps {
   onShowUnit?: (unitId: string) => void;
   /** Selects a sales territory, which shows its blocks and their pins. */
   onShowTerritory?: (territoryId: string) => void;
+  /** A feature the pointer or keyboard is on elsewhere (the district navigator): it gets the same outline as a hover on the map. */
+  hoverFeatureId?: string | null;
 }
 
 const LIMIT_PX = 4;
@@ -236,6 +238,7 @@ export function GeoMap({
   onInteract,
   onShowUnit,
   onShowTerritory,
+  hoverFeatureId = null,
 }: GeoMapProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const reducedMotion = usePrefersReducedMotion();
@@ -606,6 +609,7 @@ export function GeoMap({
   const scale = viewport?.scale ?? 1;
   const highlightList = [...highlighted].filter((id) => pathById.has(id));
   const hoverInfo = hover ? describe(hover.id) : null;
+  const hoverId = hover?.id ?? hoverFeatureId;
 
   // Names are placed once per view, not per pointer move. A deferred view lets a drag or a wheel turn stay smooth.
   const labelView = useDeferredValue(viewport);
@@ -706,6 +710,18 @@ export function GeoMap({
                 transition: animate ? `transform ${TRANSITION_MS}ms ease` : undefined,
               }}
             >
+              {/* A faint teal halo around the state's outline at the overview: two wide, quiet strokes under the fills (not a blur
+                  filter, which would be redrawn on every zoom frame). Only the outer edge shows; the fills cover the rest. */}
+              {context.districtId === null ? (
+                <g pointerEvents="none" fill="none" strokeLinejoin="round" data-testid="map-halo">
+                  {districtIds.map((id) => (
+                    <path key={id} d={pathById.get(id)} fillRule="evenodd" stroke={TEAL} strokeWidth={18} strokeOpacity={0.045} vectorEffect="non-scaling-stroke" />
+                  ))}
+                  {districtIds.map((id) => (
+                    <path key={`${id}-near`} d={pathById.get(id)} fillRule="evenodd" stroke={TEAL} strokeWidth={7} strokeOpacity={0.08} vectorEffect="non-scaling-stroke" />
+                  ))}
+                </g>
+              ) : null}
               <Shapes
                 shapes={shapes}
                 visibleBlocks={visibleBlocks}
@@ -719,8 +735,8 @@ export function GeoMap({
                 dim={dimOthers}
               />
               <g pointerEvents="none" fill="none" strokeLinejoin="round" data-testid="map-selection">
-                {hover && pathById.has(hover.id) && !highlighted.has(hover.id) ? (
-                  <path d={pathById.get(hover.id)} fillRule="evenodd" stroke={MAP_COLOR.districtLineStrong} strokeWidth={1.4} strokeOpacity={0.8} vectorEffect="non-scaling-stroke" data-hover={hover.id} />
+                {hoverId && pathById.has(hoverId) && !highlighted.has(hoverId) ? (
+                  <path d={pathById.get(hoverId)} fillRule="evenodd" stroke={MAP_COLOR.districtLineStrong} strokeWidth={1.4} strokeOpacity={0.8} vectorEffect="non-scaling-stroke" data-hover={hoverId} />
                 ) : null}
                 {/* Glow, as a pre-pass over every selected outline: two wide, faint orange strokes, so a soft halo spreads past
                     the outline. All of them are drawn before any member's wash, casing and line, so a neighbour's halo can
@@ -759,7 +775,7 @@ export function GeoMap({
             style={{ opacity: moving ? 0 : 1, transition: fade }}
           >
             {labelPlan?.hidden.map((h) => (
-              <circle key={h.id} cx={h.at.x} cy={h.at.y} r={2.6} fill={MAP_COLOR.leader} stroke={MAP_COLOR.halo} strokeWidth={1.2} data-hidden-label={h.id} />
+              <circle key={h.id} cx={h.at.x} cy={h.at.y} r={2.4} fill={MAP_COLOR.leader} stroke={MAP_COLOR.halo} strokeWidth={1.2} data-hidden-label={h.id} />
             ))}
             {labelPlan?.labels.map((label) => {
               const end = label.leader ? leaderEnd(label) : null;
@@ -769,8 +785,8 @@ export function GeoMap({
                 <g key={label.id} data-label-id={label.id} data-label-kind={label.kind} data-label-leader={label.leader ? "true" : undefined}>
                   {end ? (
                     <>
-                      <line x1={label.anchor.x} y1={label.anchor.y} x2={end.x} y2={end.y} stroke={MAP_COLOR.leader} strokeWidth={1} />
-                      <circle cx={label.anchor.x} cy={label.anchor.y} r={2.4} fill={MAP_COLOR.leader} stroke={MAP_COLOR.halo} strokeWidth={1.2} />
+                      <line x1={label.anchor.x} y1={label.anchor.y} x2={end.x} y2={end.y} stroke={MAP_COLOR.leader} strokeOpacity={0.85} strokeWidth={0.9} strokeLinecap="round" data-leader-line={label.id} />
+                      <circle cx={label.anchor.x} cy={label.anchor.y} r={2.2} fill={MAP_COLOR.leader} stroke={MAP_COLOR.halo} strokeWidth={1.2} />
                     </>
                   ) : null}
                   {label.lines.map((line, index) => (
@@ -782,6 +798,7 @@ export function GeoMap({
                       dominantBaseline="central"
                       fontSize={label.fontSize}
                       fontWeight={quiet ? 500 : 600}
+                      letterSpacing="0.01em"
                       fill={quiet ? MAP_COLOR.inkSoft : MAP_COLOR.ink}
                       fillOpacity={quiet ? 0.75 : 1}
                       stroke={MAP_COLOR.halo}

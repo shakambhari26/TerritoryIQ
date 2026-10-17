@@ -2,7 +2,7 @@
 
 import { useId, useState } from "react";
 import { REFERENCE_LIST_NOTE } from "../format";
-import { EMBER, PIN_COLOR, legendItems, type MapLayerMode } from "../map-style";
+import { CLUSTER_COLOR, EMBER, PIN_COLOR, legendItems, type MapLayerMode } from "../map-style";
 import type { BoundaryLayerMeta } from "../types";
 
 export interface MapCoverage {
@@ -20,10 +20,20 @@ export interface PinLegend {
 
 function PinSwatch() {
   return (
-    <svg aria-hidden="true" focusable="false" viewBox="0 0 28 36" width="11" height="14" className="shrink-0 overflow-visible">
-      <path d="M14 35C14 35 3 22.5 3 13.5a11 11 0 1 1 22 0C25 22.5 14 35 14 35Z" fill={PIN_COLOR.body} stroke={PIN_COLOR.ring} strokeWidth="2" />
-      <circle cx="14" cy="13.5" r="4.2" fill={PIN_COLOR.core} />
+    <svg aria-hidden="true" focusable="false" viewBox="0 0 15 20" width="10" height="13" className="shrink-0 overflow-visible">
+      <path d="M7.5 19.4C7.5 19.4 1 12.6 1 7.6A6.5 6.5 0 1 1 14 7.6C14 12.6 7.5 19.4 7.5 19.4Z" fill={PIN_COLOR.body} stroke={PIN_COLOR.ring} strokeWidth="1.4" />
+      <circle cx="7.5" cy="7.4" r="2.2" fill={PIN_COLOR.core} />
     </svg>
+  );
+}
+
+/** The same stacked-card shape the map draws for a group of pins, drawn small. */
+function GroupSwatch() {
+  return (
+    <span aria-hidden="true" className="relative inline-block h-3.5 w-3.5 shrink-0">
+      <span className="absolute right-0 top-0 h-3 w-3 rounded-[4px] border" style={{ background: CLUSTER_COLOR.back, borderColor: CLUSTER_COLOR.backEdge }} />
+      <span className="absolute bottom-0 left-0 h-3 w-3 rounded-[4px] border" style={{ background: CLUSTER_COLOR.face, borderColor: CLUSTER_COLOR.edge }} />
+    </span>
   );
 }
 
@@ -63,12 +73,18 @@ export function MapLegend({
           <span className="font-medium text-ink">Selected</span>
         </li>
         {pins ? (
-          <li className="flex items-center gap-1.5" data-testid="legend-pins" title={`${pins.count} pins, each at a provisional position`}>
-            <PinSwatch />
-            <span className="font-medium text-ink">
-              {pins.kind === "territory" ? "ASM pin, one per sales territory" : "Representative pin, one per block"}
-            </span>
-          </li>
+          <>
+            <li className="flex items-center gap-1.5" data-testid="legend-pins" title={`${pins.count} pins, each at a provisional position`}>
+              <PinSwatch />
+              <span className="font-medium text-ink">
+                {pins.kind === "territory" ? "ASM pin, one per sales territory" : "Representative pin, one per block"}
+              </span>
+            </li>
+            <li className="flex items-center gap-1.5" data-testid="legend-groups" title="Pins that would overlap are grouped; zoom in or open the group to see them one by one">
+              <GroupSwatch />
+              <span className="font-medium text-ink">Group of pins</span>
+            </li>
+          </>
         ) : null}
       </ul>
       <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1">

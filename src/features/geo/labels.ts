@@ -7,7 +7,10 @@
  * Labels never overlap each other or the map controls, and a label that cannot be placed without doing so is
  * left out and reported, never drawn on top of another. A leader line is drawn only for a label that has really
  * moved away from its anchor (more than `LEADER_MIN` pixels), and never runs through another label, a control, a
- * marker or another leader.
+ * marker or another leader. A name is placed on a strict pass first, where its line also keeps `LEADER_CLEAR` pixels
+ * from every other name, line and anchor dot; only a name with no such place is tried again on a plain pass (never
+ * through another area's dot, `ANCHOR_CLEAR`), and one with none there is reported, so no line is ever drawn through
+ * a district it does not belong to.
  *
  * Pure functions with no DOM: the text width is an estimate (see `estimateWidth`), deliberately a little
  * wide, and the browser tests check it against the rendered text.
@@ -127,6 +130,23 @@ function nearestOnBox(box: Rect, p: Point2): Point2 {
 
 const distance = (a: Point2, b: Point2) => Math.hypot(a.x - b.x, a.y - b.y);
 
+/** Clear space a leader line keeps from another label, another leader and another area's anchor dot, in pixels. */
+export const LEADER_CLEAR = 5;
+/** The least a leader line passes from another area's anchor dot, even on the plain pass: a line through a dot reads as that area's. */
+export const ANCHOR_CLEAR = 3;
+
+const inflate = (rect: Rect, by: number): Rect => ({ x: rect.x - by, y: rect.y - by, width: rect.width + 2 * by, height: rect.height + 2 * by });
+
+/** The distance from the point `p` to the segment a-b. */
+function pointSegmentDistance(p: Point2, a: Point2, b: Point2): number {
+  const dx = b.x - a.x;
+  const dy = b.y - a.y;
+  const length2 = dx * dx + dy * dy;
+  if (length2 === 0) return distance(p, a);
+  const t = Math.min(1, Math.max(0, ((p.x - a.x) * dx + (p.y - a.y) * dy) / length2));
+  return distance(p, { x: a.x + t * dx, y: a.y + t * dy });
+}
+
 /** Whether the open segments a-b and c-d cross each other (a shared end point does not count). */
 function segmentsCross(a: Point2, b: Point2, c: Point2, d: Point2): boolean {
   const side = (p: Point2, q: Point2, r: Point2) => (q.x - p.x) * (r.y - p.y) - (q.y - p.y) * (r.x - p.x);
@@ -135,6 +155,12 @@ function segmentsCross(a: Point2, b: Point2, c: Point2, d: Point2): boolean {
   const d3 = side(c, d, a);
   const d4 = side(c, d, b);
   return d1 * d2 < 0 && d3 * d4 < 0;
+}
+
+/** The least distance between the segments a-b and c-d: zero when they cross. */
+function segmentDistance(a: Point2, b: Point2, c: Point2, d: Point2): number {
+  if (segmentsCross(a, b, c, d)) return 0;
+  return Math.min(pointSegmentDistance(a, c, d), pointSegmentDistance(b, c, d), pointSegmentDistance(c, a, b), pointSegmentDistance(d, a, b));
 }
 
 /** Whether the segment a-b passes through the rectangle (Liang-Barsky). */
@@ -168,10 +194,11 @@ function segmentHitsRect(a: Point2, b: Point2, rect: Rect): boolean {
 
 // East and west first: a name is wide, so a sideways move frees the most room. Then north and south, then
 // every 22.5 degrees in between.
-const DIRECTIONS: ReadonlyArray<readonly [number, number]> = [0, 8, 12, 4, 14, 10, 2, 6, 15, 1, 7, 9, 13, 11, 3, 5].map((i) => {
-  const angle = (i * Math.PI) / 8;
-  return [Math.cos(angle), Math.sin(angle)] as const;
-});
+const DIRECTIONS: ReadonlyArray<readonly [number, number]> = [
+  ...[0, 8, 12, 4, 14, 10, 2, 6, 15, 1, 7, 9, 13, 11, 3, 5].map((i) => (i * Math.PI) / 8),
+  // Then the angles between them, so a leader can slip between two close anchor dots instead of giving the name up.
+  ...[1, 17, 25, 9, 29, 21, 5, 13, 31, 3, 15, 19, 27, 23, 7, 11].map((i) => (i * Math.PI) / 16),
+].map((angle) => [Math.cos(angle), Math.sin(angle)] as const);
 
 export function placeLabels(requests: readonly LabelRequest[], options: LabelOptions): LabelResult {
   const { area, fontSize, mode } = options;
@@ -195,10 +222,13 @@ export function placeLabels(requests: readonly LabelRequest[], options: LabelOpt
     box.y + box.height <= bounds.y + bounds.height + 1e-6;
   const free = (box: Rect) => !obstacles.some((o) => overlaps(box, o, 1)) && !avoid.some((o) => overlaps(box, o)) && !placed.some((p) => overlaps(box, p.box, GAP));
 
-  for (const request of ordered) {
+  // Places one name. `strict` is the first pass: a leader keeps `LEADER_CLEAR` pixels from every other label, leader and
+  // anchor dot. A name that finds no such place is tried again on a second pass with the plain rule (a leader may not touch
+  // another label, control, marker or leader), so a crowded corner is still named, and only where nothing else is left is a
+  // name reported as omitted.
+  const place = (request: LabelRequest, strict: boolean): "placed" | "failed" => {
     const anchor = { x: request.x, y: request.y };
-    // Off screen: nothing to label here.
-    if (!onScreen(request)) continue;
+    const clear = strict ? LEADER_CLEAR : 0;
     const othersAnchors = anchors.filter((a) => a.id !== request.id);
     const coversAnother = (box: Rect) => othersAnchors.some((a) => contains(box, a, 3));
 
@@ -214,7 +244,7 @@ export function placeLabels(requests: readonly LabelRequest[], options: LabelOpt
       if (halfDiagonal <= request.r * 1.3 && fits(centred) && free(centred)) {
         placed.push({ id: request.id, lines, box: centred, anchor, leader: false });
       }
-      continue;
+      return "placed";
     }
 
     // The centred position, then every position around the anchor, nearest first. Along each direction the
@@ -223,8 +253,8 @@ export function placeLabels(requests: readonly LabelRequest[], options: LabelOpt
     const ranked: Array<{ rect: Rect; reach: number; order: number }> = [{ rect: centred, reach: 0, order: -1 }];
     for (let k = 0; k < 30; k++) {
       DIRECTIONS.forEach(([dx, dy], order) => {
-        const clear = Math.min(width / 2 / Math.max(Math.abs(dx), 1e-9), height / 2 / Math.max(Math.abs(dy), 1e-9));
-        const reach = clear + GAP + k * step;
+        const room = Math.min(width / 2 / Math.max(Math.abs(dx), 1e-9), height / 2 / Math.max(Math.abs(dy), 1e-9));
+        const reach = room + GAP + k * step;
         ranked.push({ rect: { x: anchor.x + dx * reach - width / 2, y: anchor.y + dy * reach - height / 2, width, height }, reach, order });
       });
     }
@@ -243,26 +273,35 @@ export function placeLabels(requests: readonly LabelRequest[], options: LabelOpt
         y: Math.min(Math.max(raw.y, bounds.y), bounds.y + bounds.height - raw.height),
       };
       if (!fits(box) || !free(box) || coversAnother(box)) continue;
-      if (leaders.some((l) => segmentHitsRect(l.from, l.to, box))) continue;
+      if (leaders.some((l) => segmentHitsRect(l.from, l.to, clear ? inflate(box, 3) : box))) continue;
       const end = nearestOnBox(box, anchor);
       const away = distance(anchor, end);
       if (away > (options.maxLeader ?? Infinity)) continue;
       // A name beside its anchor needs no line, unless another area's anchor is close enough to leave it unclear whose it is.
       const leader = away > LEADER_MIN || (away > 0 && othersAnchors.some((a) => distance(a, anchor) < 2 * LEADER_MIN));
       if (leader) {
-        // A leader line must not run through another label, a control or a marker (one that already holds the
-        // anchor itself is the area's own marker), and must not cross another leader.
-        if (placed.some((p) => segmentHitsRect(anchor, end, p.box))) continue;
+        // A leader line must not run through another label (on the strict pass, nor hug one), a control or a marker (one
+        // that already holds the anchor itself is the area's own marker), and must not cross another leader. On the strict
+        // pass it also keeps clear of every other leader and of every other area's anchor dot, so no line is ever read as
+        // belonging to the wrong name.
+        if (placed.some((p) => segmentHitsRect(anchor, end, clear ? inflate(p.box, clear - 1) : p.box))) continue;
         if (obstacles.some((o) => !contains(o, anchor) && segmentHitsRect(anchor, end, o))) continue;
-        if (leaders.some((l) => segmentsCross(anchor, end, l.from, l.to))) continue;
+        if (leaders.some((l) => (clear ? segmentDistance(anchor, end, l.from, l.to) < clear : segmentsCross(anchor, end, l.from, l.to)))) continue;
+        if (othersAnchors.some((a) => pointSegmentDistance(a, anchor, end) < (clear ? clear - 1 : ANCHOR_CLEAR))) continue;
       }
       chosen = { box, leader };
       break;
     }
 
-    if (chosen) placed.push({ id: request.id, lines, box: chosen.box, anchor, leader: chosen.leader });
-    else omitted.push(request.id);
-  }
+    if (!chosen) return "failed";
+    placed.push({ id: request.id, lines, box: chosen.box, anchor, leader: chosen.leader });
+    return "placed";
+  };
+
+  const failed: LabelRequest[] = [];
+  // Off screen: nothing to label here.
+  for (const request of ordered) if (onScreen(request) && place(request, true) === "failed") failed.push(request);
+  for (const request of failed) if (place(request, false) === "failed") omitted.push(request.id);
   return { placed, omitted };
 }
 
