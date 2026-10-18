@@ -51,7 +51,7 @@ describe("the globe outline file is served only if it is the validated dataset",
       const response = globeLayerResponse(await readGlobeLayerFile(GENERATED, manifest));
       assert.equal(response.status, 200);
       assert.equal(response.headers.get("content-type"), "application/json; charset=utf-8");
-      assert.equal(response.headers.get("cache-control"), "no-store");
+      assert.equal(response.headers.get("cache-control"), "private, no-store");
       assert.equal(response.headers.get("x-content-type-options"), "nosniff");
       assert.equal(sha(Buffer.from(await response.arrayBuffer())), manifest.meta.inputs[GLOBE_LAYER_FILE].sha256);
     });
@@ -145,7 +145,7 @@ describe("the globe outline file is served only if it is the validated dataset",
         const text = await response.text();
         assert.ok(!text.includes("shapes") && !text.includes('"d"'), "nothing of the file is in the refusal");
         assert.equal((JSON.parse(text) as { code: string }).code, "tampered");
-        assert.equal(response.headers.get("cache-control"), "no-store");
+        assert.equal(response.headers.get("cache-control"), "private, no-store");
       } finally {
         rmSync(dir, { recursive: true, force: true });
       }
