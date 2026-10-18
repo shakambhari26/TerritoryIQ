@@ -67,8 +67,10 @@ anything marked **Proposed** is a direction, not a commitment. The prototype its
   other with `.ts` extensions for this reason (`allowImportingTsExtensions`), and are shared by the
   scripts, the app and the tests.
 - **One network use.** `scripts/fetch-osm.mts` is the only code that contacts an external service,
-  with a generic User-Agent and a geographic query only. The runtime dependencies are exactly
-  `next`, `react` and `react-dom`, pinned by a test.
+  with a generic User-Agent and a geographic query only. The production `dependencies` in `package.json` are exactly
+  `next`, `react`, `react-dom` and `three` (`three` is the globe's renderer, at an exact version). `tests/guardrails.test.ts`
+  fails if that set changes, and requires `three`'s version to be exact. Build, lint, type and test tooling is under
+  `devDependencies`, not in that set.
 
 ## Source layout
 
