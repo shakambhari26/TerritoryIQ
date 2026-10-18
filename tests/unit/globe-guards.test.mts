@@ -26,9 +26,9 @@ const sources = (dir: string, extensions = [".ts", ".tsx", ".mts"]) => [...files
 const GLOBE_SOURCES = [...sources("src/features/globe"), ...sources("src/app/globe")];
 
 describe("globe prototype: the browser makes no outbound request", () => {
-  it("the one request is the same-origin layer fetch in layer-client.ts; no XHR, socket, beacon or geolocation anywhere", () => {
+  it("the two requests are the same-origin layer fetch in layer-client.ts and the block-rows POST in block-rows-client.ts; no XHR, socket, beacon or geolocation anywhere", () => {
     const fetches = /\bfetch\s*\(/;
-    assert.deepEqual(GLOBE_SOURCES.filter((f) => fetches.test(readFileSync(f, "utf8"))).map(rel), ["src/features/globe/layer-client.ts"]);
+    assert.deepEqual(GLOBE_SOURCES.filter((f) => fetches.test(readFileSync(f, "utf8"))).map(rel).sort(), ["src/features/globe/block-rows-client.ts", "src/features/globe/layer-client.ts"]);
     const other = /XMLHttpRequest|\bWebSocket\b|\bEventSource\b|sendBeacon|navigator\.geolocation/;
     assert.deepEqual(GLOBE_SOURCES.filter((f) => other.test(readFileSync(f, "utf8"))).map(rel), []);
     // Three.js loaders fetch too; the renderer uses ImageLoader with literal /globe/ paths only (next test).
@@ -45,6 +45,18 @@ describe("globe prototype: the browser makes no outbound request", () => {
     // Only the globe experience reaches the client, so no other component can start a request.
     const importers = GLOBE_SOURCES.filter((f) => /from\s+["'][^"']*layer-client["']/.test(readFileSync(f, "utf8"))).map(rel);
     assert.deepEqual(importers, ["src/features/globe/components/GlobeExperience.tsx"]);
+  });
+
+  it("the block-rows client is a literal same-origin POST of { blockId } that takes no URL, and only the rows section uses it", () => {
+    const client = read("src/features/globe/block-rows-client.ts");
+    assert.match(client, /const BLOCK_ROWS_URL = "\/api\/globe\/block-rows";/);
+    assert.match(client, /export async function fetchBlockRows\(blockId: string, rowIds: readonly string\[\], signal: AbortSignal\)/);
+    assert.match(client, /method: "POST"/);
+    assert.match(client, /body: JSON\.stringify\(\{ blockId \}\)/);
+    assert.match(client, /cache: "no-store"/);
+    assert.match(client, /parseBlockRowsPayload\(body, blockId, rowIds\)/, "the answer is checked against the selected block and the page's row IDs");
+    const importers = GLOBE_SOURCES.filter((f) => /from\s+["'][^"']*block-rows-client["']/.test(readFileSync(f, "utf8"))).map(rel);
+    assert.deepEqual(importers, ["src/features/globe/components/BlockRowsSection.tsx"]);
   });
 
   it("outline path data is never in public/ and never in the page props: the manifest holds summaries only", () => {
@@ -102,8 +114,9 @@ describe("globe prototype: three.js stays inside one lazy, browser-only folder",
     const importers = sources("src")
       .filter((f) => /from\s+["'][^"']*overlay\.server["']/.test(readFileSync(f, "utf8")))
       .map(rel);
-    // The page (for the manifest props) and the globe's outline route (for the integrity record). Nothing else.
-    assert.deepEqual(importers, ["src/app/geo/globe-boundaries.json/route.ts", "src/app/globe/page.tsx"]);
+    // The page (for the manifest props), the globe's outline route (for the integrity record) and the block-rows route (for one
+    // selected block's rows). Nothing else.
+    assert.deepEqual(importers.sort(), ["src/app/api/globe/block-rows/route.ts", "src/app/geo/globe-boundaries.json/route.ts", "src/app/globe/page.tsx"]);
     const clientImporters = sources("src")
       .filter((f) => /^\s*["']use client["']/m.test(readFileSync(f, "utf8")))
       .filter((f) => /overlay\.server/.test(readFileSync(f, "utf8")));
@@ -113,8 +126,8 @@ describe("globe prototype: three.js stays inside one lazy, browser-only folder",
   it("the Territory Workspace does not import the globe", () => {
     const offenders = sources("src")
       .filter((f) => !f.includes(`${join("src", "features", "globe")}`) && !f.includes(join("src", "app", "globe")))
-      // The globe's own outline route is part of the prototype; the workspace's route (geo/boundaries.json) is not.
-      .filter((f) => rel(f) !== "src/app/geo/globe-boundaries.json/route.ts")
+      // The globe's own outline and block-rows routes are part of the prototype; the workspace's route (geo/boundaries.json) is not.
+      .filter((f) => rel(f) !== "src/app/geo/globe-boundaries.json/route.ts" && rel(f) !== "src/app/api/globe/block-rows/route.ts")
       .filter((f) => /features\/globe|globe-prototype/.test(readFileSync(f, "utf8")))
       .map(rel);
     assert.deepEqual(offenders, []);

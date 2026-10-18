@@ -186,21 +186,24 @@ describe("outbound network", () => {
     assert.match(link, /href=\{`https:\/\/www\.openstreetmap\.org\/relation\/\$\{feature\.boundary\.relationId\}`\}[^>]*rel="noopener noreferrer"/);
   });
 
-  it("the only requests the app makes are same-origin fetches of two literal URLs, one from each of two files", () => {
+  it("the only requests the app makes are same-origin fetches of three literal URLs, one from each of three files", () => {
     const pattern = /\bfetch\s*\(|XMLHttpRequest|\bWebSocket\b|\bEventSource\b|sendBeacon|navigator\.geolocation/;
     const offenders = sources("src").filter((f) => pattern.test(readFileSync(f, "utf8"))).map(rel).sort();
-    // The Territory Workspace (its own layer), and the globe prototype's one layer client (the globe's own file).
-    // A third place, or either file asking for the other's URL, fails here (rule and its negative tests: globe-network-guard.test.mts).
-    assert.deepEqual(offenders, ["src/features/globe/layer-client.ts", "src/features/territory/components/Workspace.tsx"]);
+    // The Territory Workspace (its own layer), the globe's layer client (the globe's own file) and the globe's block-rows client
+    // (a POST of `{ blockId }`). A fourth place, or a file asking for another's URL, fails here (rule and its negative tests: globe-network-guard.test.mts).
+    assert.deepEqual(offenders, ["src/features/globe/block-rows-client.ts", "src/features/globe/layer-client.ts", "src/features/territory/components/Workspace.tsx"]);
     const expected: Record<string, string> = {
       "src/features/territory/components/Workspace.tsx": "/geo/boundaries.json",
       "src/features/globe/layer-client.ts": "/geo/globe-boundaries.json",
+      "src/features/globe/block-rows-client.ts": "/api/globe/block-rows",
     };
+    const constants: Record<string, string> = { "src/features/globe/block-rows-client.ts": "BLOCK_ROWS_URL" };
     for (const file of offenders) {
       const text = read(file);
-      assert.match(text, new RegExp(`const LAYER_URL = "${expected[file].replace(/[./]/g, "\\$&")}";`), `${file}: the URL is one literal, same-origin and relative`);
+      const constant = constants[file] ?? "LAYER_URL";
+      assert.match(text, new RegExp(`const ${constant} = "${expected[file].replace(/[./]/g, "\\$&")}";`), `${file}: the URL is one literal, same-origin and relative`);
       assert.equal(text.match(/\bfetch\s*\(/g)?.length, 1, `${file}: exactly one fetch`);
-      assert.match(text, /fetch\(LAYER_URL,/, `${file}: the fetch uses that constant`);
+      assert.match(text, new RegExp(`fetch\\(${constant},`), `${file}: the fetch uses that constant`);
     }
     const client = read("src/features/globe/layer-client.ts");
     assert.equal(client.match(/\bLAYER_URL\b/g)?.length, 2, "declared once and used once, nothing else");
@@ -283,6 +286,38 @@ describe("public-asset scan (npm run verify:assets)", () => {
     assert.deepEqual(result.problems, []);
     assert.equal(result.assetFilesScanned, 2);
     assert.deepEqual(result.serverFilesWithNames, [".next/server/app/index.html"]);
+  });
+
+  it("treats Workspace as the one known named output, and any name in Globe output as a failure", () => {
+    const workspace = run({
+      "public/icon.svg": "<svg/>",
+      ".next/static/a.js": "1",
+      ".next/server/app/workspace.html": "<p>Aaron Testperson</p>",
+      ".next/server/app/workspace.segments/_full.segment.rsc": "Betty Placeholder",
+      ".next/server/app/globe.html": "<p>no names</p>",
+      ".next/server/route-cache/APP_PAGE/0123abcd/$/workspace.rsc": "Aaron Testperson",
+      ".next/server/route-cache/APP_PAGE/0123abcd/$/globe.rsc": "<p>no names</p>",
+    });
+    assert.deepEqual(workspace.problems, []);
+    assert.deepEqual(workspace.workspaceFilesWithNames, [".next/server/app/workspace.html", ".next/server/app/workspace.segments/_full.segment.rsc", ".next/server/route-cache/APP_PAGE/0123abcd/$/workspace.rsc"]);
+    assert.deepEqual(workspace.globeFilesWithNames, []);
+    for (const file of [
+      ".next/server/app/globe.html",
+      ".next/server/app/globe.rsc",
+      ".next/server/app/globe.segments/_full.segment.rsc",
+      ".next/server/app/globe.segments/globe/__PAGE__.segment.rsc",
+      ".next/server/app/globe/page.js",
+      ".next/server/app/globe-prototype/page.js",
+      ".next/server/app/api/globe/block-rows/route.js",
+      ".next/server/app/geo/globe-boundaries.json/route.js",
+      ".next/server/route-cache/APP_PAGE/0123abcd/$/globe.html",
+      ".next/server/route-cache/APP_PAGE/0123abcd/$/globe.segments/globe/__PAGE__.segment.rsc",
+    ]) {
+      const result = run({ "public/icon.svg": "<svg/>", ".next/static/a.js": "1", ".next/server/app/workspace.html": "Aaron Testperson", [file]: "x Betty Placeholder x" });
+      assert.equal(result.problems.length, 1, file);
+      assert.match(result.problems[0], /Globe output must carry no names/, file);
+      assert.deepEqual(result.globeFilesWithNames, [file], file);
+    }
   });
 
   it("flags a staff name in a client chunk or in public/", () => {

@@ -6,7 +6,8 @@ import { fileURLToPath } from "node:url";
 import { networkViolations, type AllowedFetch } from "./helpers/network-guard.mts";
 
 /**
- * The network guard, widened by exactly one request: the globe's same-origin GET of /geo/globe-boundaries.json.
+ * The network guard, widened by exactly two requests: the globe's same-origin GET of /geo/globe-boundaries.json and its
+ * same-origin POST of `{ blockId }` to /api/globe/block-rows.
  * These tests check the real source tree against the allowed list, and then check that the guard still catches
  * everything it must (external URLs, arbitrary fetch URLs, XHR, sockets, beacons, a third fetch, and a file asking
  * for another file's URL), with synthetic sources, so a guard that has gone slack fails here.
@@ -16,6 +17,7 @@ const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..", "..");
 const ALLOWED: AllowedFetch[] = [
   { file: "src/features/territory/components/Workspace.tsx", url: "/geo/boundaries.json" },
   { file: "src/features/globe/layer-client.ts", url: "/geo/globe-boundaries.json" },
+  { file: "src/features/globe/block-rows-client.ts", url: "/api/globe/block-rows", constant: "BLOCK_ROWS_URL", method: "POST" },
 ];
 
 function* files(directory: string): Generator<string> {
@@ -32,14 +34,14 @@ describe("network guard: the real source tree", () => {
     if ([".ts", ".tsx", ".mts", ".mjs"].includes(extname(file))) sources[relative(ROOT, file).split("\\").join("/")] = readFileSync(file, "utf8");
   }
 
-  it("holds: only the two allowed files request anything, each only its own literal URL", () => {
+  it("holds: only the three allowed files request anything, each only its own literal URL", () => {
     assert.deepEqual(networkViolations(sources, ALLOWED), []);
   });
 
-  it("the globe's allowed file is the only globe file that can request, and it asks for the globe's URL, not the workspace's", () => {
+  it("the globe's two allowed files are the only globe files that can request, and they ask for the globe's URLs, not the workspace's", () => {
     const globe = Object.keys(sources).filter((f) => f.startsWith("src/features/globe/") || f.startsWith("src/app/globe/"));
-    const requesting = globe.filter((f) => /\bfetch\s*\(|XMLHttpRequest|\bWebSocket\b|\bEventSource\b|sendBeacon/.test(sources[f]));
-    assert.deepEqual(requesting, ["src/features/globe/layer-client.ts"]);
+    const requesting = globe.filter((f) => /\bfetch\s*\(|XMLHttpRequest|\bWebSocket\b|\bEventSource\b|sendBeacon/.test(sources[f])).sort();
+    assert.deepEqual(requesting, ["src/features/globe/block-rows-client.ts", "src/features/globe/layer-client.ts"]);
     assert.match(sources["src/features/globe/layer-client.ts"], /const LAYER_URL = "\/geo\/globe-boundaries\.json";/);
     assert.doesNotMatch(sources["src/features/globe/layer-client.ts"], /"\/geo\/boundaries\.json"/);
   });
@@ -105,5 +107,47 @@ describe("network guard: it still blocks everything else", () => {
   it("blocks an allowed file that stops using its constant, or declares it twice", () => {
     assert.notDeepEqual(flagged({ "src/features/globe/layer-client.ts": 'export const x = () => fetch("/geo/globe-boundaries.json");' }), []);
     assert.notDeepEqual(flagged({ "src/features/globe/layer-client.ts": client("/geo/globe-boundaries.json", 'const OTHER = "/x"; fetch(OTHER);') }), []);
+  });
+});
+
+describe("network guard: the block-rows POST", () => {
+  const post = (url: string, init = 'method: "POST",\n    headers: { "Content-Type": "application/json" },\n    body: JSON.stringify({ blockId }),\n    signal,\n    cache: "no-store",', extra = "") =>
+    `const BLOCK_ROWS_URL = "${url}";\nexport const load = async (blockId: string, signal: AbortSignal) => {\n  const response = await fetch(BLOCK_ROWS_URL, {\n    ${init}\n  });\n  return response;\n};\n${extra}`;
+  const FILE = "src/features/globe/block-rows-client.ts";
+  const flagged = (text: string) => networkViolations({ [FILE]: text }, ALLOWED);
+
+  it("the real client sends exactly one fetch: the approved literal URL, method POST, body { blockId }, never cached", () => {
+    const source = readFileSync(join(ROOT, FILE), "utf8");
+    assert.match(source, /const BLOCK_ROWS_URL = "\/api\/globe\/block-rows";/);
+    assert.match(source, /method: "POST"/);
+    assert.match(source, /body: JSON\.stringify\(\{ blockId \}\)/);
+    assert.match(source, /cache: "no-store"/);
+    assert.deepEqual(flagged(source), []);
+  });
+
+  it("accepts the POST as written", () => {
+    assert.deepEqual(flagged(post("/api/globe/block-rows")), []);
+  });
+
+  it("blocks a different URL, a query string, an absolute URL and the other globe URLs", () => {
+    for (const url of ["/api/globe/block-rows?blockId=GB-1", "/api/globe/other", "https://example.test/api/globe/block-rows", "/geo/globe-boundaries.json", "/api/globe/../x"]) {
+      assert.notDeepEqual(flagged(post(url)), [], url);
+    }
+  });
+
+  it("blocks a GET, another method, a missing method and a body that is not exactly { blockId }", () => {
+    assert.match(flagged(post("/api/globe/block-rows", 'method: "GET",\n    body: JSON.stringify({ blockId }),')).join("\n"), /not method: "POST"/);
+    assert.match(flagged(post("/api/globe/block-rows", 'method: "PUT",\n    body: JSON.stringify({ blockId }),')).join("\n"), /not method: "POST"/);
+    assert.match(flagged(post("/api/globe/block-rows", "signal,\n    cache: \"no-store\",")).join("\n"), /not method: "POST"/);
+    for (const body of ["JSON.stringify({ blockId, extra: 1 })", "JSON.stringify({ id: blockId })", "JSON.stringify(blockId)", "blockId", "JSON.stringify({ blockId: blockId.toLowerCase() })"]) {
+      assert.match(flagged(post("/api/globe/block-rows", `method: "POST",\n    body: ${body},`)).join("\n"), /body is not exactly/, body);
+    }
+  });
+
+  it("blocks a second fetch, other channels, and a plain GET entry that starts sending a body", () => {
+    assert.notDeepEqual(flagged(post("/api/globe/block-rows", undefined, 'fetch("/api/other");')), []);
+    assert.notDeepEqual(flagged(post("/api/globe/block-rows", undefined, 'navigator.sendBeacon("/api/globe/block-rows", "x");')), []);
+    const layer = 'const LAYER_URL = "/geo/globe-boundaries.json";\nexport const a = () => fetch(LAYER_URL, { method: "POST", body: JSON.stringify({ blockId }) });';
+    assert.match(networkViolations({ "src/features/globe/layer-client.ts": layer }, ALLOWED).join("\n"), /plain GET entry/);
   });
 });

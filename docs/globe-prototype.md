@@ -17,8 +17,8 @@ What this does **not** mean:
 - **The geography is not approved.** The outlines are provisional, unofficial OpenStreetMap geometry (ODbL). **No official
   approval of the geographic data has been given**, and every screen that shows an outline says so.
 - **The application is not approved for deployment.** It is a local prototype: it binds to `127.0.0.1`, refuses any other
-  `Host`, has no authentication, and its served pages (including `/globe`) contain staff names from the workbook
-  ([SN-5](security-notes.md)). It must stay on this machine. The merge into `main` does not authorize production
+  `Host`, has no authentication, and its served pages (`/workspace`; `/globe` only after a block is selected, see
+  "Names on demand" below) contain staff names from the workbook ([SN-5](security-notes.md)). It must stay on this machine. The merge into `main` does not authorize production
   deployment.
 - Being merged or linked is not a decision to make the globe the entry experience, and the merge does not stand in for
   official approval of the geographic data.
@@ -147,8 +147,14 @@ folder named by `GLOBE_SHOTS`).
 src/app/globe/page.tsx                      Server page (/globe): reads the overlay, hands it to the lazy loader; badge and provisional notice
 src/app/geo/globe-boundaries.json/route.ts  GET /geo/globe-boundaries.json: the globe's own file, checked on every request
 src/features/globe/
-  types.ts                                  Manifest (page props) and overlay (manifest + path data) types, the record type
-  overlay.server.ts                         Server-only read of data/generated/globe-overlay.json (no path data in it)
+  types.ts                                  Manifest (page props: blocks list `rowIds`, no names) and overlay (manifest + path data) types
+  server-types.ts                           Types only, server only: the generated file with each block's full records (names)
+  overlay.server.ts                         Server-only read of data/generated/globe-overlay.json; exports the projection and one block's rows
+  overlay-projection.server.ts              Pure: the allow-list projection (records become rowIds) and the block-ID to rows Map
+  block-rows.ts                             The POST contract: ID pattern, size cap, fixed error codes, response check (no workbook data)
+  block-rows-route.server.ts                The POST handler's logic: host, method, media type, size, shape, exact lookup, headers
+  block-rows-client.ts                      The second request: same-origin POST of { blockId } to /api/globe/block-rows, literal URL
+  components/BlockRowsSection.tsx           The selected block's rows: loading, ready, empty, error with retry; abort, timeout, stale guard
   classification.ts                         The white rule: no "no-representative" without an approved reviewed record (pure)
   layer-identity.ts                         File name and kind of the globe's outline file, shared by server and browser
   layer-integrity.ts                        Server only: checks the file against the manifest (SHA-256, identity, structure) and answers
@@ -203,12 +209,36 @@ Phase 1 adds to that: the route moved to `src/app/globe/`, `next.config.ts` (the
   missing file or an unbuilt manifest gives 404 (`missing`, `unavailable`); the others 500. A refusal carries a code and a
   plain sentence and none of the file. Responses carry `Cache-Control: no-store` and `nosniff`. The workspace's
   `/geo/boundaries.json` route, file and payload are unchanged (a browser test fetches both and compares bytes). The page
-  carries only the validated manifest: the classification, the staff names for the details panel, and for each outline a
+  carries only the validated manifest: the classification, each block's workbook row IDs (no names), and for each outline a
   summary (bounding box, label point, vertex count).
+- **Names on demand.** The page no longer carries staff names, the workbook's block labels or its sales territories.
+  `overlay.server.ts` builds the page's manifest by an allow-list projection (`overlay-projection.server.ts`: every object
+  is constructed field by field, and a block's `records` become `rowIds`, in the same order). When a block is selected,
+  `BlockRowsSection` sends one `POST /api/globe/block-rows` with the body `{"blockId":"GB-…"}` and shows the rows that come
+  back, after checking that they are that block's and that their row IDs are exactly the page's `rowIds`. The route is
+  dynamic (`connection()`), accepts only `application/json` of at most 256 bytes with exactly one key matching
+  `^GB-[0-9]{1,9}$`, looks the ID up in a server-built `Map` (never as an object key or a path), and answers 200, 400, 404,
+  405, 413, 415 or 403 (non-loopback Host) with a fixed code and sentence that never echo the input. Every response is
+  `Cache-Control: private, no-store` with `nosniff`. A block with no rows sends no request. The section aborts a request
+  when the selection changes and after about ten seconds, ignores a late answer for a block that is no longer selected, and
+  drops the names on a new selection, Back, Escape and Return to globe. **This narrows what a page load exposes. It is not
+  authentication or access control:** anyone who can reach the local server and passes the loopback Host check can ask for any
+  block ID, and the IDs can be listed from the page. `tests/e2e/globe-privacy.test.mts` proves it on the production build and
+  `npm run verify:assets` fails if any Globe output holds a name (Workspace is the one known exception).
+- **No automatic Workspace prefetch from the globe.** Next.js prefetches a visible `<Link>`'s page, and `/workspace`'s
+  HTML and RSC payload hold every staff name, so a default link would have delivered them to a visitor who had only opened
+  `/globe`. Two places now set `prefetch={false}`: the shared navigation's Workspace link (`NavLink.tsx`, for `/workspace`
+  only; the Globe and Overview links keep default prefetching) and the Workspace links in the selected-block panel
+  (`components/WorkspaceLink.tsx`: the block, district and state link and each row link). Explicit navigation is unchanged:
+  a click opens `/workspace` with the same URL, hash and behaviour. Because the navigation is shared, its Workspace link does
+  not prefetch on any page; the homepage's own Workspace links are untouched. This reduces unsolicited delivery of names
+  to the browser. It is not authentication or access control: `/workspace` still contains every staff name whenever it is
+  opened, directly or by a click, and anyone who can reach the local server can request it.
 - **The request.** One `fetch` in `src/features/globe/layer-client.ts`: the literal relative URL
   `/geo/globe-boundaries.json`, `GET`, the same options as the workspace (`cache: "no-cache"`, an abort signal), no URL
-  parameter, no header, no body, no credentials. The repository's network guard allows exactly two `fetch` calls in the
-  app, by file name and exact URL: the workspace to `/geo/boundaries.json` and this client to `/geo/globe-boundaries.json`.
+  parameter, no header, no body, no credentials. The repository's network guard allows exactly three `fetch` calls in the
+  app, by file name and exact URL: the workspace to `/geo/boundaries.json`, this client to `/geo/globe-boundaries.json`, and
+  `block-rows-client.ts` to `/api/globe/block-rows` (`POST`, body exactly `JSON.stringify({ blockId })`, `cache: "no-store"`).
   Each file must hold one `fetch` of its own literal constant, so neither may ask for the other's URL, and the client may
   take no URL argument. The rule is a function (`tests/unit/helpers/network-guard.mts`); `tests/unit/globe-network-guard.test.mts`
   runs it over the real source and over synthetic code to show it still blocks an external URL, an arbitrary or built
@@ -397,7 +427,11 @@ Measured in this environment (software WebGL, so frame rate is not representativ
   unmount, every geometry, material and texture is disposed, the renderer is disposed and its context released, and
   event listeners and observers are removed. Next.js keeps a page you navigate away from hidden; the cleanup runs then, and
   coming back builds a fresh globe (tested).
-- **Page weight.** The page carries the 232 KB manifest (names, classification, outline summaries) and no path data.
+- **Page weight.** The page carries the manifest (classification, row IDs, outline summaries) and no path data. Measured
+  on the production build of this branch: the generated `data/generated/globe-overlay.json` is 232,146 bytes, the manifest
+  projected from it for the page is 133,212 bytes of JSON, and the `/globe` HTML (manifest plus the page itself) is 166,697
+  bytes. Over all 294 blocks that have workbook rows, the `POST /api/globe/block-rows` response is 165 to 647 bytes (median
+  357, mean 358). These sizes change whenever the overlay is regenerated.
   The 559 KB outline file is fetched from `/geo/globe-boundaries.json` in parallel with the textures: the globe no longer
   waits for it, and the outlines are revealed only once it has validated and the camera has arrived. The route hashes
   the file on each request (about 0.5 MB, a few milliseconds on this machine).

@@ -5,6 +5,8 @@ import path from "node:path";
 import { after, before, describe, it } from "node:test";
 import { chromium, type Browser, type BrowserContext, type Page } from "playwright-core";
 import { mergeLayer } from "../../src/features/globe/layer-merge.ts";
+import { projectManifest } from "../../src/features/globe/overlay-projection.server.ts";
+import type { ServerManifest } from "../../src/features/globe/server-types.ts";
 import type { GlobeManifest, GlobeOverlay } from "../../src/features/globe/types.ts";
 import { browserPath, runAxe, skipReason, startServer, type Server } from "./harness.mts";
 
@@ -32,9 +34,12 @@ describe("globe integration (Phase 1) in a real browser", { skip: skipReason, ti
   let browser: Browser;
   let manifest: GlobeManifest;
   let overlay: GlobeOverlay;
+  // The full generated file, with each block's workbook rows. Test side only: the page and its manifest carry row IDs.
+  let source: ServerManifest;
 
   before(async () => {
-    manifest = JSON.parse(await readFile(path.join(GENERATED, "globe-overlay.json"), "utf8")) as GlobeManifest;
+    source = JSON.parse(await readFile(path.join(GENERATED, "globe-overlay.json"), "utf8")) as ServerManifest;
+    manifest = projectManifest(source);
     const merged = mergeLayer(manifest, JSON.parse(await readFile(path.join(GENERATED, "globe-boundaries.json"), "utf8")));
     assert.ok(merged.ok, merged.ok ? "" : merged.reason);
     overlay = merged.overlay;
@@ -61,7 +66,10 @@ describe("globe integration (Phase 1) in a real browser", { skip: skipReason, ti
 
   // The district the tests use, a represented block in it that has an outline and a workbook row, and a second such block.
   const district = () => overlay.districts.find((d) => d.name === "Bankura")!;
-  const blocksOf = () => overlay.blocks.filter((b) => b.districtId === district().id && b.state === "represented" && b.geometry && b.records.length > 0);
+  const blocksOf = () => overlay.blocks.filter((b) => b.districtId === district().id && b.state === "represented" && b.geometry && b.rowIds.length > 0);
+  const rowsOf = (blockId: string) => source.blocks.find((b) => b.id === blockId)!.records;
+  /** The selected block's rows have been fetched and shown: names and row links exist only after this. */
+  const rowsReady = (page: Page) => page.waitForSelector('[data-testid="globe-block-rows"][data-state="ready"]', { timeout: 15_000 });
 
   async function selectDistrict(page: Page) {
     await page.getByRole("searchbox").fill("bankura");
@@ -212,7 +220,7 @@ describe("globe integration (Phase 1) in a real browser", { skip: skipReason, ti
 
   it("a workbook row in the block details opens that row (#unit=) in the workspace, at its block", async () => {
     const block = blocksOf()[0];
-    const row = block.records[0];
+    const row = rowsOf(block.id)[0];
     const { page, context } = await open("/globe");
     await ready(page);
     await selectDistrict(page);
@@ -220,8 +228,9 @@ describe("globe integration (Phase 1) in a real browser", { skip: skipReason, ti
     await selectBlock(page, block.name);
     await waitPhase(page, "flying");
     await waitPhase(page, "arrived");
+    await rowsReady(page);
     const rowLinks = page.locator(ROW_LINK);
-    assert.equal(await rowLinks.count(), block.records.length, "one link per workbook row listed");
+    assert.equal(await rowLinks.count(), block.rowIds.length, "one link per workbook row listed");
     assert.equal(await rowLinks.first().getAttribute("href"), `/workspace#unit=${row.unitId}`);
     await rowLinks.first().click();
     await workspaceAt(page, "block");
@@ -242,7 +251,8 @@ describe("globe integration (Phase 1) in a real browser", { skip: skipReason, ti
       assert.equal(await page.locator(LINK).getAttribute("href"), `/workspace#feature=${district().id}`);
       await selectBlock(page, block.name);
       assert.equal(await page.locator(LINK).getAttribute("href"), `/workspace#feature=${block.id}`);
-      assert.equal(await page.locator(ROW_LINK).first().getAttribute("href"), `/workspace#unit=${block.records[0].unitId}`);
+      await rowsReady(page);
+      assert.equal(await page.locator(ROW_LINK).first().getAttribute("href"), `/workspace#unit=${rowsOf(block.id)[0].unitId}`);
       await page.locator(LINK).click();
       await workspaceAt(page, "block");
       assert.equal(await page.locator('[data-testid="details-feature"]').getAttribute("data-feature-id"), block.id);

@@ -4,7 +4,8 @@ import { dirname, join, resolve } from "node:path";
 import { describe, it } from "node:test";
 import { fileURLToPath } from "node:url";
 import { mergeLayer } from "../../src/features/globe/layer-merge.ts";
-import type { GlobeManifest } from "../../src/features/globe/types.ts";
+import { projectManifest } from "../../src/features/globe/overlay-projection.server.ts";
+import type { ServerManifest } from "../../src/features/globe/server-types.ts";
 import type { BoundaryLayer } from "../../src/features/territory/types.ts";
 
 /**
@@ -22,7 +23,7 @@ const ready = existsSync(overlayPath) && existsSync(layerPath);
 const clone = <T,>(value: T): T => JSON.parse(JSON.stringify(value)) as T;
 
 describe("joining the served outlines to the validated manifest", { skip: ready ? false : "run npm run data:build and python -I scripts/globe/build_overlay.py first" }, () => {
-  const manifest = ready ? (JSON.parse(readFileSync(overlayPath, "utf8")) as GlobeManifest) : (null as never);
+  const manifest = ready ? projectManifest(JSON.parse(readFileSync(overlayPath, "utf8")) as ServerManifest) : (null as never);
   const layer = ready ? (JSON.parse(readFileSync(layerPath, "utf8")) as BoundaryLayer) : (null as never);
   const drawnBlocks = () => manifest.blocks.filter((b) => b.geometry);
 

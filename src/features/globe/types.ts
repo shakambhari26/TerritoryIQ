@@ -1,7 +1,10 @@
 /**
  * Shapes of the globe overlay manifest written by scripts/globe/build_overlay.py to
- * data/generated/globe-overlay.json. Server data: it carries workbook names, so it is read only on the server
- * (overlay.server.ts) and handed to the page as props, never written to public/.
+ * data/generated/globe-overlay.json, as the page receives it. The file itself carries workbook names (server-types.ts
+ * describes it), so it is read only on the server (overlay.server.ts), which hands the page a strict projection of it:
+ * every block lists only the IDs of its workbook rows (`rowIds`). The names, row labels and sales territories of those
+ * rows are fetched for one selected block at a time from POST /api/globe/block-rows (block-rows.ts). Nothing here is
+ * ever written to public/.
  *
  * The manifest holds no outline path data. It records, for every outline that passed validation, the summary
  * the validation produced (bounding box, label point, vertex count), and the identity (dataset ID, SHA-256, shape
@@ -59,23 +62,6 @@ export interface Confirmation {
   review: { status: ReviewStatus; reviewedBy: string | null; reviewedAt: string | null; notes?: string };
 }
 
-export interface OverlayPerson {
-  role: string;
-  slot: number;
-  name: string | null;
-  vacant: boolean;
-}
-
-export interface OverlayRecord {
-  unitId: string;
-  /** The block label exactly as the workbook row writes it. */
-  blockLabel: string;
-  /** The workbook DISTRICT label: a sales territory, not an administrative district. */
-  territory: string;
-  people: OverlayPerson[];
-  namedPeople: number;
-}
-
 export interface OverlayBlock {
   id: string;
   name: string;
@@ -86,7 +72,8 @@ export interface OverlayBlock {
   /** Present only with a reviewed source record that confirms "no representative". */
   confirmation?: Confirmation | null;
   contested: boolean;
-  records: OverlayRecord[];
+  /** The workbook rows linked to this block, by row ID (`TU-…`), in the manifest's order. Their names are not here. */
+  rowIds: string[];
   geometry: OverlayGeometry | null;
   noGeometryReason: string | null;
 }

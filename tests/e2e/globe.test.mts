@@ -8,6 +8,8 @@ import { Euler, PerspectiveCamera, Vector3 } from "three";
 import { angularDistance, faceRotation, lngLatToVector } from "../../src/features/globe/geo-math.ts";
 import { mergeLayer } from "../../src/features/globe/layer-merge.ts";
 import { decodeGeometry, pointInPolygons } from "../../src/features/globe/shapes.ts";
+import { projectManifest } from "../../src/features/globe/overlay-projection.server.ts";
+import type { ServerManifest } from "../../src/features/globe/server-types.ts";
 import type { GlobeManifest, GlobeOverlay } from "../../src/features/globe/types.ts";
 import { browserPath, runAxe, skipReason, startServer, type Server } from "./harness.mts";
 
@@ -78,10 +80,13 @@ describe("globe prototype in a real browser", { skip: skipReason, timeout: 600_0
   let browser: Browser;
   let overlay: GlobeOverlay;
   let manifest: GlobeManifest;
+  // The full generated file, with each block's workbook rows. Test side only: the page and its manifest carry row IDs.
+  let source: ServerManifest;
 
   before(async () => {
     // What the page draws: the validated manifest joined to the outlines the route handler serves.
-    manifest = JSON.parse(await readFile(path.join(GENERATED, "globe-overlay.json"), "utf8")) as GlobeManifest;
+    source = JSON.parse(await readFile(path.join(GENERATED, "globe-overlay.json"), "utf8")) as ServerManifest;
+    manifest = projectManifest(source);
     const layer: unknown = JSON.parse(await readFile(GLOBE_LAYER_PATH, "utf8"));
     const merged = mergeLayer(manifest, layer);
     assert.ok(merged.ok, merged.ok ? "" : merged.reason);
@@ -304,11 +309,13 @@ describe("globe prototype in a real browser", { skip: skipReason, timeout: 600_0
     await page.waitForTimeout(1500);
     await shot(page, "05-block-details");
     assert.equal(await attr(page, "data-level"), "block");
+    // The rows are fetched after the block is selected: wait for them before reading names.
+    await page.waitForSelector('[data-testid="globe-block-rows"][data-state="ready"]', { timeout: 15_000 });
     const details = (await page.locator(ROOT_SEL).textContent()) ?? "";
     assert.match(details, /Provisional representative link/);
     assert.match(details, /Workbook rows linked to this block/);
     assert.match(details, /A sales territory label is not an administrative district/);
-    const person = represented.records[0].people.find((p) => p.name)!;
+    const person = source.blocks.find((b) => b.id === represented.id)!.records[0].people.find((p) => p.name)!;
     assert.ok(details.includes(person.name!), "the workbook name for the linked row is shown");
 
     // A block with no outline says so and draws nothing for it.

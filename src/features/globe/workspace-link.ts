@@ -4,7 +4,7 @@
  * The workspace keeps its selection in the URL hash (`#feature=<official unit ID>` or `#unit=<workbook row ID>`, see
  * features/territory/selection.ts) and derives the map's geographic level from it, so a hash is all the hand-off
  * needs: no shared store, and nothing is written to the URL while the globe is used. IDs are never built from names.
- * A district or block ID is used only if the validated overlay lists it, and a row ID only if it is a record the
+ * A district or block ID is used only if the validated overlay lists it, and a row ID only if it is a row ID the
  * overlay links to a block; anything else gives null and the caller shows no link.
  *
  *   state               /workspace                  (the map starts at the state overview)
@@ -20,7 +20,7 @@ export const WORKSPACE_PATH = "/workspace";
 
 export type WorkspaceTarget = { kind: "state" } | { kind: "district"; id: string } | { kind: "block"; id: string } | { kind: "row"; id: string };
 
-/** What is needed to check an ID: the validated district and block records, rows included. */
+/** What is needed to check an ID: the validated district and block records, with each block's row IDs. */
 export type WorkspaceLookup = Pick<GlobeManifest, "districts" | "blocks">;
 
 const isId = (id: unknown): id is string => typeof id === "string" && id.length > 0;
@@ -35,7 +35,7 @@ export function workspaceHref(lookup: WorkspaceLookup, target: WorkspaceTarget):
     case "block":
       return isId(target.id) && lookup.blocks.some((b) => b.id === target.id) ? `${WORKSPACE_PATH}${selectionToHash({ kind: "feature", id: target.id })}` : null;
     case "row":
-      return isId(target.id) && lookup.blocks.some((b) => b.records.some((r) => r.unitId === target.id)) ? `${WORKSPACE_PATH}${selectionToHash({ kind: "unit", id: target.id })}` : null;
+      return isId(target.id) && lookup.blocks.some((b) => b.rowIds.includes(target.id)) ? `${WORKSPACE_PATH}${selectionToHash({ kind: "unit", id: target.id })}` : null;
     default:
       return null;
   }
