@@ -1,8 +1,9 @@
 import assert from "node:assert/strict";
-import { existsSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import http from "node:http";
 import path from "node:path";
 import { after, before, describe, it } from "node:test";
+import nextConfig from "../../next.config.ts";
 import { startServer, type Server } from "./harness.mts";
 
 const ROOT = path.resolve(import.meta.dirname, "..", "..");
@@ -61,6 +62,20 @@ describe("response headers on the production server", { skip }, () => {
       assertBaseline(response.headers, urlPath);
     });
   }
+
+  it("/geo/boundaries.json: the route's own Cache-Control, the next.config.ts rule and the real response agree", async () => {
+    // Whichever answer the route gives (the layer, or the 404 when it is not built), the three must be one value. The
+    // route-level value is read from its source, since the route itself reads the generated data when imported.
+    const source = readFileSync(path.join(ROOT, "src", "app", "geo", "boundaries.json", "route.ts"), "utf8");
+    const routeValue = source.match(/^const CACHE_CONTROL\s*=\s*"([^"]*)"/m)?.[1];
+    const rule = ((await nextConfig.headers?.()) ?? []).find((r) => r.source === "/geo/:path*")?.headers.find((h) => h.key === "Cache-Control")?.value;
+    const response = await fetch(url("/geo/boundaries.json"));
+    await response.arrayBuffer();
+    assert.ok(response.status === 200 || response.status === 404, `answered ${response.status}`);
+    assert.equal(routeValue, "private, no-store", "the route declares the policy");
+    assert.equal(rule, routeValue, "the config rule equals the route's");
+    assert.equal(response.headers.get("cache-control"), routeValue, `the ${response.status} response equals the route's`);
+  });
 
   it("a data-free geo response keeps its JSON type; with data it is JSON too", async () => {
     for (const urlPath of SENSITIVE_ROUTES) {

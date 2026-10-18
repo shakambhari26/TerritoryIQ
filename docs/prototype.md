@@ -52,8 +52,8 @@ data/generated/dataset.json    ──> buildOverviewData (server) ──> / (Ove
 `/` receives an `OverviewData` (`src/features/territory/overview-data.ts`), not the dataset: row, slot and
 crosswalk structure with each person replaced by an opaque integer key, plus the geography fields and source
 provenance the page prints. The browser still recalculates every figure from it, applying the reviewer's locally
-stored change log. `/globe` is fed by the globe manifest, which is separate from this diagram and also lists
-staff names (see the limitation below).
+stored change log. `/globe` is fed by the globe manifest, which is separate from this diagram. The page carries
+only each block's workbook row IDs; a block's staff names load on demand after it is selected (section 8).
 
 - `scripts/verify-sources.mts` and `scripts/build-data.mts` hash all four source files before and
   after, and fail if any differs from the recorded value. Nothing writes to `data-source/`, and a
@@ -267,15 +267,24 @@ from another computer. Each layer below is checked by a test (`tests/unit/local-
 | No outbound requests from the app | The app makes one request, a same-origin `fetch` of `/geo/boundaries.json`. A browser test asserts every request goes to the app's own host. `scripts/fetch-osm.mts` is the only project code that reaches the network, and a test pins what it may send | The details panel has one link to `openstreetmap.org/relation/<id>`; it makes no request until a person clicks it, and carries `noopener noreferrer` and a public relation ID only. **The Next.js build and dev tools make their own requests, listed below: this row is about the app and the project's code, not the tooling** |
 | Sources | The four files in `data-source/` are hashed before and after every build and never written | |
 
-- **Staff names are in some served pages.** `/workspace` is prerendered with the full dataset so
-  the forms and counts work in the browser, and `/globe` embeds a manifest whose block details list
-  the workbook staff names, so the HTML and payload of those two pages contain the names (the dated
-  scan counts are in [security-notes.md](security-notes.md), SN-5). They are not in `public/` or any
-  file the page downloads as an asset. Serving them is the point of the workspace, and the bind
-  address and host check are what keep them on this machine. The Overview (`/`) is the exception:
-  it receives the name-free `OverviewData`, and its homepage build files held no staff name in the
-  2026-10-17 scan. The Overview's person keys are pseudonymous, not anonymous. Sending `/workspace`
-  and `/globe` only what each view needs is future work; any deployment must add real access
+- **Staff names are in some served responses.** Three views, three different situations (the dated scan
+  counts are in [security-notes.md](security-notes.md), SN-5):
+  - `/workspace` is prerendered with the full dataset so the forms and counts work in the browser, so
+    its HTML and payload contain every staff name whenever the page is opened. It has not been
+    minimised. Serving them is the point of the workspace.
+  - `/globe` no longer carries names in its HTML or payload. Its manifest lists each block's workbook
+    row IDs only; a block's rows (names, row label, sales territory) are fetched from
+    `POST /api/globe/block-rows` after a person selects that block. The Workspace links from the globe
+    and the navigation are not prefetched, so opening the globe does not pull the workspace's names.
+  - The Overview (`/`) receives the name-free `OverviewData`, and its homepage build files held no staff
+    name in the 2026-10-17 scan. Its person keys are pseudonymous, not anonymous.
+
+  Names are not in `public/` or any file a page downloads as an asset. **Names on demand and the
+  `private, no-store` cache headers (`next.config.ts`) are privacy improvements, not authentication or
+  authorization.** They narrow what a page load carries and stop a shared cache keeping a copy. They do
+  not decide who may ask: anyone who can reach the server can request any block ID or open `/workspace`.
+  The bind address and Host check are what keep the names on this machine. Minimising `/workspace` and
+  authorizing the block-rows and geography routes is future work; any deployment must add real access
   control first.
 - Boundary data is © OpenStreetMap contributors under the ODbL. Legal review of internal
   multi-user use and of LGD reuse is **not recorded**. The data is derived from the public
@@ -396,7 +405,9 @@ cases, renamed from "Gate P0 code ..." to "application code ...".
   `localStorage`; there is no shared store, no database and no authentication.
 - **Legal status is not settled.** ODbL obligations for internal multi-user use, and LGD reuse terms,
   are unreviewed (B-18).
-- **Names reach the browser.** See section 8. Not suitable for any shared or hosted setting as is.
+- **Names reach the browser.** `/workspace` still sends every staff name when it is opened, and `/globe` sends a
+  block's names on request after selection (section 8). Neither is access control. Not suitable for any shared or
+  hosted setting as is.
 - **No deployment path.** Not built, tested or secured for production, and not intended to be.
 - **A cold build needs the network.** Google Fonts (and, on every build, the npm registry) are
   contacted by the Next.js tooling; a cold build with no route to Google fails. Section 8 has the
