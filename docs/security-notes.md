@@ -134,7 +134,7 @@ authentication.
 | Personal data | Staff names from the workbook, server side and in served pages (SN-5). No salary data. No email address anywhere in code, tests, scripts or docs (tested) |
 | Source files | The four in `data-source/` are hash-checked before and after every build and never written |
 | Secrets | None |
-| Dependencies | No runtime dependency beyond `next`, `react` and `react-dom`; pinned by a test |
+| Dependencies | The production `dependencies` are exactly `next`, `react`, `react-dom` and `three` (the globe's renderer, at an exact version); `tests/guardrails.test.ts` fails if that set changes. Build, lint, type and test tooling is under `devDependencies`, which that test does not cover |
 | Public assets | `public/` is empty and a test fails if a data file appears; build scan finds no staff name or layer ID in `.next/static` |
 | Fixture exposure | None possible: the Gate P0 test fixture and the code that used it were removed on 2026-10-15 (backup outside the project; see prototype.md, section 10) |
 
