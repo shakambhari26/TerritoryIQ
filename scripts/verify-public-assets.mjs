@@ -10,10 +10,16 @@
  *   3. The boundary layer's dataset ID does not appear in a public asset: the
  *      layer is delivered only by the /geo/boundaries.json route handler.
  *
- * The prerendered pages under `.next/server` do contain staff names, by design:
- * the workspace shows who covers each area. They are served by the local server
- * only (loopback host check, 127.0.0.1 bind), so they are counted and reported
- * but are not an error.
+ * The prerendered pages under `.next/server` that belong to the Workspace do
+ * contain staff names, by design: it shows who covers each area. They are served
+ * by the local server only (loopback host check, 127.0.0.1 bind), so they are
+ * counted and reported but are not an error.
+ *
+ *   4. Nothing Globe-prefixed under `.next/server/app` (the /globe page, its RSC
+ *      payload, its segment and route-cache files, and /api/globe/*) contains a
+ *      staff name. The Globe page carries row IDs only; a selected block's rows
+ *      are fetched at request time from POST /api/globe/block-rows. Workspace is
+ *      the one known exception to the rule that served output holds no names.
  *
  * Run after `npm run build`:  npm run verify:assets
  */
@@ -52,6 +58,11 @@ export function staffNames(dataset) {
   }
   return [...names].sort((a, b) => b.length - a.length || a.localeCompare(b));
 }
+
+/** The Workspace's build output (`app/` and the `route-cache/` the server writes while it runs): the only served files known to hold staff names. */
+export const WORKSPACE_OUTPUT = /^\.next\/server\/(?:app\/|route-cache\/[A-Za-z_]+\/[0-9a-f]+\/\$\/)workspace(?:[./]|$)/;
+/** The Globe's build output, whatever the file type: the page, its RSC, segment and route-cache files, and its API routes. */
+export const GLOBE_OUTPUT = /^\.next\/server\/(?:app\/|route-cache\/[A-Za-z_]+\/[0-9a-f]+\/\$\/)(?:api\/|geo\/)?globe(?:[-./]|$)/;
 
 /** Files under `directories` that contain any marker, and how many files were read. */
 export function findMarkers(directories, markers) {
@@ -96,11 +107,16 @@ export function checkPublicAssets(root, { names, layerDatasetId }) {
 
   const server = findMarkers([serverDir], names);
   const serverFilesWithNames = new Set(server.hits.map((hit) => relative(root, hit.file).split("\\").join("/")));
+  for (const file of [...serverFilesWithNames].sort()) {
+    if (GLOBE_OUTPUT.test(file)) problems.push(`${file} contains a staff name: Globe output must carry no names (only Workspace may)`);
+  }
   return {
     problems,
     assetFilesScanned: assets.filesScanned,
     serverFilesScanned: server.filesScanned,
     serverFilesWithNames: [...serverFilesWithNames].sort(),
+    workspaceFilesWithNames: [...serverFilesWithNames].filter((file) => WORKSPACE_OUTPUT.test(file)).sort(),
+    globeFilesWithNames: [...serverFilesWithNames].filter((file) => GLOBE_OUTPUT.test(file)).sort(),
     namesChecked: names.length,
   };
 }
@@ -127,7 +143,7 @@ function main() {
     process.exit(2);
   }
   if (result.problems.length > 0) {
-    console.error("verify:assets: FAILED. Workbook-derived data is exposed as a public asset:");
+    console.error("verify:assets: FAILED. Workbook-derived data is exposed as a public asset or in Globe output:");
     for (const problem of result.problems) console.error(`  ${problem}`);
     process.exit(1);
   }
@@ -135,9 +151,12 @@ function main() {
     `verify:assets: OK. ${result.assetFilesScanned} public files (public/ and .next/static) scanned for ${result.namesChecked} staff names ` +
       `and the layer dataset ID: none found, and public/ holds no data file.`,
   );
+  const other = result.serverFilesWithNames.filter((file) => !WORKSPACE_OUTPUT.test(file) && !GLOBE_OUTPUT.test(file));
   console.log(
-    `  Served pages (.next/server): ${result.serverFilesWithNames.length} of ${result.serverFilesScanned} files contain staff names, as designed: ` +
-      `${result.serverFilesWithNames.join(", ") || "none"}`,
+    `  Served output (.next/server): ${result.serverFilesWithNames.length} of ${result.serverFilesScanned} files contain staff names. ` +
+      `Globe: ${result.globeFilesWithNames.length} (must be none). ` +
+      `Workspace, the one known exception, by design: ${result.workspaceFilesWithNames.length}${result.workspaceFilesWithNames.length ? ` (${result.workspaceFilesWithNames.join(", ")})` : ""}.` +
+      (other.length ? ` Other: ${other.join(", ")}` : ""),
   );
 }
 

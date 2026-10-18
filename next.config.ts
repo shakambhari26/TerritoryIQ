@@ -27,9 +27,9 @@ const BASELINE_HEADERS = [
 ];
 
 /**
- * Pages and routes that carry the workbook (staff names on the workspace, territory figures on the Overview) or its
- * derived boundary layer. Next gives a prerendered page `s-maxage=31536000`, which lets a shared cache keep a copy
- * for a year; these must not be stored.
+ * Pages and routes that carry the workbook (staff names on the workspace, territory figures on the Overview), its
+ * derived boundary layer, or the rows of a selected globe block (POST /api/globe/block-rows). Next gives a prerendered
+ * page `s-maxage=31536000`, which lets a shared cache keep a copy for a year; these must not be stored.
  */
 const PRIVATE_NO_STORE = [{ key: "Cache-Control", value: "private, no-store" }];
 
@@ -45,6 +45,7 @@ const nextConfig: NextConfig = {
       { source: "/workspace", headers: PRIVATE_NO_STORE },
       { source: "/globe", headers: PRIVATE_NO_STORE },
       { source: "/geo/:path*", headers: PRIVATE_NO_STORE },
+      { source: "/api/:path*", headers: PRIVATE_NO_STORE },
     ];
   },
   // The Gate P0 data-free map preview was folded into the workspace. Old links

@@ -6,7 +6,9 @@ import { fileURLToPath } from "node:url";
 import { mergeLayer } from "../../src/features/globe/layer-merge.ts";
 import { decodeGeometry, pointInPolygons } from "../../src/features/globe/shapes.ts";
 import { DISTRICT_STYLE, NEUTRAL, ROYAL_BLUE } from "../../src/features/globe/styles.ts";
-import type { GlobeManifest, GlobeOverlay } from "../../src/features/globe/types.ts";
+import { projectManifest } from "../../src/features/globe/overlay-projection.server.ts";
+import type { ServerManifest } from "../../src/features/globe/server-types.ts";
+import type { GlobeOverlay } from "../../src/features/globe/types.ts";
 import type { TerritoryDataset } from "../../src/features/territory/types.ts";
 
 /**
@@ -22,7 +24,7 @@ const layerPath = join(ROOT, "data", "generated", "globe-boundaries.json");
 const ready = existsSync(overlayPath) && existsSync(datasetPath) && existsSync(layerPath);
 
 describe("globe overlay manifest", { skip: ready ? false : "run npm run data:build and python -I scripts/globe/build_overlay.py first" }, () => {
-  const manifest = ready ? (JSON.parse(readFileSync(overlayPath, "utf8")) as GlobeManifest) : (null as never);
+  const manifest = ready ? projectManifest(JSON.parse(readFileSync(overlayPath, "utf8")) as ServerManifest) : (null as never);
   const layerData = ready ? (JSON.parse(readFileSync(layerPath, "utf8")) as unknown) : (null as never);
   const dataset = ready ? (JSON.parse(readFileSync(datasetPath, "utf8")) as TerritoryDataset) : (null as never);
   // What the app draws: the manifest joined to the path data the globe's route handler serves (src/features/globe/layer-merge.ts).

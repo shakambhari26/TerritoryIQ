@@ -8,6 +8,8 @@ import { fileURLToPath } from "node:url";
 import { GLOBE_LAYER_FILE, GLOBE_LAYER_KIND } from "../../src/features/globe/layer-identity.ts";
 import { globeLayerResponse, readGlobeLayerFile, verifyGlobeLayer } from "../../src/features/globe/layer-integrity.ts";
 import { mergeLayer } from "../../src/features/globe/layer-merge.ts";
+import { projectManifest } from "../../src/features/globe/overlay-projection.server.ts";
+import type { ServerManifest } from "../../src/features/globe/server-types.ts";
 import type { GlobeManifest } from "../../src/features/globe/types.ts";
 
 /**
@@ -23,7 +25,7 @@ const sha = (bytes: Uint8Array) => createHash("sha256").update(bytes).digest("he
 const clone = <T,>(value: T): T => JSON.parse(JSON.stringify(value)) as T;
 
 describe("the globe outline file is served only if it is the validated dataset", { skip: ready ? false : "run npm run data:build and python -I scripts/globe/build_overlay.py first" }, () => {
-  const manifest = ready ? (JSON.parse(readFileSync(join(GENERATED, "globe-overlay.json"), "utf8")) as GlobeManifest) : (null as never);
+  const manifest = ready ? projectManifest(JSON.parse(readFileSync(join(GENERATED, "globe-overlay.json"), "utf8")) as ServerManifest) : (null as never);
   const bytes = ready ? readFileSync(join(GENERATED, GLOBE_LAYER_FILE)) : (null as never);
   const workspaceBytes = ready ? readFileSync(join(GENERATED, "boundaries.json")) : (null as never);
   const parsed = ready ? (JSON.parse(bytes.toString("utf8")) as { meta: Record<string, unknown>; shapes: Array<{ featureId: string; d: string }> }) : (null as never);

@@ -101,8 +101,8 @@ No database or migrations, no Supabase or Power BI integration, no authenticatio
 no shared allocation store (changes live in one browser), no managed import (the workbook is read
 by an offline script), no ward or urban-body geography, and no deployment. **Salary data is excluded
 from the platform's scope.** Staff names are present in the local dataset (B-25 is open) and must
-stay on this machine. The served `/globe` page carries them too (the globe's block details list the workbook names), so the
-same applies to it.
+stay on this machine. The served `/globe` page carries none; the globe's block details fetch the selected block's workbook rows
+from `POST /api/globe/block-rows` on demand, so the same applies to that response.
 
 ## Open questions
 

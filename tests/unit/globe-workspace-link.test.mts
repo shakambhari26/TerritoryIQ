@@ -4,7 +4,9 @@ import { dirname, join, resolve } from "node:path";
 import { describe, it } from "node:test";
 import { fileURLToPath } from "node:url";
 import { targetForSelection, workspaceHref, WORKSPACE_PATH, type WorkspaceLookup } from "../../src/features/globe/workspace-link.ts";
-import type { GlobeManifest, ManifestBlock, ManifestDistrict } from "../../src/features/globe/types.ts";
+import { projectManifest } from "../../src/features/globe/overlay-projection.server.ts";
+import type { ServerManifest } from "../../src/features/globe/server-types.ts";
+import type { ManifestBlock, ManifestDistrict } from "../../src/features/globe/types.ts";
 import { mapContext } from "../../src/features/territory/map-level.ts";
 import { buildModel } from "../../src/features/territory/model.ts";
 import { parseSelectionHash } from "../../src/features/territory/selection.ts";
@@ -18,7 +20,7 @@ import type { TerritoryDataset } from "../../src/features/territory/types.ts";
  */
 const district = (id: string) => ({ id }) as ManifestDistrict;
 const block = (id: string, districtId: string | null, rowIds: string[] = []) =>
-  ({ id, districtId, records: rowIds.map((unitId) => ({ unitId })) }) as unknown as ManifestBlock;
+  ({ id, districtId, rowIds }) as unknown as ManifestBlock;
 
 const lookup: WorkspaceLookup = {
   districts: [district("GD-1"), district("GD-2")],
@@ -98,7 +100,7 @@ const datasetPath = join(ROOT, "data", "generated", "dataset.json");
 const ready = existsSync(overlayPath) && existsSync(datasetPath);
 
 describe("workspaceHref against the real build", { skip: ready ? false : "run npm run data:build and python -I scripts/globe/build_overlay.py first" }, () => {
-  const manifest = ready ? (JSON.parse(readFileSync(overlayPath, "utf8")) as GlobeManifest) : (null as never);
+  const manifest = ready ? projectManifest(JSON.parse(readFileSync(overlayPath, "utf8")) as ServerManifest) : (null as never);
   const model = ready ? buildModel(JSON.parse(readFileSync(datasetPath, "utf8")) as TerritoryDataset, []) : (null as never);
   const hashOf = (href: string | null) => {
     assert.ok(href, "a link was built");
@@ -130,11 +132,11 @@ describe("workspaceHref against the real build", { skip: ready ? false : "run np
   it("every workbook row the globe lists opens that row, at the block the workspace links it to", () => {
     let rows = 0;
     for (const b of manifest.blocks) {
-      for (const r of b.records) {
+      for (const rowId of b.rowIds) {
         rows++;
-        const selection = parseSelectionHash(hashOf(workspaceHref(manifest, { kind: "row", id: r.unitId })), model);
-        assert.deepEqual(selection, { kind: "unit", id: r.unitId }, r.unitId);
-        assert.equal(mapContext(model, selection).blockId, b.id, `${r.unitId}: the row is at the block the globe lists it under`);
+        const selection = parseSelectionHash(hashOf(workspaceHref(manifest, { kind: "row", id: rowId })), model);
+        assert.deepEqual(selection, { kind: "unit", id: rowId }, rowId);
+        assert.equal(mapContext(model, selection).blockId, b.id, `${rowId}: the row is at the block the globe lists it under`);
       }
     }
     assert.ok(rows > 0);
