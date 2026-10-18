@@ -3,6 +3,7 @@ import { readdirSync, readFileSync } from "node:fs";
 import path from "node:path";
 import { describe, it } from "node:test";
 import nextConfig from "../../next.config.ts";
+import { globeLayerResponse, type GlobeLayerFault } from "../../src/features/globe/layer-integrity.ts";
 
 const ROOT = path.resolve(import.meta.dirname, "..", "..");
 
@@ -33,6 +34,34 @@ describe("next.config.ts response-header rules", async () => {
     const responses = code.match(/\bnew Response\(|\bResponse\.json\(/g) ?? [];
     assert.ok(responses.length >= 2, `${responses.length} responses found (the layer and the "not built" answer)`);
     assert.equal(set.length, responses.length, "every response sets a Cache-Control");
+    for (const value of set) assert.equal(value, policy);
+  });
+
+  it("every response the globe outline helper builds carries the /geo rule's Cache-Control, on success and on each refusal", async () => {
+    // The helper behind /geo/globe-boundaries.json once said `no-store` while the rule said `private, no-store`. It
+    // takes a plain result, so it is called here with a success and one refusal per fault (no generated data needed).
+    const [policy] = valuesFor("/geo/:path*", "Cache-Control");
+    const statuses: Record<GlobeLayerFault, number> = { unavailable: 404, missing: 404, identity: 500, tampered: 500, invalid: 500 };
+    const ok = globeLayerResponse({ ok: true, text: "{}", sha256: "0" });
+    assert.equal(ok.status, 200);
+    assert.equal(ok.headers.get("cache-control"), policy, "success");
+    assert.equal(ok.headers.get("x-content-type-options"), "nosniff");
+    assert.equal(await ok.text(), "{}");
+    for (const [fault, status] of Object.entries(statuses) as Array<[GlobeLayerFault, number]>) {
+      const refused = globeLayerResponse({ ok: false, fault, reason: "reason" });
+      assert.equal(refused.status, status, fault);
+      assert.equal(refused.headers.get("cache-control"), policy, fault);
+      assert.equal(refused.headers.get("x-content-type-options"), "nosniff", fault);
+      assert.deepEqual(await refused.json(), { code: fault, error: "reason" }, fault);
+    }
+  });
+
+  it("the globe outline helper's source declares no other Cache-Control value", () => {
+    const [policy] = valuesFor("/geo/:path*", "Cache-Control");
+    const code = readFileSync(path.join(ROOT, "src", "features", "globe", "layer-integrity.ts"), "utf8").replace(/\/\*[\s\S]*?\*\//g, "");
+    const constants = new Map([...code.matchAll(/^const (\w+)\s*=\s*"([^"]*)"/gm)].map((m) => [m[1], m[2]] as const));
+    const set = [...code.matchAll(/["']Cache-Control["']\s*:\s*(?:"([^"]*)"|(\w+))/g)].map((m) => m[1] ?? constants.get(m[2]));
+    assert.ok(set.length >= 1, "the helper sets a Cache-Control");
     for (const value of set) assert.equal(value, policy);
   });
 

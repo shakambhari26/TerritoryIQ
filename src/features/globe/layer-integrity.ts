@@ -71,7 +71,9 @@ export async function readGlobeLayerFile(directory: string, manifest: GlobeManif
   return verifyGlobeLayer(bytes, manifest);
 }
 
-const NO_STORE = { "Cache-Control": "no-store", "X-Content-Type-Options": "nosniff" } as const;
+/** The same value as the `/geo/:path*` rule in next.config.ts (tests/unit/response-headers-config.test.mts keeps the two equal). */
+const CACHE_CONTROL = "private, no-store";
+const NO_STORE = { "Cache-Control": CACHE_CONTROL, "X-Content-Type-Options": "nosniff" } as const;
 
 /** The route's answer. A refusal carries a code and a plain sentence and never any of the file's content. */
 export function globeLayerResponse(result: GlobeLayerResult): Response {
