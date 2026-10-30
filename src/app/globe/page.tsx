@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Badge } from "@/components/ui/Badge";
 import { GlobeLoader } from "@/features/globe/components/GlobeLoader";
+import { getCustomerSummary } from "@/features/globe/customers.server";
 import { getGlobeManifest } from "@/features/globe/overlay.server";
 
 export const metadata: Metadata = {
@@ -19,6 +20,8 @@ export const metadata: Metadata = {
  */
 export default function GlobePage() {
   const manifest = getGlobeManifest();
+  // Counts only: customer names are fetched for one selected block (POST /api/globe/block-customers).
+  const customers = getCustomerSummary();
   return (
     <>
       <PageHeader
@@ -36,7 +39,7 @@ export default function GlobePage() {
       </p>
       <div className="mt-5">
         {manifest ? (
-          <GlobeLoader manifest={manifest} />
+          <GlobeLoader manifest={manifest} customers={customers} />
         ) : (
           <div className="rounded-xl border border-line bg-surface p-6" role="alert">
             <p className="text-base font-semibold text-ink">The globe data has not been built</p>

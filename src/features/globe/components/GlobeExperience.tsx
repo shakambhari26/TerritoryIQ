@@ -12,6 +12,7 @@ import { buildTargets, pickableRefs, type Target } from "../targets";
 import type { GlobeManifest, Level, Phase } from "../types";
 import { GlobeFallback } from "./GlobeFallback";
 import { GlobeDetails, PlaceSearch } from "./GlobePanel";
+import type { CustomerSummary } from "../customers";
 
 interface Selection {
   level: Level;
@@ -106,11 +107,12 @@ function OutlineDataStrip({ layer, onRetry, drawn }: { layer: LayerState; onRetr
 
 interface StageProps {
   manifest: GlobeManifest;
+  customers: CustomerSummary | null;
   layer: LayerState;
   onRetryLayer: () => void;
 }
 
-function GlobeStage({ manifest, layer, onRetryLayer }: StageProps) {
+function GlobeStage({ manifest, customers, layer, onRetryLayer }: StageProps) {
   const reducedMotion = usePrefersReducedMotion();
   const hostRef = useRef<HTMLDivElement>(null);
   const stageRef = useRef<HTMLDivElement>(null);
@@ -553,6 +555,7 @@ function GlobeStage({ manifest, layer, onRetryLayer }: StageProps) {
         <PlaceSearch targets={targets} districts={districtTargets} onSelect={selectTarget} disabled={status !== "ready" || flying} />
         <GlobeDetails
           overlay={view}
+          customers={customers}
           level={level}
           district={district}
           block={block}
@@ -582,7 +585,7 @@ const CODE_REASON: Record<string, string> = {
  * if the textures fail, the globe shows its own error and retry, and the outline status is unaffected. Without
  * WebGL there is nothing to draw on, so the list-only view is shown and the outline file is not requested.
  */
-export default function GlobeExperience({ manifest }: { manifest: GlobeManifest }) {
+export default function GlobeExperience({ manifest, customers }: { manifest: GlobeManifest; customers: CustomerSummary | null }) {
   const [webgl] = useState(() => webglAvailable());
   const [attempt, setAttempt] = useState(0);
   const [layer, setLayer] = useState<LayerState>({ status: "loading" });
@@ -610,6 +613,6 @@ export default function GlobeExperience({ manifest }: { manifest: GlobeManifest 
     setAttempt((n) => n + 1);
   }, []);
 
-  if (!webgl) return <GlobeFallback overlay={manifest} reason="WebGL is not available in this browser, so the 3D globe cannot run." />;
-  return <GlobeStage manifest={manifest} layer={layer} onRetryLayer={retry} />;
+  if (!webgl) return <GlobeFallback overlay={manifest} customers={customers} reason="WebGL is not available in this browser, so the 3D globe cannot run." />;
+  return <GlobeStage manifest={manifest} customers={customers} layer={layer} onRetryLayer={retry} />;
 }

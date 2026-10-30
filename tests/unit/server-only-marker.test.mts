@@ -14,7 +14,7 @@ const SRC = path.join(ROOT, "src");
  * `"use client"` file, even through a chain) is tests/unit/globe-names-on-demand.test.mts, "structure: client code
  * cannot reach the names-bearing manifest or its records".
  */
-const MARKED = ["src/features/territory/dataset.server.ts", "src/features/globe/overlay.server.ts"];
+const MARKED = ["src/features/territory/dataset.server.ts", "src/features/globe/overlay.server.ts", "src/features/globe/customers.server.ts"];
 
 function* sourceFiles(directory: string): Generator<string> {
   for (const entry of readdirSync(directory, { withFileTypes: true })) {

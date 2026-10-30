@@ -411,7 +411,13 @@ for (const file of sourceFiles(SRC)) sources.set(file, readFileSync(file, "utf8"
 const rel = (file: string) => relative(ROOT, file).split("\\").join("/");
 
 /** Modules that hold, or can return, the names-bearing records. */
-const SERVER_ONLY = ["src/features/globe/overlay.server.ts", "src/features/globe/overlay-projection.server.ts", "src/features/globe/server-types.ts", "src/features/globe/block-rows-route.server.ts"];
+const SERVER_ONLY = [
+  "src/features/globe/overlay.server.ts",
+  "src/features/globe/overlay-projection.server.ts",
+  "src/features/globe/server-types.ts",
+  "src/features/globe/block-rows-route.server.ts",
+  "src/features/globe/customers.server.ts",
+];
 
 function resolveImport(from: string, specifier: string): string | null {
   const base = specifier.startsWith("@/") ? join(SRC, specifier.slice(2)) : specifier.startsWith(".") ? resolve(dirname(from), specifier) : null;
@@ -458,7 +464,10 @@ describe("structure: client code cannot reach the names-bearing manifest or its 
       }
     }
     assert.deepEqual((importers.get("src/features/globe/overlay.server.ts") ?? []).sort(), ["src/app/api/globe/block-rows/route.ts", "src/app/geo/globe-boundaries.json/route.ts", "src/app/globe/page.tsx"]);
-    assert.deepEqual(importers.get("src/features/globe/block-rows-route.server.ts"), ["src/app/api/globe/block-rows/route.ts"]);
+    // The block-customers route reuses the same handler for one selected block's customers.
+    assert.deepEqual((importers.get("src/features/globe/block-rows-route.server.ts") ?? []).sort(), ["src/app/api/globe/block-customers/route.ts", "src/app/api/globe/block-rows/route.ts"]);
+    // Customer names: the page reads counts only, the route one block's records.
+    assert.deepEqual((importers.get("src/features/globe/customers.server.ts") ?? []).sort(), ["src/app/api/globe/block-customers/route.ts", "src/app/globe/page.tsx"]);
     assert.deepEqual((importers.get("src/features/globe/overlay-projection.server.ts") ?? []).sort(), ["src/features/globe/overlay.server.ts"]);
     for (const file of importers.get("src/features/globe/server-types.ts") ?? []) assert.match(file, /\.server\.ts$/, `${file} should import server-types only from a server module`);
     for (const [file, text] of sources) {
@@ -512,7 +521,7 @@ describe("structure: the route", () => {
   });
 
   it("the handler checks the host, method, media type and size before it reads a lookup, and never builds a key from input", () => {
-    const order = ["isLoopbackHost", 'request.method !== "POST"', "isJson(", "readCapped(", "JSON.parse(", "BLOCK_ID_PATTERN.test", "source.rows(blockId)"].map((needle) => handler.indexOf(needle));
+    const order = ["isRequestAuthorized(", 'request.method !== "POST"', "isJson(", "readCapped(", "JSON.parse(", "BLOCK_ID_PATTERN.test", "source.rows(blockId)"].map((needle) => handler.indexOf(needle));
     assert.ok(order.every((n) => n >= 0), "every check is present");
     assert.deepEqual([...order].sort((a, b) => a - b), order, "the checks run in this order");
     assert.doesNotMatch(handler, /\[blockId\]|\[body|\[key|new URL|searchParams|readFile|path\.join/);

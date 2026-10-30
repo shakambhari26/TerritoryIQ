@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { cn } from "@/lib/cn";
+import type { CustomerSummary } from "../customers";
 import { DISTRICT_STYLE } from "../styles";
 import type { GlobeManifest } from "../types";
 import { GlobeDetails, PlaceSearch } from "./GlobePanel";
@@ -12,7 +13,7 @@ import { buildTargets, type Target } from "../targets";
  * globe, and a static picture of the Earth: the same-origin NASA texture, shown as a CSS disc. Nothing moves, and
  * nothing is drawn that has not passed validation: districts are listed as text with their provisional status.
  */
-export function GlobeFallback({ overlay, reason }: { overlay: GlobeManifest; reason: string }) {
+export function GlobeFallback({ overlay, customers, reason }: { overlay: GlobeManifest; customers: CustomerSummary | null; reason: string }) {
   const targets = useMemo(() => buildTargets(overlay), [overlay]);
   const districts = useMemo(() => targets.filter((t) => t.kind === "district").sort((a, b) => a.name.localeCompare(b.name)), [targets]);
   const [selected, setSelected] = useState<Target | null>(null);
@@ -47,6 +48,7 @@ export function GlobeFallback({ overlay, reason }: { overlay: GlobeManifest; rea
         <PlaceSearch targets={targets} districts={districts} onSelect={setSelected} disabled={false} />
         <GlobeDetails
           overlay={overlay}
+          customers={customers}
           level={level}
           district={district}
           block={block}
