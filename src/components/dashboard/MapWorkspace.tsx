@@ -15,7 +15,7 @@ interface MapWorkspaceProps {
 }
 
 /**
- * Navy frame for the map (the `map-theme` scope in globals.css re-themes everything inside it). Owns sizing,
+ * Light frame for the map, in the page's own colours. Owns sizing,
  * chrome and the section landmark; the map implementation itself lives in src/features/territory (GeoMap). On a
  * wide screen the frame takes the viewport height left under the page heading, so the map is the main thing on the page;
  * its header, status lines and footer are kept slim and sit in the flow, never over the map.
@@ -25,7 +25,7 @@ export function MapWorkspace({ title, toolbar, status, children, footer, rail }:
     <section
       aria-labelledby="map-workspace-title"
       data-testid="map-workspace"
-      className="map-theme flex flex-col rounded-2xl border border-line bg-surface shadow-card lg:h-[calc(100dvh-9rem)] lg:min-h-[34rem]"
+      className="flex flex-col rounded-2xl border border-line bg-surface shadow-card lg:h-[calc(100dvh-9rem)] lg:min-h-[34rem]"
     >
       <h2 id="map-workspace-title" className="sr-only">
         {title}

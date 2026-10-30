@@ -58,7 +58,7 @@ function PinGlyph({ pin, active }: { pin: RepresentativePin; active: boolean }) 
       aria-hidden="true"
       focusable="false"
       className="block overflow-visible"
-      style={{ filter: active ? `drop-shadow(0 0 6px ${PIN_COLOR.glow})` : "drop-shadow(0 1px 1.2px rgba(5, 9, 18, 0.65))" }}
+      style={{ filter: active ? `drop-shadow(0 0 6px ${PIN_COLOR.glow})` : "drop-shadow(0 1px 1.2px rgba(15, 23, 42, 0.35))" }}
     >
       <path d="M7.5 19.4C7.5 19.4 1 12.6 1 7.6A6.5 6.5 0 1 1 14 7.6C14 12.6 7.5 19.4 7.5 19.4Z" fill={fill} stroke={stroke} strokeWidth={pin.contested ? 1.6 : 1.2} strokeLinejoin="round" />
       <circle cx="7.5" cy="7.4" r="2.2" fill={PIN_COLOR.core} />
@@ -81,7 +81,7 @@ function GroupBadge({ count, active }: { count: number; active: boolean }) {
           background: CLUSTER_COLOR.face,
           borderColor: active ? CLUSTER_COLOR.edgeActive : CLUSTER_COLOR.edge,
           color: CLUSTER_COLOR.ink,
-          boxShadow: active ? `0 0 0 3px ${CLUSTER_COLOR.glow}, 0 1px 3px rgba(5, 9, 18, 0.7)` : "0 1px 3px rgba(5, 9, 18, 0.7)",
+          boxShadow: active ? `0 0 0 3px ${CLUSTER_COLOR.glow}, 0 1px 3px rgba(15, 23, 42, 0.3)` : "0 1px 3px rgba(15, 23, 42, 0.3)",
         }}
       >
         {count}

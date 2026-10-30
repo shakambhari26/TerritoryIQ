@@ -64,7 +64,7 @@ export function MapLegend({
       <ul className="flex flex-wrap items-center gap-x-3.5 gap-y-1" aria-label="Map legend" data-testid="legend-items">
         {items.map((item) => (
           <li key={item.key} className="flex items-center gap-1.5" title={item.title}>
-            <span aria-hidden="true" className="inline-block h-2.5 w-3.5 shrink-0 rounded-sm ring-1 ring-white/20" style={{ background: item.swatch }} />
+            <span aria-hidden="true" className="inline-block h-2.5 w-3.5 shrink-0 rounded-sm ring-1 ring-black/10" style={{ background: item.swatch }} />
             <span className="font-medium text-ink">{item.label}</span>
           </li>
         ))}
