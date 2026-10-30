@@ -22,8 +22,8 @@ export function GlobeFallback({ overlay, customers, reason }: { overlay: GlobeMa
   const level = !selected ? "globe" : selected.kind === "state" ? "state" : selected.kind;
 
   return (
-    <div className="map-theme grid overflow-hidden rounded-xl border border-line bg-navy-950 lg:grid-cols-[minmax(0,1fr)_23rem]" data-testid="globe-fallback">
-      <div className="flex min-h-[360px] flex-col items-center justify-center gap-5 bg-[#02060f] p-6 text-center">
+    <div className="grid overflow-hidden rounded-xl border border-line bg-surface lg:grid-cols-[minmax(0,1fr)_23rem]" data-testid="globe-fallback">
+      <div className="flex min-h-[360px] flex-col items-center justify-center gap-5 bg-[#f8fafc] p-6 text-center">
         <div
           role="img"
           aria-label="Static picture of the Earth"
@@ -31,18 +31,18 @@ export function GlobeFallback({ overlay, customers, reason }: { overlay: GlobeMa
           style={{ backgroundImage: "url(/globe/earth-day-4k.jpg)", backgroundSize: "320% 100%", backgroundPosition: "72% 50%" }}
         />
         <div className="max-w-md space-y-1">
-          <p className="text-base font-semibold text-on-navy">The 3D globe is not available</p>
-          <p className="text-sm text-on-navy-muted">{reason} The places and details below work without it.</p>
+          <p className="text-base font-semibold text-ink">The 3D globe is not available</p>
+          <p className="text-sm text-ink-muted">{reason} The places and details below work without it.</p>
         </div>
         <ul className="flex max-w-lg flex-wrap justify-center gap-1.5" aria-label="Districts and their provisional status">
           {districts.map((d) => (
-            <li key={d.id} className="flex items-center gap-1.5 rounded-full border border-white/10 px-2 py-0.5 text-xs text-on-navy-muted">
+            <li key={d.id} className="flex items-center gap-1.5 rounded-full border border-line px-2 py-0.5 text-xs text-ink-muted">
               <span aria-hidden="true" className={cn("size-2 rounded-full")} style={{ backgroundColor: DISTRICT_STYLE[d.state].fill }} />
               {d.name}
             </li>
           ))}
         </ul>
-        <p className="text-[0.6875rem] text-on-navy-subtle">Earth: NASA Earth Observatory, Blue Marble. District status is provisional and unreviewed.</p>
+        <p className="text-[0.6875rem] text-ink-subtle">Earth: NASA Earth Observatory, Blue Marble. District status is provisional and unreviewed.</p>
       </div>
       <aside className="space-y-4 border-t border-line bg-surface p-4 lg:border-l lg:border-t-0">
         <PlaceSearch targets={targets} districts={districts} onSelect={setSelected} disabled={false} />

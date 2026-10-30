@@ -14,12 +14,12 @@ import { WorkspaceLink } from "./WorkspaceLink";
 
 const stateChip: Record<UnitState, { label: string; className: string }> = {
   represented: { label: "Provisional representative link", className: "border-orange-300/50 bg-orange-400/15 text-orange-200" },
-  "no-representative": { label: "Confirmed: no representative", className: "border-white/50 bg-white/15 text-white" },
+  "no-representative": { label: "Confirmed: no representative", className: "border-line-strong bg-surface-muted text-ink" },
   unresolved: { label: "Unresolved or unverified", className: "border-slate-400/40 bg-slate-400/10 text-slate-200" },
 };
 
 function Dot({ colour, ring }: { colour: string; ring?: boolean }) {
-  return <span aria-hidden="true" className={cn("inline-block size-2.5 shrink-0 rounded-full", ring && "ring-1 ring-white/50")} style={{ backgroundColor: colour }} />;
+  return <span aria-hidden="true" className={cn("inline-block size-2.5 shrink-0 rounded-full", ring && "ring-1 ring-line-strong")} style={{ backgroundColor: colour }} />;
 }
 
 export function StateChip({ state, kind }: { state: UnitState; kind: "district" | "block" }) {
