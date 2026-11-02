@@ -43,22 +43,22 @@ function Legend({ open }: { open: boolean }) {
     { colour: BLOCK_STYLE.unresolved.fill, label: "Unresolved or unverified", note: "not the same as none" },
   ];
   return (
-    <details key={open ? "open" : "closed"} open={open} aria-label="Legend" className="pointer-events-auto w-60 rounded-lg border border-white/10 bg-navy-950/80 p-2.5 backdrop-blur">
-      <summary className="cursor-pointer text-[0.6875rem] font-semibold uppercase tracking-wide text-on-navy-subtle">Legend (provisional)</summary>
-      <ul className="mt-1.5 space-y-1">
+    <details key={open ? "open" : "closed"} open={open} aria-label="Legend" className="pointer-events-auto w-60 rounded-xl bg-white/95 p-3 shadow-float">
+      <summary className="cursor-pointer text-[0.6875rem] font-semibold uppercase tracking-wider text-ink-muted">Legend (provisional)</summary>
+      <ul className="mt-2 space-y-1.5">
         {rows.map((row) => (
-          <li key={row.label} className="flex items-center gap-2 text-xs text-on-navy-muted">
-            <span aria-hidden="true" className={cn("size-3 shrink-0 rounded-sm", row.ring && "ring-1 ring-white/60")} style={{ backgroundColor: row.colour }} />
+          <li key={row.label} className="flex items-start gap-2 text-xs text-ink">
+            <span aria-hidden="true" className={cn("mt-0.5 size-3 shrink-0 rounded-sm", row.ring && "ring-1 ring-ink/50")} style={{ backgroundColor: row.colour }} />
             <span className="min-w-0 flex-1 leading-4">
               {row.label}
-              {row.note ? <span className="block text-[0.6875rem] text-on-navy-subtle">{row.note}</span> : null}
+              {row.note ? <span className="block text-[0.6875rem] text-ink-muted">{row.note}</span> : null}
             </span>
           </li>
         ))}
-        <li className="flex items-center gap-2 border-t border-white/10 pt-1 text-xs text-on-navy-muted">
-          <span aria-hidden="true" className="h-0.5 w-3 shrink-0 rounded" style={{ backgroundColor: SELECTED_COLOUR }} />
+        <li className="flex items-center gap-2 border-t border-line pt-1.5 text-xs text-ink">
+          <span aria-hidden="true" className="h-1 w-3 shrink-0 rounded bg-white ring-1 ring-ink/60" style={{ backgroundColor: SELECTED_COLOUR }} />
           Selected
-          <span aria-hidden="true" className="ml-2 h-0.5 w-3 shrink-0 rounded" style={{ backgroundColor: HOVER_COLOUR }} />
+          <span aria-hidden="true" className="ml-2 h-1 w-3 shrink-0 rounded" style={{ backgroundColor: HOVER_COLOUR }} />
           Hover or focus
         </li>
       </ul>
@@ -70,11 +70,11 @@ function Legend({ open }: { open: boolean }) {
 function OutlineDataStrip({ layer, onRetry, drawn }: { layer: LayerState; onRetry: () => void; drawn: { districts: number; blocks: number } }) {
   return (
     <div
-      className="flex flex-wrap items-center gap-x-3 gap-y-1 border-t border-line bg-navy-950 px-4 py-2 text-xs text-on-navy-muted lg:order-last lg:col-span-2"
+      className="flex flex-wrap items-center gap-x-3 gap-y-1 border-t border-line bg-surface-muted px-4 py-2 text-xs text-ink-muted lg:order-last lg:col-span-3 lg:row-start-2"
       data-testid="globe-outlines-status"
       data-state={layer.status}
     >
-      <span className="font-semibold uppercase tracking-wide text-[0.6875rem] text-on-navy-subtle">Outline data</span>
+      <span className="text-[0.6875rem] font-semibold uppercase tracking-wider text-ink">Outline data</span>
       {layer.status === "loading" ? (
         <p role="status" className="min-w-0 flex-1">
           Loading and validating. The globe works meanwhile; outlines appear once you have arrived somewhere and the data has passed validation.
@@ -93,7 +93,7 @@ function OutlineDataStrip({ layer, onRetry, drawn }: { layer: LayerState; onRetr
           <button
             type="button"
             onClick={onRetry}
-            className="rounded-md border border-accent/60 bg-accent/15 px-3 py-1 text-xs font-semibold text-on-navy hover:bg-accent/25"
+            className="rounded-lg border border-primary/40 bg-primary-soft px-3 py-1 text-xs font-semibold text-primary-ink hover:border-primary"
             data-testid="globe-outlines-retry"
           >
             Try again
@@ -130,8 +130,6 @@ function GlobeStage({ manifest, layer, onRetryLayer }: StageProps) {
   const selectionRef = useRef<Selection>(NONE);
   // True from the arrival of a flight to a place until the next flight or reset begins.
   const arrivedRef = useRef(false);
-  // This component renders only in the browser, so the width can be read once: on a phone the legend starts closed.
-  const [wide] = useState(() => window.matchMedia("(min-width: 768px)").matches);
   // The renderer outlives renders, so it calls the latest handlers through refs.
   const pickHandler = useRef<(ref: FeatureRef) => void>(() => {});
   const revealRef = useRef<() => void>(() => {});
@@ -438,7 +436,7 @@ function GlobeStage({ manifest, layer, onRetryLayer }: StageProps) {
 
   return (
     <div
-      className="map-theme grid overflow-hidden rounded-xl border border-line bg-navy-950 lg:grid-cols-[minmax(0,1fr)_23rem]"
+      className="grid overflow-clip rounded-card bg-surface shadow-card lg:grid-cols-[16rem_minmax(0,1fr)_18.5rem]"
       data-testid="globe-prototype"
       data-status={status}
       data-outlines={layer.status}
@@ -448,7 +446,7 @@ function GlobeStage({ manifest, layer, onRetryLayer }: StageProps) {
       data-revealed-blocks={revealed.blocksFor ?? ""}
       data-selected={selection.blockId ?? selection.districtId ?? ""}
     >
-      <div className="relative h-[min(74vh,780px)] min-h-[440px] bg-[#02060f]">
+      <div className="relative h-[min(74vh,780px)] min-h-[440px] lg:h-[clamp(440px,calc(100dvh-17rem),820px)] bg-[radial-gradient(ellipse_at_50%_46%,#f7fbff_0%,#e3eefa_55%,#d0e1f4_100%)] lg:col-start-2 lg:row-start-1">
         <div
           ref={stageRef}
           tabIndex={0}
@@ -461,7 +459,6 @@ function GlobeStage({ manifest, layer, onRetryLayer }: StageProps) {
         >
           <div ref={hostRef} className="absolute inset-0" data-testid="globe-canvas-host" />
         </div>
-        <div aria-hidden="true" className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_center,transparent_55%,rgba(2,6,15,0.55)_100%)]" />
         <p id="globe-help" className="sr-only">
           Use the search and place list on the right, or press Enter to fly to West Bengal. When outlines are shown, the arrow keys move between them, Enter selects one, and Escape goes back one step.
         </p>
@@ -474,14 +471,14 @@ function GlobeStage({ manifest, layer, onRetryLayer }: StageProps) {
             <div className="pointer-events-none absolute inset-x-3 top-3 flex flex-wrap items-start justify-between gap-2">
               <div className="flex flex-wrap items-center gap-2">
                 <span
-                  className="rounded-full border border-white/15 bg-navy-950/80 px-3 py-1 text-xs font-medium text-on-navy backdrop-blur"
+                  className="rounded-full bg-white/95 px-3 py-1.5 text-xs font-medium text-ink shadow-float"
                   data-testid="globe-status"
                 >
-                  <span aria-hidden="true" className={cn("mr-2 inline-block size-2 rounded-full", phase === "idle" ? "bg-accent" : phase === "flying" ? "bg-gold-400" : "bg-white")} />
+                  <span aria-hidden="true" className={cn("mr-2 inline-block size-2 rounded-full", phase === "idle" ? "bg-accent" : phase === "flying" ? "bg-primary" : "bg-ink")} />
                   {statusText}
                 </span>
                 {showProvisional ? (
-                  <span className="rounded-full border border-dashed border-gold-400/60 bg-navy-950/80 px-3 py-1 text-[0.6875rem] font-medium uppercase tracking-wide text-gold-400 backdrop-blur">
+                  <span className="rounded-full border border-warn-line bg-warn-soft px-3 py-1 text-[0.6875rem] font-semibold uppercase tracking-wider text-warn-ink shadow-sm">
                     Provisional outlines
                   </span>
                 ) : null}
@@ -491,14 +488,14 @@ function GlobeStage({ manifest, layer, onRetryLayer }: StageProps) {
                   <button
                     type="button"
                     onClick={back}
-                    className="rounded-md border border-white/20 bg-navy-950/80 px-3 py-1.5 text-xs font-semibold text-on-navy backdrop-blur hover:border-accent"
+                    className="rounded-lg bg-white px-3 py-1.5 text-xs font-semibold text-ink shadow-float hover:bg-surface-muted"
                   >
                     Back
                   </button>
                   <button
                     type="button"
                     onClick={reset}
-                    className="rounded-md border border-accent/60 bg-accent/15 px-3 py-1.5 text-xs font-semibold text-on-navy backdrop-blur hover:bg-accent/25"
+                    className="rounded-lg bg-primary px-3 py-1.5 text-xs font-semibold text-white shadow-float hover:bg-primary-hover"
                   >
                     Return to globe
                   </button>
@@ -506,14 +503,14 @@ function GlobeStage({ manifest, layer, onRetryLayer }: StageProps) {
               ) : null}
             </div>
             <div className="pointer-events-none absolute bottom-3 left-3">
-              <Legend open={showProvisional && wide} />
+              <Legend open={false} />
             </div>
             {hoverName || focusName ? (
-              <p className="pointer-events-none absolute bottom-3 left-1/2 max-w-[40%] -translate-x-1/2 truncate rounded-full border border-white/15 bg-navy-950/85 px-3 py-1 text-xs font-medium text-on-navy backdrop-blur" data-testid="globe-hover">
+              <p className="pointer-events-none absolute bottom-3 left-1/2 max-w-[40%] -translate-x-1/2 truncate rounded-full bg-white/95 px-3 py-1.5 text-xs font-medium text-ink shadow-float" data-testid="globe-hover">
                 {focusName ?? hoverName}
               </p>
             ) : null}
-            <p className="pointer-events-none absolute bottom-3 right-3 hidden max-w-[16rem] text-right text-[0.6875rem] leading-4 text-on-navy-subtle md:block">
+            <p className="pointer-events-none absolute bottom-3 right-3 hidden max-w-[16rem] rounded-lg bg-white/85 px-2 py-1 text-right text-[0.625rem] leading-4 text-ink-muted md:block">
               {ATTRIBUTION_EARTH} Outlines: {view.meta.attribution}, ODbL, provisional and not official boundaries.
             </p>
           </>
@@ -521,15 +518,15 @@ function GlobeStage({ manifest, layer, onRetryLayer }: StageProps) {
 
         {status === "loading" ? (
           <div className="absolute inset-0 flex flex-col items-center justify-center gap-4" role="status" data-testid="globe-loading">
-            <div aria-hidden="true" className="size-40 animate-pulse rounded-full bg-[radial-gradient(circle_at_35%_30%,#2a5ca8,#0b1f4a_55%,#030a1c_100%)] shadow-[0_0_60px_rgba(60,120,255,0.25)]" />
-            <p className="text-sm text-on-navy-muted">Loading the globe… {Math.round(progress * 100)}%</p>
+            <div aria-hidden="true" className="size-40 animate-pulse rounded-full bg-[radial-gradient(circle_at_35%_30%,#8dbbf3,#3f7ecb_55%,#235aa6_100%)] shadow-[0_0_48px_rgba(63,126,203,0.28)]" />
+            <p className="text-sm text-ink-muted">Loading the globe… {Math.round(progress * 100)}%</p>
           </div>
         ) : null}
 
         {status === "error" ? (
-          <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-navy-950/90 p-6 text-center" role="alert" data-testid="globe-error">
-            <p className="text-base font-semibold text-on-navy">The globe could not be shown</p>
-            <p className="max-w-md text-sm text-on-navy-muted">{errorText}</p>
+          <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-surface/95 p-6 text-center" role="alert" data-testid="globe-error">
+            <p className="text-base font-semibold text-ink">The globe could not be shown</p>
+            <p className="max-w-md text-sm text-ink-muted">{errorText}</p>
             <button
               type="button"
               onClick={() => {
@@ -537,7 +534,7 @@ function GlobeStage({ manifest, layer, onRetryLayer }: StageProps) {
                 setProgress(0);
                 setAttempt((n) => n + 1);
               }}
-              className="rounded-md border border-accent/60 bg-accent/15 px-4 py-2 text-sm font-semibold text-on-navy hover:bg-accent/25"
+              className="rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-white hover:bg-primary-hover"
             >
               Try again
             </button>
@@ -546,11 +543,19 @@ function GlobeStage({ manifest, layer, onRetryLayer }: StageProps) {
       </div>
 
       <OutlineDataStrip layer={layer} onRetry={onRetryLayer} drawn={{ districts: view.meta.counts.districtsDrawn, blocks: view.meta.counts.blocksDrawn }} />
-      <p className="border-t border-line bg-navy-950 px-4 py-2 text-[0.6875rem] leading-4 text-on-navy-subtle md:hidden lg:col-span-2">
+      <p className="border-t border-line bg-surface-muted px-4 py-2 text-[0.6875rem] leading-4 text-ink-muted md:hidden lg:col-span-3">
         {ATTRIBUTION_EARTH} Outlines: {view.meta.attribution}, ODbL, provisional and not official boundaries.
       </p>
-      <aside className="space-y-4 border-t border-line bg-surface p-4 lg:max-h-[min(74vh,780px)] lg:overflow-y-auto lg:border-l lg:border-t-0">
-        <PlaceSearch targets={targets} districts={districtTargets} onSelect={selectTarget} disabled={status !== "ready" || flying} />
+      <div className="flex min-h-0 flex-col border-t border-line bg-surface p-5 lg:col-start-1 lg:row-start-1 lg:h-[clamp(440px,calc(100dvh-17rem),820px)] lg:min-h-[440px] lg:border-r lg:border-t-0">
+        <PlaceSearch
+          targets={targets}
+          districts={districtTargets}
+          onSelect={selectTarget}
+          disabled={status !== "ready" || flying}
+          activeId={selection.blockId ?? selection.districtId}
+        />
+      </div>
+      <aside className="flex min-h-0 flex-col border-t border-line bg-surface p-5 lg:col-start-3 lg:row-start-1 lg:h-[clamp(440px,calc(100dvh-17rem),820px)] lg:min-h-[440px] lg:border-l lg:border-t-0">
         <GlobeDetails
           overlay={view}
           level={level}

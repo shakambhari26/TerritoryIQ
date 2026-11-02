@@ -54,9 +54,9 @@ export function LocalChangesBar({
         local {count === 1 ? "change" : "changes"}
         <span className="text-ink-muted"> · kept in this browser only, on top of the unmodified workbook data</span>
       </p>
-      {!persistent ? <p className="text-xs font-medium text-amber-900">This browser cannot save changes, so they will be lost when the page closes.</p> : null}
-      {rejected > 0 ? <p className="text-xs font-medium text-amber-900">{rejected} saved {rejected === 1 ? "change was" : "changes were"} invalid and ignored.</p> : null}
-      {storedProblem ? <p className="text-xs font-medium text-amber-900">{storedProblem}</p> : null}
+      {!persistent ? <p className="text-xs font-medium text-warn-ink">This browser cannot save changes, so they will be lost when the page closes.</p> : null}
+      {rejected > 0 ? <p className="text-xs font-medium text-warn-ink">{rejected} saved {rejected === 1 ? "change was" : "changes were"} invalid and ignored.</p> : null}
+      {storedProblem ? <p className="text-xs font-medium text-warn-ink">{storedProblem}</p> : null}
       <div className="ml-auto flex flex-wrap items-center gap-2">
         <button type="button" className={buttonClass} onClick={onExport} disabled={count === 0}>
           Export JSON

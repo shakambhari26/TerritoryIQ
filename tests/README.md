@@ -51,6 +51,13 @@ dataset gives, and still applies a reviewer's local changes to them.
 or logged until a pin is opened, the panel's dialog semantics, keyboard (Tab, Enter, Escape, focus return), district
 and territory drill-down pin counts, grouping and the toggle, reduced motion and eased motion, phone, tablet and wide
 layouts, 24 px targets, and axe with the panel open.
+`block-interaction.test.mts`: what a block shows on the Workspace map is decided by the current selection (the URL hash) and never
+by an earlier click. A block pin selects its block exactly as a click on the outline does (a group of block pins zooms in
+instead), opens no floating card, and the details panel holds the people; the map shows one compact "Selected" card (name
+and allocation state, no staff name). Selecting block B replaces A everywhere (card, details, URL, no staff name of A
+readable); hovering another block shows a labelled hover tooltip and never changes the selected card, details or URL;
+Escape and the URL step the selection up and clear it; a block opened from the globe's own link lands on its card; and the
+territory ASM card closes when the selection changes and does not return when it changes back.
 `grid-glow.test.mts`: the coordinate grid is off by default, the toggle's `aria-pressed` state, mouse and keyboard
 operation (Enter, Space, the G key, Tab order), the grid not disturbing pins or the scale bar, the selection glow's
 layering and legibility (glow under the wash, casing and orange line), no glow without a selection, the taller

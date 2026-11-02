@@ -23,8 +23,12 @@ export const ROYAL_BLUE = "#4169e1";
 export const ORANGE = "#f5821f";
 export const NEUTRAL = "#8796b0";
 
-/** Selected, hovered and keyboard-focused boundaries. Distinct from every state fill and from the edge lines. */
-export const SELECTED_COLOUR = "#e2b93b";
+/**
+ * Selected, hovered and keyboard-focused boundaries. Distinct from every state fill and from the edge lines. The
+ * selected line is white because it is drawn on satellite imagery under royal-blue, orange and grey fills, where the
+ * workspace's blue selection colour would disappear.
+ */
+export const SELECTED_COLOUR = "#ffffff";
 export const HOVER_COLOUR = "#2dd4bf";
 
 export const DISTRICT_STYLE: Record<UnitState, StateStyle> = {
@@ -41,7 +45,7 @@ export const DISTRICT_STYLE: Record<UnitState, StateStyle> = {
     short: "White",
     fill: "#ffffff",
     fillOpacity: 0.7,
-    edge: "#0b1220",
+    edge: "#172b4d",
     description: "Explicitly confirmed to have no associated representative.",
   },
   unresolved: {
@@ -68,7 +72,7 @@ export const BLOCK_STYLE: Record<UnitState, StateStyle> = {
     short: "White",
     fill: "#ffffff",
     fillOpacity: 0.85,
-    edge: "#0b1220",
+    edge: "#172b4d",
     description: "Explicitly confirmed to have no associated representative.",
   },
   unresolved: {

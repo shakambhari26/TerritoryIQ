@@ -111,7 +111,8 @@ void main() {
   float b = length(closest);
   float f = clamp(1.0 - (b - 1.0) / uThickness, 0.0, 1.0);
   float lit = 0.30 + 0.70 * smoothstep(-0.45, 0.65, dot(normalize(closest), normalize(uSunDir)));
-  float a = pow(f, 2.6) * lit * uFade;
-  gl_FragColor = vec4(vec3(0.24, 0.52, 1.0) * a * 1.15, a);
+  // Normal blending over the page's light sky: a straight-alpha blue halo, strongest at the limb.
+  float a = pow(f, 2.2) * lit * uFade;
+  gl_FragColor = vec4(vec3(0.27, 0.55, 0.98), a * 0.85);
 }
 `;

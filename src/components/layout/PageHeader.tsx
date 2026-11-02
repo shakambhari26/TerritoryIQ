@@ -13,11 +13,11 @@ export function PageHeader({ title, description, aside, compact = false }: PageH
   return (
     <div className={compact ? "flex flex-wrap items-center justify-between gap-x-6 gap-y-1" : "flex flex-wrap items-start justify-between gap-x-6 gap-y-2"}>
       <div className="min-w-0">
-        <h1 className={compact ? "text-xl font-semibold tracking-tight text-ink sm:text-2xl" : "text-2xl font-semibold tracking-tight text-ink sm:text-3xl"}>
+        <h1 className={compact ? "text-xl font-semibold tracking-tight text-ink" : "text-2xl font-semibold tracking-tight text-ink sm:text-3xl"}>
           {title}
         </h1>
         {description ? (
-          <p className="mt-1 max-w-3xl text-sm leading-6 text-ink-muted sm:text-base">
+          <p className="mt-1 max-w-[65ch] text-sm leading-6 text-ink-muted">
             {description}
           </p>
         ) : null}

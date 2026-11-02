@@ -24,13 +24,13 @@ export default function GlobePage() {
       <PageHeader
         title="Globe"
         description="A rotating 3D Earth that flies to a place you choose, stops, and then reveals provisional outlines. A selected place can be opened in the 2D workspace."
-        aside={<Badge>Local prototype · not for deployment</Badge>}
+        aside={<Badge tone="warning">Local prototype · not for deployment</Badge>}
       />
       <p
-        className="mt-3 max-w-4xl rounded-md border border-dashed border-line-strong bg-surface-muted px-3 py-2 text-xs leading-5 text-ink-muted"
+        className="mt-4 rounded-xl bg-warn-soft px-4 py-2.5 text-xs leading-5 text-warn-ink"
         data-testid="globe-provisional-notice"
       >
-        <strong className="font-semibold text-ink">Provisional outlines.</strong> They are unofficial OpenStreetMap geometry, not official boundaries, and no
+        <strong className="font-semibold">Provisional outlines.</strong> They are unofficial OpenStreetMap geometry, not official boundaries, and no
         authority has reviewed or approved them. Colours show a provisional, unreviewed link to a named representative only. This prototype runs on this
         machine and is not approved for deployment.
       </p>
@@ -38,7 +38,7 @@ export default function GlobePage() {
         {manifest ? (
           <GlobeLoader manifest={manifest} />
         ) : (
-          <div className="rounded-xl border border-line bg-surface p-6" role="alert">
+          <div className="rounded-card bg-surface p-6 shadow-card" role="alert">
             <p className="text-base font-semibold text-ink">The globe data has not been built</p>
             <p className="mt-1 text-sm text-ink-muted">
               Run <code className="font-mono">npm run data:build</code>, then <code className="font-mono">python -I scripts/globe/build_overlay.py</code>, and restart the server.

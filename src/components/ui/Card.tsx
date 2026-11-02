@@ -5,7 +5,7 @@ type CardProps<T extends ElementType> = {
   as?: T;
 } & Omit<ComponentPropsWithoutRef<T>, "as">;
 
-/** Light analytics surface. The dark map workspace has its own frame. */
+/** The light surface every page's content sits on. */
 export function Card<T extends ElementType = "div">({
   as,
   className,
@@ -15,7 +15,7 @@ export function Card<T extends ElementType = "div">({
   return (
     <Component
       className={cn(
-        "rounded-2xl border border-line bg-surface shadow-card",
+        "rounded-card bg-surface shadow-card",
         className,
       )}
       {...props}

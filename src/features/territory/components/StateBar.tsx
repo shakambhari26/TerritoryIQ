@@ -29,7 +29,7 @@ export function StateBar({
       <div
         role="img"
         aria-label={`${label}: ${ALLOCATION_STATES.map((s) => `${formatCount(counts[s])} ${ALLOCATION_STATE_LABEL[s].toLowerCase()}`).join(", ")}`}
-        className="flex h-2.5 w-full overflow-hidden rounded-full bg-line"
+        className="flex h-3 w-full gap-0.5 overflow-hidden rounded-full bg-surface-muted"
       >
         {ALLOCATION_STATES.map((state) =>
           counts[state] > 0 ? (

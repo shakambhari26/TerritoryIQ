@@ -5,7 +5,7 @@ import path from "node:path";
 import { describe, it } from "node:test";
 import { ANCHOR_CLEAR, LEADER_CLEAR, LEADER_MIN, estimateWidth, leaderEnd, outlineRects, parseOutline, placeLabels, wrapLabel, type LabelRequest, type PlacedLabel, type Point2, type Rect } from "../../src/features/geo/labels.ts";
 import { toScreen, unionBounds, type Bounds } from "../../src/features/geo/viewport.ts";
-import { LEADER_MAX, controlObstacles, districtFontSize, fitClear } from "../../src/features/territory/map-layout.ts";
+import { LEADER_MAX, controlObstacles, districtFontSize, fitClear, furniture } from "../../src/features/territory/map-layout.ts";
 import type { BoundaryLayer, TerritoryDataset } from "../../src/features/territory/types.ts";
 import { ROOT } from "../../scripts/lib/sources.ts";
 
@@ -55,6 +55,19 @@ describe("estimateWidth", () => {
 });
 
 describe("placeLabels (free)", () => {
+  it("keeps the requested clear space between two names", () => {
+    const a = request("A", 200, 150, "Alpha", 40);
+    const b = request("B", 262, 150, "Bravo", 30);
+    for (const gap of [3, 8, 14]) {
+      const { placed } = placeLabels([a, b], { area, fontSize: 11, mode: "free", gap });
+      assert.equal(placed.length, 2);
+      const [p, q] = placed;
+      const dx = Math.max(q.box.x - (p.box.x + p.box.width), p.box.x - (q.box.x + q.box.width));
+      const dy = Math.max(q.box.y - (p.box.y + p.box.height), p.box.y - (q.box.y + q.box.height));
+      assert.ok(Math.max(dx, dy) >= gap - 1e-6, `${gap} px requested, ${Math.max(dx, dy).toFixed(1)} px kept`);
+    }
+  });
+
   it("centres a lone label on its anchor with no leader", () => {
     const { placed, omitted } = placeLabels([request("A", 200, 150)], { area, fontSize: 11, mode: "free" });
     assert.equal(omitted.length, 0);
@@ -315,8 +328,11 @@ describe("district labels on the real statewide overview", { skip: built ? false
     const options = { area: { width, height }, fontSize: districtFontSize(width), mode: "free" as const, obstacles: controlObstacles({ width, height }) };
     const capped = placeLabels(requests, { ...options, maxLeader: LEADER_MAX });
     assert.deepEqual(capped.omitted.map((id) => nameOf.get(id)), ["Howrah"]);
-    const uncapped = placeLabels(requests, options);
-    assert.deepEqual(uncapped.omitted, [], "without the cap every name has a place");
+    // The open key (bottom left, the light-theme map redesign) takes room that Howrah's name needs on this small canvas; the
+    // key folds away, so the cap is checked with it folded.
+    const folded = { ...options, obstacles: furniture({ width, height }, 6).filter((f) => f.id !== "key").map((f) => f.rect) };
+    const uncapped = placeLabels(requests, folded);
+    assert.deepEqual(uncapped.omitted, [], "without the cap (and with the key folded) every name has a place");
     const howrah = uncapped.placed.find((p) => nameOf.get(p.id) === "Howrah")!;
     const end = leaderEnd(howrah);
     assert.ok(Math.hypot(howrah.anchor.x - end.x, howrah.anchor.y - end.y) > LEADER_MAX, "and Howrah's line is longer than the cap");

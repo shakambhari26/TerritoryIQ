@@ -85,7 +85,7 @@ export function BlockRowsSection({ overlay, blockId, rowIds }: SectionProps) {
   if (current.kind === "error") {
     return (
       <div data-testid="globe-block-rows" data-state="error" className="space-y-2">
-        <p role="alert" className="rounded-md border border-amber-300/40 bg-amber-400/10 px-2 py-1.5 text-xs text-amber-100">
+        <p role="alert" className="rounded-lg border border-warn-line bg-warn-soft px-2.5 py-1.5 text-xs text-warn-ink">
           The workbook rows for this block could not be loaded.
         </p>
         <button
@@ -97,7 +97,7 @@ export function BlockRowsSection({ overlay, blockId, rowIds }: SectionProps) {
             setOutcome(null);
             setAttempt((n) => n + 1);
           }}
-          className="inline-flex items-center rounded-md border border-accent/40 bg-accent-soft px-3 py-1.5 text-xs font-semibold text-ink hover:border-accent"
+          className="inline-flex items-center rounded-lg border border-primary/30 bg-primary-soft px-3 py-1.5 text-xs font-semibold text-primary-ink hover:border-primary"
         >
           Retry
         </button>
@@ -107,24 +107,24 @@ export function BlockRowsSection({ overlay, blockId, rowIds }: SectionProps) {
 
   return (
     <div data-testid="globe-block-rows" data-state="ready" className="space-y-2">
-      <h3 className="text-xs font-semibold uppercase tracking-wide text-ink-subtle">Workbook rows linked to this block</h3>
+      <h3 className="text-[0.6875rem] font-semibold uppercase tracking-wider text-ink-muted">Workbook rows linked to this block</h3>
       {current.rows.map((record) => (
-        <div key={record.unitId} className="rounded-md border border-line bg-surface-muted p-2">
-          <p className="text-xs text-ink-subtle">
-            Sales territory <span className="font-medium text-ink-muted">{record.territory}</span> · row label{" "}
-            <span className="font-medium text-ink-muted">{record.blockLabel}</span>
+        <div key={record.unitId} className="rounded-lg border border-line bg-surface-muted p-2.5">
+          <p className="text-xs text-ink-muted">
+            Sales territory <span className="font-medium text-ink">{record.territory}</span> · row label{" "}
+            <span className="font-medium text-ink">{record.blockLabel}</span>
           </p>
           {record.people.length > 0 ? (
             <ul className="mt-1 space-y-0.5">
               {record.people.map((person, index) => (
                 <li key={index} className="flex justify-between gap-3">
-                  <span className="text-xs text-ink-subtle">{slotLabel(person.role as StaffRole, person.slot)}</span>
-                  <span className={cn("text-right text-xs", person.vacant ? "italic text-ink-subtle" : "font-medium text-ink")}>{person.vacant ? "Vacant marker" : person.name}</span>
+                  <span className="text-xs text-ink-muted">{slotLabel(person.role as StaffRole, person.slot)}</span>
+                  <span className={cn("text-right text-xs", person.vacant ? "italic text-ink-muted" : "font-medium text-ink")}>{person.vacant ? "Vacant marker" : person.name}</span>
                 </li>
               ))}
             </ul>
           ) : (
-            <p className="mt-1 text-xs text-ink-subtle">The row lists no names.</p>
+            <p className="mt-1 text-xs text-ink-muted">The row lists no names.</p>
           )}
           {(() => {
             const rowHref = workspaceHref(overlay, { kind: "row", id: record.unitId });

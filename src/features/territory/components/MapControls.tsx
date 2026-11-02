@@ -7,7 +7,7 @@ import { cn } from "@/lib/cn";
 export const KEY_PAN = 60;
 
 const button =
-  "inline-flex h-9 w-9 items-center justify-center rounded-lg text-ink transition-colors hover:bg-surface-muted active:bg-navy-700 disabled:cursor-not-allowed disabled:text-ink-subtle/50 disabled:hover:bg-transparent max-sm:h-8 max-sm:w-8";
+  "inline-flex h-8 w-8 items-center justify-center rounded-lg text-ink-muted transition-colors hover:bg-surface-muted hover:text-ink active:bg-primary-soft disabled:cursor-not-allowed disabled:text-ink-subtle/50 disabled:hover:bg-transparent";
 
 /** A press on a control must not reach the map underneath: it would start a drag or clear the selection. */
 const keepOffMap = {
@@ -18,7 +18,7 @@ const keepOffMap = {
 
 function Icon({ children }: { children: ReactNode }) {
   return (
-    <svg aria-hidden="true" focusable="false" viewBox="0 0 20 20" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+    <svg aria-hidden="true" focusable="false" viewBox="0 0 20 20" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
       {children}
     </svg>
   );
@@ -46,13 +46,13 @@ interface MapControlsProps {
  * block is a selection, not a zoom.
  */
 export function MapControls({ onZoomIn, onZoomOut, onFitState, onFitView, onReset, fitViewTarget, resetLabel, gridOn, onToggleGrid }: MapControlsProps) {
-  const divider = <span aria-hidden="true" className="mx-1.5 my-0.5 block h-px bg-line-strong" />;
+  const divider = <span aria-hidden="true" className="mx-1.5 my-0.5 block h-px bg-line" />;
   return (
     <div
       role="group"
       aria-label="Map controls"
       data-testid="map-controls"
-      className="absolute right-3 top-3 z-10 flex flex-col rounded-xl border border-line bg-surface/90 p-0.5 shadow-md backdrop-blur"
+      className="absolute right-3 top-3 z-10 flex flex-col rounded-xl border border-line/70 bg-surface p-0.5 shadow-float"
       {...keepOffMap}
     >
       <button type="button" className={button} onClick={onZoomIn} aria-label="Zoom in" title="Zoom in (+)">
@@ -90,7 +90,7 @@ export function MapControls({ onZoomIn, onZoomOut, onFitState, onFitView, onRese
       {divider}
       <button
         type="button"
-        className={cn(button, gridOn && "bg-navy-700 shadow-[inset_0_0_0_1.5px_var(--color-ember)]")}
+        className={cn(button, gridOn && "bg-primary-soft text-primary-ink shadow-[inset_0_0_0_1.5px_var(--color-primary)]")}
         onClick={onToggleGrid}
         aria-label="Coordinate grid"
         aria-pressed={gridOn}
@@ -116,7 +116,7 @@ export function PanControls({ onPan, compact = false }: { onPan: (dx: number, dy
       <path d="M10 16V4M5 9l5-5 5 5" />
     </svg>
   );
-  const cell = cn(button, "bg-surface/90 shadow-md backdrop-blur");
+  const cell = cn(button, "border border-line/70 bg-surface shadow-float");
   const up = (
     <button type="button" className={cell} onClick={() => onPan(0, KEY_PAN)} aria-label="Pan up" title="Pan up (↑)">
       {arrow(0)}
@@ -137,28 +137,13 @@ export function PanControls({ onPan, compact = false }: { onPan: (dx: number, dy
       {arrow(180)}
     </button>
   );
-  // A small map gets one row, so the buttons do not sit on top of the state. Same buttons, same order of keys.
-  if (compact) {
-    return (
-      <div role="group" aria-label="Pan map" data-testid="pan-controls" className="absolute bottom-3 left-3 z-10 flex gap-1" {...keepOffMap}>
-        {left}
-        {up}
-        {down}
-        {right}
-      </div>
-    );
-  }
+  // One slim row on every size (bottom right, or bottom left on a small map): it takes a strip of the map, not a block of it.
   return (
-    <div role="group" aria-label="Pan map" data-testid="pan-controls" className="absolute bottom-3 left-3 z-10 grid grid-cols-3 gap-1 max-sm:bottom-3" {...keepOffMap}>
-      <span aria-hidden="true" />
-      {up}
-      <span aria-hidden="true" />
+    <div role="group" aria-label="Pan map" data-testid="pan-controls" className={cn("absolute bottom-3 z-10 flex gap-1", compact ? "left-3" : "right-3")} {...keepOffMap}>
       {left}
-      <span aria-hidden="true" />
-      {right}
-      <span aria-hidden="true" />
+      {up}
       {down}
-      <span aria-hidden="true" />
+      {right}
     </div>
   );
 }

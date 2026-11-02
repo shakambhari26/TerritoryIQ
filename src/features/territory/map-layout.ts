@@ -8,7 +8,7 @@ import type { Rect } from "../geo/labels.ts";
 import { fitBoundsInset, type Bounds, type Insets, type Size, type Viewport } from "../geo/viewport.ts";
 
 export const CONTROL_INSET = 12;
-export const BUTTON = 36;
+export const BUTTON = 32;
 /** Below this map width the controls use their compact size. */
 export const COMPACT_WIDTH = 560;
 const COMPACT_BUTTON = 32;
@@ -25,57 +25,74 @@ export function zoomColumn(width: number): { width: number; height: number } {
   return { width: b + 6, height: ZOOM_BUTTONS * b + ZOOM_CHROME };
 }
 
-/**
- * The pan buttons. A cross of four buttons on a 3 by 3 grid, or on a small map a single row of four, which
- * covers a third of the height and so leaves the south-west of a fitted state clear.
- */
+/** The pan buttons: one slim row of four, at the bottom right (bottom left on a small map), so they take a strip and not a block of the map. */
 export function panPad(width: number): { width: number; height: number } {
   const b = buttonSize(width);
-  if (width < COMPACT_WIDTH) return { width: 4 * b + 3 * PAN_GAP, height: b };
-  return { width: 3 * b + 2 * PAN_GAP, height: 3 * b + 2 * PAN_GAP };
+  return { width: 4 * b + 3 * PAN_GAP, height: b };
 }
 
 /** The permanent "Provisional boundaries" chip in the top-left corner (see Workspace). A little wider than it draws. */
 const CHIP = { width: 136, height: 24 };
-/** The scale bar: its line and its text, to the right of the pan buttons. A little larger than it draws. */
-const SCALE = { width: 112, height: 26, gap: 14 };
-/** The "Details" jump button a small map shows at the bottom right once something is selected. */
-const DETAILS = { width: 88, height: 32 };
+/** The scale bar: its line and its text, in the top left just under the provisional chip, where the map is quietest. A little larger than it draws. */
+const SCALE = { width: 112, height: 26, gap: 6 };
+/**
+ * The key (see MapKey), a compact white card at the bottom left. A small map starts with it folded to a pill, so
+ * it reserves only the pill; a wider map reserves the open card, which lists its entries in one narrow column, so on a wide map it stays beside the (narrow, centred) state.
+ */
+const KEY_OPEN = { width: 232, height: 172 };
+const KEY_FOLDED = { width: 76, height: 28 };
 
 export interface Furniture {
-  id: "zoom" | "pan" | "chip" | "scale" | "details";
+  id: "zoom" | "pan" | "chip" | "scale" | "key";
   rect: Rect;
   /**
    * Whether the fit keeps the state clear of it. The scale bar is a hairline and a few characters in a corner that a
-   * fitted state's bounding box only grazes, so it only keeps labels and markers off it; every control and notice does more.
+   * fitted state's bounding box only grazes, so it only keeps labels and markers off it; every control and notice does more. The key is the same: it sits in the
+   * bounding box's empty corner (the state itself is narrower than the map) and the reader can fold it away.
    */
   clearOfFit: boolean;
 }
 
 /**
- * Everything drawn over the map that is not the map: the zoom column (top right), the pan buttons (bottom left),
- * the provisional chip (top left), the scale bar (beside the pan buttons) and, on a small map, the details button
- * (bottom right). Each rectangle has `margin` pixels of breathing room.
+ * Everything drawn over the map that is not the map: the zoom column (top right), the pan buttons (bottom right),
+ * the provisional chip (top left), the scale bar (under the chip) and the key (bottom left). Each rectangle has `margin` pixels of breathing room.
  */
-export function furniture(size: Size, margin = 6): Furniture[] {
+export function furniture(size: Size, margin = 6, keyOpen = size.width >= COMPACT_WIDTH): Furniture[] {
   const zoom = zoomColumn(size.width);
   const pan = panPad(size.width);
   const grow = (r: Rect): Rect => ({ x: r.x - margin, y: r.y - margin, width: r.width + 2 * margin, height: r.height + 2 * margin });
-  const list: Furniture[] = [
+  const key = keyOpen ? KEY_OPEN : KEY_FOLDED;
+  // On a small map the two swap sides: the pan row at the bottom left and the key pill at the bottom right.
+  const compact = size.width < COMPACT_WIDTH;
+  return [
     { id: "zoom", clearOfFit: true, rect: grow({ x: size.width - CONTROL_INSET - zoom.width, y: CONTROL_INSET, width: zoom.width, height: zoom.height }) },
-    { id: "pan", clearOfFit: true, rect: grow({ x: CONTROL_INSET, y: size.height - CONTROL_INSET - pan.height, width: pan.width, height: pan.height }) },
+    { id: "pan", clearOfFit: true, rect: grow({ x: compact ? CONTROL_INSET : size.width - CONTROL_INSET - pan.width, y: size.height - CONTROL_INSET - pan.height, width: pan.width, height: pan.height }) },
     { id: "chip", clearOfFit: true, rect: grow({ x: CONTROL_INSET, y: CONTROL_INSET, width: CHIP.width, height: CHIP.height }) },
-    { id: "scale", clearOfFit: false, rect: grow({ x: CONTROL_INSET + pan.width + SCALE.gap, y: size.height - SCALE.gap - SCALE.height, width: SCALE.width, height: SCALE.height }) },
+    {
+      id: "scale",
+      clearOfFit: false,
+      rect: grow({ x: CONTROL_INSET, y: CONTROL_INSET + CHIP.height + SCALE.gap, width: SCALE.width, height: SCALE.height }),
+    },
+    { id: "key", clearOfFit: false, rect: grow({ x: compact ? size.width - CONTROL_INSET - key.width : CONTROL_INSET, y: size.height - CONTROL_INSET - key.height, width: key.width, height: key.height }) },
   ];
-  if (size.width < COMPACT_WIDTH) {
-    list.push({ id: "details", clearOfFit: true, rect: grow({ x: size.width - CONTROL_INSET - DETAILS.width, y: size.height - CONTROL_INSET - DETAILS.height, width: DETAILS.width, height: DETAILS.height }) });
-  }
-  return list;
 }
 
-/** The rectangles the furniture occupies, for the label placer and the marker filter. */
-export function controlObstacles(size: Size, margin = 6): Rect[] {
-  return furniture(size, margin).map((f) => f.rect);
+/** The rectangles the furniture occupies, for the label placer. `keyOpen` is whether the key is drawn open. */
+export function controlObstacles(size: Size, margin = 6, keyOpen = size.width >= COMPACT_WIDTH): Rect[] {
+  return furniture(size, margin, keyOpen).map((f) => f.rect);
+}
+
+/**
+ * The rectangles that keep markers out: every control and notice but the key. A marker under the key is not dropped (that
+ * would lose a representative the data supports); the key folds away instead (see `keyCoversMarker` in GeoMap).
+ */
+export function markerObstacles(size: Size, margin = 6): Rect[] {
+  return furniture(size, margin).filter((f) => f.id !== "key").map((f) => f.rect);
+}
+
+/** The open key's rectangle, for the check whether it would sit over a marker. */
+export function openKeyRect(size: Size, margin = 4): Rect {
+  return furniture(size, margin, true).find((f) => f.id === "key")!.rect;
 }
 
 /** Space kept clear around a fitted extent: tight, so the state fills the frame; a phone gets less. */
