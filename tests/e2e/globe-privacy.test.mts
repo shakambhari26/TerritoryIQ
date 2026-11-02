@@ -207,8 +207,14 @@ describe("globe names on demand", { skip: skipReason, timeout: 900_000 }, () => 
       const label = JSON.stringify(extra);
       const response = await fetch(`${server.baseUrl}/globe`, { headers: { RSC: "1", ...extra } });
       const text = await response.text();
-      assert.equal(response.status, 200, label);
-      assert.match(response.headers.get("content-type") ?? "", /^text\/x-component/, label);
+      // Next inlines a root layout that is small enough into its child segment and then emits no `/_index` file for it. The
+      // sidebar is a client component, so the layout's own payload is small and `/_index` is now answered with a 404; the
+      // layout still reaches the browser inside the other variants. Every response, a 404 included, must still hold no name.
+      const inlined = response.status === 404 && extra["Next-Router-Segment-Prefetch"] === "/_index";
+      if (!inlined) {
+        assert.equal(response.status, 200, label);
+        assert.match(response.headers.get("content-type") ?? "", /^text\/x-component/, label);
+      }
       assert.equal(leakedNames(text, names), 0, `staff names in the /globe RSC ${label}`);
       assert.doesNotMatch(text, /blockLabel|namedPeople/, label);
       bytes += text.length;

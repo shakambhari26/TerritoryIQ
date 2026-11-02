@@ -30,14 +30,15 @@ import {
 } from "@/features/geo/viewport";
 import { usePrefersReducedMotion } from "@/lib/use-reduced-motion";
 import type { GeoQuality } from "../quality";
-import { COMPACT_WIDTH, controlObstacles, fitClear, panPad } from "../map-layout";
+import { COMPACT_WIDTH, controlObstacles, fitClear, markerObstacles, openKeyRect, panPad } from "../map-layout";
 import { planLabels, type LabelAnchor } from "../map-labels";
 import { isBlockInteractive, visibleBlockIds, type MapContext } from "../map-level";
-import { ALLOCATION_FILL, MAP_BACKDROP, MAP_COLOR, TEAL, PATTERNS, QUALITY_FILL, districtTint, patternUrl, type MapLayerMode, type PatternSpec } from "../map-style";
+import { ALLOCATION_FILL, MAP_BACKDROP, MAP_COLOR, PATTERNS, QUALITY_FILL, districtTint, patternUrl, type MapLayerMode, type PatternSpec } from "../map-style";
 import type { TerritoryModel } from "../model";
 import { clusterPins, type PinCluster, type RepresentativePin } from "../representatives";
 import type { AllocationState, BoundaryLayer, BoundaryShape } from "../types";
 import { KEY_PAN, MapControls, PanControls } from "./MapControls";
+import { MapKey, type PinLegend } from "./MapLegend";
 import { MARKER_GEOMETRY, RepresentativePins, markerRect } from "./RepresentativePins";
 import { RepresentativesPanel } from "./RepresentativesPanel";
 
@@ -59,9 +60,11 @@ export interface GeoMapProps {
   highlighted: ReadonlySet<string>;
   /** The selected official unit, which gets the strongest outline. */
   focusId: string | null;
+  /** Identifies the current selection (its URL hash). A card the map opened for one selection never outlives it. */
+  selectionKey: string;
   /** Fade everything that is not highlighted (used for a sales-territory view). */
   dimOthers: boolean;
-  describe: (featureId: string) => { title: string; detail: string };
+  describe: (featureId: string) => { title: string; detail: string; /** One short line for the floating card (a title and this, nothing more). */ brief: string };
   /** Changes whenever the map should move to the current geographic level (a drill-down, a back step, a list pick). */
   revealToken: number;
   onFeatureClick: (featureId: string) => void;
@@ -77,6 +80,8 @@ export interface GeoMapProps {
   onShowTerritory?: (territoryId: string) => void;
   /** A feature the pointer or keyboard is on elsewhere (the district navigator): it gets the same outline as a hover on the map. */
   hoverFeatureId?: string | null;
+  /** What the pins on the map are, for the key; null when none are shown. */
+  keyPins?: PinLegend | null;
 }
 
 const LIMIT_PX = 4;
@@ -171,8 +176,8 @@ const Shapes = memo(function Shapes({
               d={shape.d}
               fillRule="evenodd"
               stroke={isFocus ? MAP_COLOR.districtLineStrong : MAP_COLOR.districtLine}
-              strokeWidth={isFocus ? 1.8 : focused !== null ? 0.9 : 1.2}
-              strokeOpacity={focused !== null && !isFocus ? 0.7 : 1}
+              strokeWidth={isFocus ? 1.4 : focused !== null ? 0.8 : 0.9}
+              strokeOpacity={focused !== null && !isFocus ? 0.8 : 1}
               vectorEffect="non-scaling-stroke"
             />
           );
@@ -228,6 +233,7 @@ export function GeoMap({
   qualityOf,
   highlighted,
   focusId,
+  selectionKey,
   dimOthers,
   describe,
   revealToken,
@@ -239,6 +245,7 @@ export function GeoMap({
   onShowUnit,
   onShowTerritory,
   hoverFeatureId = null,
+  keyPins = null,
 }: GeoMapProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const reducedMotion = usePrefersReducedMotion();
@@ -256,9 +263,13 @@ export function GeoMap({
   const pointers = useRef(new Map<number, { x: number; y: number }>());
   const dragStart = useRef<{ x: number; y: number; vx: number; vy: number; id: number } | null>(null);
   const pinch = useRef<number | null>(null);
-  // The pins in the open representatives panel (by id, so zooming does not change what the panel shows), and the
-  // marker that opened it, so closing the panel can hand focus back.
-  const [openIds, setOpenIds] = useState<readonly string[] | null>(null);
+  // The pins in the open representatives panel (by id, so zooming does not change what the panel shows) and the
+  // selection it was opened under, and the marker that opened it, so closing the panel can hand focus back.
+  const [open, setOpen] = useState<{ ids: readonly string[]; at: string } | null>(null);
+  // The selection is the source of truth: a panel opened under another selection is closed in the same render that
+  // sees the change (never shown for a frame), and it cannot come back if the selection returns to what it was.
+  if (open && open.at !== selectionKey) setOpen(null);
+  const openIds = open && open.at === selectionKey ? open.ids : null;
   // The latitude and longitude grid is orientation only and competed with the outlines, so it starts hidden.
   const [gridOn, setGridOn] = useState(false);
   const trigger = useRef<HTMLElement | null>(null);
@@ -505,14 +516,14 @@ export function GeoMap({
   const pinList = useMemo(() => pins ?? [], [pins]);
   const openPins = useMemo(() => (openIds ? pinList.filter((p) => openIds.includes(p.id)) : []), [openIds, pinList]);
   // Pins that left the view (another level, a toggle) take the panel with them, so it cannot return on its own later.
-  if (openIds && openPins.length === 0) setOpenIds(null);
+  if (open && openPins.length === 0) setOpen(null);
 
   const clustersFor = useCallback(
     (v: Viewport | null): PinCluster[] => {
       if (!v || size.width <= 0 || pinList.length === 0) return [];
       // A marker that would sit under a button is left out until the map is moved: a covered button breaks the
       // target-size rule and a covered marker would still take keyboard focus.
-      const furniture = controlObstacles(size, 2);
+      const furniture = markerObstacles(size, 2);
       return clusterPins(pinList, (x, y) => toScreen(v, x, y), MARKER_GEOMETRY).filter((c) => {
         if (!(c.screen.x > -40 && c.screen.x < size.width + 40 && c.screen.y > -40 && c.screen.y < size.height + 80)) return false;
         const r = markerRect(c);
@@ -522,18 +533,24 @@ export function GeoMap({
     [pinList, size],
   );
   const clusters = useMemo(() => clustersFor(viewport), [clustersFor, viewport]);
+  // The key (bottom left) is open on a map wide enough for it, unless the reader chose otherwise. Where a marker would sit
+  // under it the key folds to its pill, so no marker is hidden or covered; the reader can still open it.
+  const [keyChosen, setKeyChosen] = useState<boolean | null>(null);
+  const keyCoversMarker = useMemo(() => {
+    const k = openKeyRect(size);
+    return clusters.some((c) => {
+      const r = markerRect(c);
+      return r.x < k.x + k.width && r.x + r.width > k.x && r.y < k.y + k.height && r.y + r.height > k.y;
+    });
+  }, [clusters, size]);
+  const keyOpen = keyChosen ?? (size.width >= COMPACT_WIDTH && !keyCoversMarker);
 
   const closePanel = useCallback(() => {
-    setOpenIds(null);
+    setOpen(null);
     // Back to the marker that opened the panel; if it is gone (the pins regrouped), to the map itself.
     const target = trigger.current?.isConnected ? trigger.current : containerRef.current;
     requestAnimationFrame(() => target?.focus());
   }, []);
-  const openCluster = useCallback((cluster: PinCluster, element: HTMLElement) => {
-    trigger.current = element;
-    setOpenIds(cluster.pins.map((p) => p.id));
-    onInteract?.();
-  }, [onInteract]);
   const zoomToPins = useCallback(
     (group: readonly RepresentativePin[]) => {
       const points = group.map((p) => [p.at[0], p.at[1], p.at[0], p.at[1]] as Bounds);
@@ -542,6 +559,26 @@ export function GeoMap({
       apply(fit(padBounds(union, spanOf(0.03))), true, null);
     },
     [apply, fit, spanOf],
+  );
+  const openCluster = useCallback(
+    (cluster: PinCluster, element: HTMLElement) => {
+      onInteract?.();
+      if (cluster.pins.every((p) => p.kind === "block")) {
+        // Block pins open no card over the map: the people of a block are in the details panel, and the selected
+        // block is named by the compact card. One pin selects its block exactly as a click on the outline does; a
+        // group moves the map in so its pins separate (the markers are rebuilt, so the map takes focus).
+        setOpen(null);
+        if (cluster.pins.length === 1) onFeatureClick(cluster.pins[0].anchorFeatureId);
+        else {
+          zoomToPins(cluster.pins);
+          requestAnimationFrame(() => containerRef.current?.focus());
+        }
+        return;
+      }
+      trigger.current = element;
+      setOpen({ ids: cluster.pins.map((p) => p.id), at: selectionKey });
+    },
+    [onInteract, onFeatureClick, zoomToPins, selectionKey],
   );
 
   const onKeyDown = (event: ReactKeyboardEvent<HTMLDivElement>) => {
@@ -596,19 +633,21 @@ export function GeoMap({
     },
     [layerMode, stateOf, qualityOf],
   );
+  // White strokes make each shaded block its own cell; on the boundaries layer the fill is almost white, so a slate stroke is used.
+  const blockStroke = layerMode === "boundaries" ? MAP_COLOR.blockLine : MAP_COLOR.blockLineOnFill;
   const lineOf = useCallback(
     (id: string) =>
       interactiveBlocks.has(id)
-        ? { stroke: MAP_COLOR.blockLine, width: 0.9, opacity: 1 }
-        : { stroke: MAP_COLOR.blockLine, width: 0.5, opacity: 0.55 },
-    [interactiveBlocks],
+        ? { stroke: blockStroke, width: 0.8, opacity: 1 }
+        : { stroke: blockStroke, width: 0.5, opacity: 0.55 },
+    [interactiveBlocks, blockStroke],
   );
   const stateOfString = useCallback((id: string) => stateOf(id), [stateOf]);
   const lgdCodeOf = useCallback((id: string) => model.featureById.get(id)?.lgdCode ?? 0, [model]);
 
   const scale = viewport?.scale ?? 1;
   const highlightList = [...highlighted].filter((id) => pathById.has(id));
-  const hoverInfo = hover ? describe(hover.id) : null;
+  const hoverInfo = hover && hover.id !== focusId ? describe(hover.id) : null;
   const hoverId = hover?.id ?? hoverFeatureId;
 
   // Names are placed once per view, not per pointer move. A deferred view lets a drag or a wheel turn stay smooth.
@@ -628,18 +667,29 @@ export function GeoMap({
       blockIds: interactiveBlocks,
       selectedBlockId: context.blockId,
       // Names keep clear of the buttons and of the pins, so a name is never read through a marker.
-      obstacles: [...controlObstacles(size), ...labelClusters.map(markerRect)],
+      obstacles: [...controlObstacles(size, 6, keyOpen), ...labelClusters.map(markerRect)],
       avoid: outlines.length > 0 ? outlineRects(outlines, labelView, size) : undefined,
       zoomRatio: labelView.scale / levelView.scale,
       overviewHeight: stateBounds ? (stateBounds[3] - stateBounds[1]) * labelView.scale : undefined,
     });
-  }, [labelView, size, levelView, model, anchors, context, districtIds, interactiveBlocks, labelClusters, outlines, stateBounds]);
+  }, [labelView, size, levelView, model, anchors, context, districtIds, interactiveBlocks, labelClusters, outlines, stateBounds, keyOpen]);
 
   const grid = useMemo(() => (gridOn && viewport && size.width > 0 ? graticule(viewport, size, LAYER_SCALE) : null), [gridOn, viewport, size]);
   const bar = useMemo(() => (viewport && size.width > 0 ? scaleBar(viewport, size, LAYER_SCALE, size.width < COMPACT_WIDTH ? 72 : 110) : null), [viewport, size]);
   const fade = motion ? "opacity 120ms" : "none";
 
   const drawn = !!(layer && stateBounds && viewport);
+
+  // The card beside the selected block (a district is already named by the breadcrumb, and its card would cover the pins inside it): its title and one short line, placed at the area's label point (where its pin
+  // sits), flipped to the other side near the right edge. It waits while the map is moving and hides when the point is off the map.
+  const focusAnchor = focusId ? anchors.get(focusId) : undefined;
+  const focusCard = (() => {
+    if (!focusId || focusId.startsWith("GD-") || !focusAnchor || !viewport || moving || size.width <= 0) return null;
+    const at = toScreen(viewport, focusAnchor[0], focusAnchor[1]);
+    if (at.x < 8 || at.x > size.width - 8 || at.y < 8 || at.y > size.height - 8) return null;
+    const flip = at.x > size.width - 250;
+    return { info: describe(focusId), top: Math.min(Math.max(at.y - 56, 8), Math.max(size.height - 64, 8)), left: flip ? undefined : at.x + 16, right: flip ? size.width - at.x + 16 : undefined };
+  })();
 
   return (
     <div
@@ -710,18 +760,6 @@ export function GeoMap({
                 transition: animate ? `transform ${TRANSITION_MS}ms ease` : undefined,
               }}
             >
-              {/* A faint teal halo around the state's outline at the overview: two wide, quiet strokes under the fills (not a blur
-                  filter, which would be redrawn on every zoom frame). Only the outer edge shows; the fills cover the rest. */}
-              {context.districtId === null ? (
-                <g pointerEvents="none" fill="none" strokeLinejoin="round" data-testid="map-halo">
-                  {districtIds.map((id) => (
-                    <path key={id} d={pathById.get(id)} fillRule="evenodd" stroke={TEAL} strokeWidth={18} strokeOpacity={0.045} vectorEffect="non-scaling-stroke" />
-                  ))}
-                  {districtIds.map((id) => (
-                    <path key={`${id}-near`} d={pathById.get(id)} fillRule="evenodd" stroke={TEAL} strokeWidth={7} strokeOpacity={0.08} vectorEffect="non-scaling-stroke" />
-                  ))}
-                </g>
-              ) : null}
               <Shapes
                 shapes={shapes}
                 visibleBlocks={visibleBlocks}
@@ -736,27 +774,27 @@ export function GeoMap({
               />
               <g pointerEvents="none" fill="none" strokeLinejoin="round" data-testid="map-selection">
                 {hoverId && pathById.has(hoverId) && !highlighted.has(hoverId) ? (
-                  <path d={pathById.get(hoverId)} fillRule="evenodd" stroke={MAP_COLOR.districtLineStrong} strokeWidth={1.4} strokeOpacity={0.8} vectorEffect="non-scaling-stroke" data-hover={hoverId} />
+                  <path d={pathById.get(hoverId)} fillRule="evenodd" stroke={MAP_COLOR.districtLineStrong} strokeWidth={1.2} strokeOpacity={0.75} vectorEffect="non-scaling-stroke" data-hover={hoverId} />
                 ) : null}
-                {/* Glow, as a pre-pass over every selected outline: two wide, faint orange strokes, so a soft halo spreads past
-                    the outline. All of them are drawn before any member's wash, casing and line, so a neighbour's halo can
+                {/* Glow, as a pre-pass over every selected outline: two wide, very faint blue strokes, so a barely-there halo
+                    spreads past the outline. All of them are drawn before any member's wash, casing and line, so a neighbour's halo can
                     never paint over another member's line along a shared border. Strokes, not a blur filter: a filter would be
                     redrawn on every zoom frame and a territory selects many outlines. */}
                 {highlightList.map((id) => (
                   <g key={`glow-${id}`}>
-                    <path d={pathById.get(id)} fillRule="evenodd" fill="none" stroke={MAP_COLOR.selected} strokeWidth={id === focusId ? 24 : 15} strokeOpacity={id === focusId ? 0.09 : 0.06} strokeLinejoin="round" vectorEffect="non-scaling-stroke" data-glow="outer" />
-                    <path d={pathById.get(id)} fillRule="evenodd" fill="none" stroke={MAP_COLOR.selected} strokeWidth={id === focusId ? 13 : 8} strokeOpacity={id === focusId ? 0.17 : 0.11} strokeLinejoin="round" vectorEffect="non-scaling-stroke" data-glow="inner" />
+                    <path d={pathById.get(id)} fillRule="evenodd" fill="none" stroke={MAP_COLOR.selected} strokeWidth={id === focusId ? 12 : 8} strokeOpacity={id === focusId ? 0.06 : 0.04} strokeLinejoin="round" vectorEffect="non-scaling-stroke" data-glow="outer" />
+                    <path d={pathById.get(id)} fillRule="evenodd" fill="none" stroke={MAP_COLOR.selected} strokeWidth={id === focusId ? 6 : 4} strokeOpacity={id === focusId ? 0.12 : 0.08} strokeLinejoin="round" vectorEffect="non-scaling-stroke" data-glow="inner" />
                   </g>
                 ))}
-                {/* Selection: a soft orange wash, a navy casing, then the Molten Orange line, so it reads against every fill and pattern. */}
+                {/* Selection: a soft blue wash, a white casing, then the blue line, so it reads against every fill and pattern. */}
                 {highlightList.map((id) => (
                   <g key={id}>
-                    <path d={pathById.get(id)} fillRule="evenodd" fill={MAP_COLOR.selectedGlow} stroke={MAP_COLOR.selectedCasing} strokeWidth={id === focusId ? 6 : 4} strokeOpacity={0.9} vectorEffect="non-scaling-stroke" />
+                    <path d={pathById.get(id)} fillRule="evenodd" fill={MAP_COLOR.selectedGlow} stroke={MAP_COLOR.selectedCasing} strokeWidth={id === focusId ? 5 : 3.5} strokeOpacity={0.9} vectorEffect="non-scaling-stroke" />
                     <path
                       d={pathById.get(id)}
                       fillRule="evenodd"
                       stroke={MAP_COLOR.selected}
-                      strokeWidth={id === focusId ? 2.6 : 1.6}
+                      strokeWidth={id === focusId ? 2.5 : 1.5}
                       vectorEffect="non-scaling-stroke"
                       data-highlight={id === focusId ? "focus" : "member"}
                     />
@@ -797,12 +835,12 @@ export function GeoMap({
                       textAnchor="middle"
                       dominantBaseline="central"
                       fontSize={label.fontSize}
-                      fontWeight={quiet ? 500 : 600}
+                      fontWeight={quiet ? 500 : 550}
                       letterSpacing="0.01em"
                       fill={quiet ? MAP_COLOR.inkSoft : MAP_COLOR.ink}
-                      fillOpacity={quiet ? 0.75 : 1}
+                      fillOpacity={quiet ? 0.9 : 1}
                       stroke={MAP_COLOR.halo}
-                      strokeWidth={3.2}
+                      strokeWidth={3}
                       strokeLinejoin="round"
                       paintOrder="stroke"
                     >
@@ -814,6 +852,8 @@ export function GeoMap({
             })}
           </svg>
 
+          {/* Before the controls in the document, so the Tab order runs key, zoom, pan, markers. */}
+          <MapKey layerMode={layerMode} pins={keyPins} open={keyOpen} compact={size.width < COMPACT_WIDTH} onToggle={() => setKeyChosen(!keyOpen)} />
           <MapControls
             onZoomIn={() => zoomBy(1.5)}
             onZoomOut={() => zoomBy(1 / 1.5)}
@@ -832,8 +872,8 @@ export function GeoMap({
               role="img"
               aria-label={`Scale bar: about ${bar.label}`}
               data-testid="map-scale"
-              className="pointer-events-none absolute z-10 text-[0.6875rem] font-medium leading-4 text-ink-muted"
-              style={{ left: 12 + panPad(size.width).width + 14, bottom: 14 }}
+              className="pointer-events-none absolute z-10 flex flex-col items-start text-[0.6875rem] font-medium leading-4 text-ink-muted"
+              style={{ left: 14, top: 12 + 24 + 8 }}
             >
               <span className="block" style={{ width: bar.pixels, height: 6, borderBottom: `1.5px solid ${MAP_COLOR.leader}`, borderLeft: `1.5px solid ${MAP_COLOR.leader}`, borderRight: `1.5px solid ${MAP_COLOR.leader}` }} />
               <span className="mt-0.5 block">~{bar.label}</span>
@@ -848,26 +888,43 @@ export function GeoMap({
               sheetBottom={12 + panPad(size.width).height + 10}
               onClose={closePanel}
               onShowUnit={(unitId) => {
-                setOpenIds(null);
+                setOpen(null);
                 onShowUnit?.(unitId);
               }}
               onShowTerritory={(territoryId) => {
-                setOpenIds(null);
+                setOpen(null);
                 onShowTerritory?.(territoryId);
               }}
               onZoomTo={openPins.length > 1 ? () => zoomToPins(openPins) : undefined}
             />
           ) : null}
 
+          {focusCard ? (
+            <div
+              role="presentation"
+              data-testid="map-selection-card"
+              data-kind="selected"
+              data-feature-id={focusId ?? undefined}
+              className="pointer-events-none absolute z-10 max-w-60 rounded-xl border border-line/60 bg-surface px-3 py-2 shadow-[0_8px_22px_-8px_rgba(28,36,51,0.28),0_1px_3px_rgba(28,36,51,0.08)] ring-1 ring-selected/25"
+              style={{ top: focusCard.top, left: focusCard.left, right: focusCard.right }}
+            >
+              <p className="text-[0.625rem] font-semibold uppercase leading-3 tracking-wide text-ink-muted">Selected</p>
+              <p className="text-[0.8125rem] font-semibold leading-4 text-ink">{focusCard.info.title}</p>
+              <p className="mt-0.5 text-[0.6875rem] leading-4 text-ink-muted">{focusCard.info.brief}</p>
+            </div>
+          ) : null}
+
           {hover && hoverInfo ? (
             <div
               role="presentation"
               data-testid="map-tooltip"
-              className="pointer-events-none absolute z-20 max-w-64 rounded-md border border-line-strong bg-surface-muted px-2.5 py-1.5 text-xs shadow-xl"
-              style={{ left: Math.min(hover.x + 14, Math.max(size.width - 270, 8)), top: Math.min(hover.y + 14, Math.max(size.height - 60, 8)) }}
+              data-kind="hover"
+              data-feature-id={hover.id}
+              className="pointer-events-none absolute z-20 max-w-60 rounded-xl border border-line/60 bg-surface px-3 py-2 shadow-[0_6px_18px_-8px_rgba(28,36,51,0.25),0_1px_2px_rgba(28,36,51,0.08)]"
+              style={{ left: Math.min(hover.x + 14, Math.max(size.width - 250, 8)), top: Math.min(hover.y + 14, Math.max(size.height - 60, 8)) }}
             >
-              <p className="font-semibold text-ink">{hoverInfo.title}</p>
-              <p className="mt-0.5 text-ink-muted">{hoverInfo.detail}</p>
+              <p className="text-[0.8125rem] font-semibold leading-4 text-ink">{hoverInfo.title}</p>
+              <p className="mt-0.5 text-[0.6875rem] leading-4 text-ink-muted">{hoverInfo.brief}</p>
             </div>
           ) : null}
         </>

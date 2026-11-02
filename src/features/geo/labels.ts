@@ -57,6 +57,8 @@ export interface LabelOptions {
   maxLines?: number;
   /** The longest leader line a label may have, in pixels; a label that would need a longer one is reported as omitted. */
   maxLeader?: number;
+  /** The least clear space between two names, in pixels (default `GAP`). A larger value reads as calmer and names fewer places where they crowd. */
+  gap?: number;
 }
 
 export interface PlacedLabel {
@@ -220,7 +222,8 @@ export function placeLabels(requests: readonly LabelRequest[], options: LabelOpt
     box.y >= bounds.y - 1e-6 &&
     box.x + box.width <= bounds.x + bounds.width + 1e-6 &&
     box.y + box.height <= bounds.y + bounds.height + 1e-6;
-  const free = (box: Rect) => !obstacles.some((o) => overlaps(box, o, 1)) && !avoid.some((o) => overlaps(box, o)) && !placed.some((p) => overlaps(box, p.box, GAP));
+  const between = options.gap ?? GAP;
+  const free = (box: Rect) => !obstacles.some((o) => overlaps(box, o, 1)) && !avoid.some((o) => overlaps(box, o)) && !placed.some((p) => overlaps(box, p.box, between));
 
   // Places one name. `strict` is the first pass: a leader keeps `LEADER_CLEAR` pixels from every other label, leader and
   // anchor dot. A name that finds no such place is tried again on a second pass with the plain rule (a leader may not touch

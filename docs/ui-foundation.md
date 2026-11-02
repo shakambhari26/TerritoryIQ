@@ -1,67 +1,64 @@
 # UI foundation
 
-The Phase 0A shell: tokens, layout areas and conventions. The shell and tokens are unchanged; the
-pages built on them now show real data (see [prototype.md](prototype.md)). Sections below say which
+The Phase 0A shell: tokens, layout areas and conventions. The light-theme redesign replaced the earlier navy surfaces and tokens; the
+pages built on them show real data (see [prototype.md](prototype.md)). Sections below say which
 parts are shared shell and which are the prototype's.
 
 ## Surfaces
 
-The interface mixes two surface families on a light page canvas:
+One light theme on every page (`color-scheme: light`; there is no OS dark-mode variant). Three surface levels: the page
+`canvas` (#F5F8FC), white `surface` cards with a 1px `line` border and a 16px radius, and `surface-muted` wells
+(#EFF4F8) for segmented controls and status strips. Shadows stay faint (`shadow-card`, `shadow-float` for floating map
+controls); there is no glass or blur. The top navigation is white with a bottom border; the active page is a light-blue
+pill with an underline.
 
-- **Navy**: the top navigation bar and the whole map workspace (frame, toolbar, search, controls, legend).
-- **Light**: KPI cards, the details panel, lists and the page canvas.
-
-There is no OS dark-mode variant (`color-scheme: light` on the page). The map frame opts into navy with
-the `.map-theme` class in `globals.css`, which redefines the surface, line and ink variables for everything
-inside it, so the toolbar, search, controls and legend need no second set of classes. The map itself is a
-deep-navy canvas with a soft lifted centre (`MAP_BACKDROP`, a CSS gradient: no image, no request), an
-approximate scale bar, an optional latitude and longitude grid (hidden by default; the grid button in the map
-controls, or the G key on the map, shows it), pale names with a navy halo, subtle teal
-for assigned areas (`#14B8A6`, also a faint halo around the state's outline at the overview), blue for confirmed unallocated, and navy-hatched or amber-hatched patterns
-for missing and conflicting data. **Molten Orange (`#E8622A`) is reserved for the selection and the
-representative pins**, so it means nothing else: on a selected region, a soft orange halo (two wide, faint
-strokes behind the outline, with no blur filter so zooming stays cheap), then a faint orange wash, a navy casing
-and the orange line on top. The glow never takes a click and exists only while something is selected. Its colours live in `features/territory/map-style.ts`.
+The map is a light geographic canvas (`MAP_BACKDROP`, a CSS gradient: no image, no request) with an approximate scale
+bar, an optional latitude and longitude grid (hidden by default; the grid button, or the G key on the map, shows it),
+dark names with a white halo, white strokes between shaded blocks and slate district outlines. Colours live in
+`features/territory/map-style.ts`: teal for allocated, blue for confirmed unallocated, grey hatch for missing or
+unverified, amber cross-hatch for conflicting data. **Primary blue (`#2563EB`) is the selection** (a faint blue halo,
+a white casing and the blue line) and **orange (`#EA580C`) is reserved for representative pins**, so neither means
+anything else. The Globe keeps its realistic Earth on a soft sky gradient behind a transparent canvas; its selected
+outline is white because it is drawn on satellite imagery under blue, orange and grey fills.
 
 ## Tokens
 
-Defined in `src/app/globals.css` under `@theme` and usable as Tailwind
-utilities (`bg-navy-950`, `text-ink-muted`, ...).
+Defined in `src/app/globals.css` under `@theme` and usable as Tailwind utilities (`bg-primary`, `text-ink-muted`, ...).
 
-| Token                 | Value     | Use                                         |
-| --------------------- | --------- | ------------------------------------------- |
-| `navy-950`            | `#0B1220` | Primary navy: nav bar, map workspace        |
-| `ember` / `ember-soft` | `#E8622A` / `#F08A5D` | Molten Orange: selection and representative pins only (5.5:1 on navy-950) |
-| `navy-900/800/700`    | `#111A2E` / `#18233B` / `#223152` | Navy elevations               |
-| `accent`              | `#14B8A6` | Teal accent: fills, graphics, text on navy  |
-| `accent-ink`          | `#0F766E` | Teal text on light surfaces                 |
-| `gold-400` / `gold-700` / `gold-50` | `#E2B93B` / `#8A6508` / `#FBF5E4` | Selection highlight only |
-| `canvas`, `surface`, `surface-muted` | `#F4F6FA`, `#FFFFFF`, `#F8FAFC` | Light surfaces |
-| `ink`, `ink-muted`, `ink-subtle` | `#0B1220`, `#475569`, `#64748B` | Text on light |
-| `on-navy`, `-muted`, `-subtle` | `#FFFFFF`, `#CBD5E1`, `#94A3B8` | Text on navy |
+| Token | Value | Use |
+| --- | --- | --- |
+| `canvas`, `surface`, `surface-muted` | `#F5F8FC`, `#FFFFFF`, `#EFF4F8` | Page, cards, secondary wells |
+| `line`, `line-strong` | `#DCE5EF`, `#C5D2E1` | 1px borders, input borders |
+| `ink`, `ink-muted`, `ink-subtle` | `#172B4D`, `#475569`, `#64748B` | Primary text; secondary text (also on tinted surfaces); small captions on white only |
+| `primary`, `primary-hover`, `primary-soft`, `primary-ink` | `#2563EB`, `#1D4ED8`, `#EAF1FF`, `#1D4ED8` | Actions, active navigation, selection; text on light |
+| `accent`, `accent-ink`, `accent-soft` | `#0F8B78`, `#0B6B5D`, `#E3F4F1` | Teal: allocated; teal text on light |
+| `warn`, `warn-ink`, `warn-soft`, `warn-line` | `#D97706`, `#92400E`, `#FEF3E2`, `#F3D09B` | Provisional states, conflicts, warnings only |
+| `status-allocated/confirmed/missing/conflict` | `#0F8B78`, `#3973D6`, `#94A3B8`, `#D97706` | Data-status colours |
+| `marker`, `selected` | `#EA580C`, `#2563EB` | Representative pins; selected outline |
 
 Rules that keep contrast valid (ratios computed against WCAG 2.x):
 
-- Never use `accent` (`#14B8A6`) as text on light: 2.5:1. Use `accent-ink` (5.5:1 on white).
-- `ink-subtle` only on `surface` / `surface-muted` (4.5–4.8:1), never on `canvas`.
-- Gold is for *selected* state only, and stays restrained.
+- `ink-subtle` (4.8:1) only on white `surface`; on `canvas` or `surface-muted` use `ink-muted` (6.6:1 or better).
+- Never use `accent` (`#0F8B78`, 4.2:1) as text: use `accent-ink`. Never use `warn` as text: use `warn-ink`.
+- Amber means provisional, conflicting or warning. Orange means a representative pin. Nothing else uses them.
+- Status is never shown by colour alone: each allocation state has a name, a fill pattern and an outline.
 
 ## Layout areas
 
 | Area | Component | Notes |
 | --- | --- | --- |
-| Page frame | `layout/AppShell` | Skip link, nav, `<main id="main">`, footer |
-| Top navigation | `layout/TopNav` | Driven by `NAV_ITEMS` in `src/lib/site.ts`: Globe, Overview, Workspace, then the planned modules. Only built routes are links; planned modules are non-interactive text. `NavLink` marks the one current page with `aria-current` |
+| Page frame | `layout/AppShell` | Skip link, the sidebar, `<main id="main">`, footer |
+| Sidebar | `layout/Sidebar`, `layout/NavLink`, `layout/NavIcons` | The one `<nav aria-label="Primary">`. Driven by `NAV_ITEMS` in `src/lib/site.ts`: Overview, Globe, Workspace, then the planned modules (Allocation, Analytics, Data Import, each marked Soon). Only built routes are links; planned modules are non-interactive text. `NavLink` marks the one current page with `aria-current`. From `lg` it is a persistent left sidebar, 16 rem wide, or a 4.75 rem icon rail. Until the visitor chooses, the width decides, the same on every page: the rail from `lg` to below `2xl` (so a laptop's map keeps its width) and the labelled sidebar from `2xl`. The Collapse button makes the choice, which is kept in `localStorage` and applies on every page and reload. The rule is the `rail:` variant in `globals.css`, driven by `data-rail` on the `<aside>` (`on`, `off`, `auto`), so there is no flash on first paint. Below `lg` the same element is an off-canvas drawer opened from a slim top bar (Escape, the scrim or any link, including the current page's own, closes it; the page behind does not scroll; closed, it takes no focus). Its search field filters the page list and is a plain text input, not `type="search"`, because each page's own place or area search is the page's one `searchbox` |
 | Globe page | `app/globe`, `features/globe/components/` | The 3D globe (lazy, browser-only). The page carries the "Local prototype · not for deployment" badge and a standing notice that outlines are provisional, unofficial OpenStreetMap geometry and not official boundaries. The details panel's "Open in 2D workspace" link hands a selected place to the workspace by URL hash. See [globe-prototype.md](globe-prototype.md) |
-| Globe entry card | `dashboard/GlobeEntryCard` | Server component on the Overview, between the page heading and the dashboard. Heading "Explore on the globe", a "Provisional outlines" badge, a permanent notice (unofficial OpenStreetMap geometry, not official boundaries, no complete district or block coverage) and two links: "Explore on the globe" to `/globe` and "Go to the 2D workspace" to `/workspace`. No figures, image or decorative SVG. One column below `lg` with full-width links under `sm` (each at least 44 px high); from `lg`, text on the left and the actions grouped on the right (the card is about 125 px high), so the KPI row stays on screen at 1440 x 900 |
+| Globe entry card | `dashboard/GlobeEntryCard` | Server component on the Overview, between the page heading and the dashboard, and the Overview's main geographic visual. Heading "Explore on the globe", a "Provisional outlines" badge, a permanent notice (unofficial OpenStreetMap geometry, not official boundaries, no complete district or block coverage) and two links: "Explore on the globe" to `/globe` and "Go to the 2D workspace" to `/workspace`. The sphere beside the text is drawn from CSS shapes alone (no image, no SVG, no data, no Three.js), so it says nothing about any place. Stacked below `lg` with full-width links under `sm` (each at least 44 px high); from `lg`, text on the left and the sphere on a pale-blue panel on the right |
 | Page heading | `layout/PageHeader` | Title, description, optional aside; `compact` is one slim line (the workspace uses it so the map starts higher) |
 | KPI cards | `dashboard/KpiCard` | Omit `value` for an empty state, never fake one |
-| Map frame | `dashboard/MapWorkspace` | Navy (`.map-theme`) frame with a toolbar, a footer strip, an optional left `rail`, and the map surface as `children`; takes the viewport height under the compact page heading from `lg` |
-| District navigator | `features/territory/components/DistrictNavigator` | The 23 districts with outlined-block counts and a mini allocation bar. A 256 px rail in the map frame when the frame is 900 px or wider, else a list in the details panel (CSS container queries, `layout-classes.ts`); hover or focus outlines the district on the map |
+| Map frame | `dashboard/MapWorkspace` | White card with a toolbar, a status strip, an optional left `rail`, the map surface as `children` and a footer strip (the legend); takes the viewport height under the compact page heading from `lg` |
+| District navigator | `features/territory/components/DistrictNavigator` | The 23 districts with outlined-block counts and a mini allocation bar. A 256 px left panel in the map frame when the frame is 900 px or wider (1500 px of grid with the details panel open, so from a window of about 1565 px), else a list in the details panel (CSS container queries, `layout-classes.ts`); hover or focus outlines the district on the map |
 | Map toolbar | `features/territory/components/MapToolbar` | Breadcrumb, level, back, layer switch, Representatives pin toggle, district and block search (`MapSearch`), details toggle |
 | Overview | `features/territory/components/OverviewDashboard` | Counts by allocation state, territory table, link statuses, known gaps, provenance |
 | Territory map | `features/territory/components/GeoMap` | SVG map of the validated boundary layer; an explicit empty state if the layer is missing, refused or unloaded |
-| Map legend | `features/territory/components/MapLegend` | Three tiers. First what the colours mean (the layer's states or confidence levels, the dotted gap, selection, the pin when shown); then the provisional wording and OpenStreetMap attribution; then the coverage warning, set apart by an amber rule. Always visible |
+| Map legend | `features/territory/components/MapLegend` | A compact white strip that can be folded away ("Hide key"). Three tiers. First what the colours mean (the layer's states or confidence levels, the dotted gap, selection, the pin when shown); then the provisional wording and OpenStreetMap attribution; then the coverage warning, set apart by an amber rule. The key starts open; the provisional wording and attribution are always visible |
 | Representative pins | `features/territory/components/RepresentativePins`, `RepresentativesPanel` | Pins are real `<button>`s over the map (keyboard, accessible name, at least 24 px); a click opens a non-modal dialog that takes focus and returns it to the pin on Escape. Rules in `features/territory/representatives.ts` |
 | Lists | `features/territory/components/AreaList` | Searchable, filterable rows and official blocks; the keyboard route to selection |
 | Details panel | `features/territory/components/DetailsPanel` | Selected row, official unit or sales territory, with the allocation state and the reason |
@@ -94,8 +91,7 @@ Rules that keep contrast valid (ratios computed against WCAG 2.x):
 
 Inside a scroll container (`overflow-x-auto`), absolutely positioned children
 such as `sr-only` text escape its clipping unless the container is positioned.
-`TopNav`'s `<nav>` is `relative` for this reason; removing that widens the page
-by hundreds of pixels on phones.
+The sidebar's `<nav>` is `relative` for this reason; removing that lets the planned items' hidden text widen the page.
 
 ## Map controls and accessibility (`/workspace`)
 

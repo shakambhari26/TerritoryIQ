@@ -127,8 +127,8 @@ describe("representative pins in a real browser", { skip: skipReason }, () => {
 
   it("keyboard: Tab reaches a pin, Enter opens the panel, Escape closes it and returns focus to the pin", async () => {
     const { page, context } = await open();
-    // The last pan button is the control just before the pins in the tab order.
-    await page.locator('[aria-label="Pan down"]').focus();
+    // The last pan button (the pan buttons are one row, left, up, down, right) is the control just before the pins in the tab order.
+    await page.locator('[aria-label="Pan right"]').focus();
     await page.keyboard.press("Tab");
     const reached = await page.evaluate(() => document.activeElement?.getAttribute("data-testid"));
     assert.ok(reached === "representative-pin" || reached === "pin-cluster", `Tab reached ${reached}`);
@@ -150,16 +150,21 @@ describe("representative pins in a real browser", { skip: skipReason }, () => {
     await context.close();
   });
 
-  it("Escape closes the panel before it steps the map up a level; the close button works too", async () => {
-    const district = data.features.find((f) => f.kind === "district" && blockPins(model, anchors, (id) => model.featureById.get(id)?.districtId === f.id).length > 1)!;
-    const { page, context } = await open(1440, 1000, `#feature=${encodeURIComponent(district.id)}`);
-    assert.equal(await page.locator('[data-testid="geo-map"]').getAttribute("data-level"), "district");
+  it("Escape closes the panel before it clears the selection; the close button works too", async () => {
+    // A district's block pins no longer open a card (the details panel holds the people), so the panel is the state
+    // overview's. A row with no linked block keeps the map at the state level while something is selected.
+    const unlinked = [...model.unitById.keys()].find((id) => !model.links.get(id)?.featureId)!;
+    const hash = `#unit=${encodeURIComponent(unlinked)}`;
+    const { page, context } = await open(1440, 1000, hash);
+    assert.equal(await page.locator('[data-testid="geo-map"]').getAttribute("data-level"), "state");
     await page.locator(MARKER).first().click();
     await page.locator(PANEL).waitFor();
     await page.locator('[data-testid="geo-map"]').focus();
     await page.keyboard.press("Escape");
     await page.locator(PANEL).waitFor({ state: "detached" });
-    assert.equal(await page.locator('[data-testid="geo-map"]').getAttribute("data-level"), "district", "the first Escape only closed the panel");
+    assert.equal(await page.evaluate(() => window.location.hash), hash, "the first Escape only closed the panel");
+    await page.keyboard.press("Escape");
+    await page.waitForFunction(() => window.location.hash === "");
     await page.locator(MARKER).first().click();
     await page.locator('[data-testid="representatives-close"]').click();
     await page.locator(PANEL).waitFor({ state: "detached" });
@@ -179,19 +184,22 @@ describe("representative pins in a real browser", { skip: skipReason }, () => {
     await page.waitForTimeout(700);
     assert.equal(await pinTotal(page), expected.length, "every supported block in the district has a pin or is inside a group");
     assert.equal(await page.locator('[data-pin-kind="territory"]').count(), 0, "territory pins are for the state overview only");
+    // In a district the open key would sit over some of the pins, so it starts folded to its "Key" pill; opening it shows the entry.
+    const keyToggle = page.locator('[data-testid="legend-toggle"]');
+    if ((await keyToggle.getAttribute("aria-expanded")) !== "true") await keyToggle.click();
     assert.match(await page.locator('[data-testid="legend-pins"]').innerText(), /one per block/);
 
-    // Open a single block pin and check what the panel says.
-    const single = page.locator(PIN).first();
+    // Open a single block pin: it selects the block, and the details panel (not a card over the map) says who is listed.
+    const single = page.locator(`${PIN}:not([data-pin-contested])`).first();
+    const blockId = (await single.getAttribute("data-pin-id"))!.replace("RP-", "");
     await single.click();
-    const panel = page.locator(PANEL);
-    await panel.waitFor();
-    const text = await panel.innerText();
-    assert.match(text, /Block representatives|representative pins/);
-    assert.match(text, /Block \/ area/);
-    assert.match(text, new RegExp(`District\\s+${district.name}`));
-    assert.match(text, /\b(ASM|Primary \d|Secondary \d|DSO \d)\b/, "role-slot labels");
-    assert.match(text, /IMPLIED/i);
+    const details = page.locator('[data-testid="details-panel"]');
+    await details.locator('[data-testid="details-unit"]').waitFor();
+    assert.equal(await page.locator(PANEL).count(), 0, "no floating roster card over the map");
+    const text = await details.innerText();
+    assert.ok(text.includes(model.featureById.get(blockId)!.name), "the official block");
+    assert.match(text, new RegExp(`${district.name}`));
+    assert.match(text, /\b(ASM|Primary|Secondary|DSO)\b/, "role-slot labels");
     assert.match(text, /provisional/i);
     assert.deepEqual(errors, []);
     await context.close();

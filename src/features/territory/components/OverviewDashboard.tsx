@@ -6,7 +6,7 @@ import { KpiCard } from "@/components/dashboard/KpiCard";
 import { Badge } from "@/components/ui/Badge";
 import { Card } from "@/components/ui/Card";
 import { useLocalChanges } from "@/features/allocation/overlay-store";
-import { LINK_LABEL, LINK_MEANING, REFERENCE_LIST_NOTE, formatCount, plural, shortHash } from "../format";
+import { LINK_LABEL, LINK_MEANING, REFERENCE_LIST_NOTE, formatCount, shortHash } from "../format";
 import { buildModel } from "../model";
 import { overviewModelInput, type OverviewData } from "../overview-data";
 import { ALLOCATION_STATES, ALLOCATION_STATE_LABEL, type BoundaryLayerMeta } from "../types";
@@ -16,9 +16,9 @@ import { buttonClass } from "./ui";
 
 function Panel({ title, children, testId }: { title: string; children: React.ReactNode; testId?: string }) {
   return (
-    <Card as="section" aria-label={title} className="p-5" data-testid={testId}>
-      <h2 className="text-sm font-semibold text-ink">{title}</h2>
-      <div className="mt-3 space-y-3 text-sm text-ink">{children}</div>
+    <Card as="section" aria-label={title} className="p-6" data-testid={testId}>
+      <h2 className="text-base font-semibold tracking-tight text-ink">{title}</h2>
+      <div className="mt-4 space-y-4 text-sm text-ink">{children}</div>
     </Card>
   );
 }
@@ -56,31 +56,35 @@ export function OverviewDashboard({ data, layerMeta }: { data: OverviewData; lay
         <h2 id="kpi-heading" className="sr-only">
           Key indicators
         </h2>
-        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-4">
           <div data-testid="kpi-territories">
             <KpiCard
               label="Sales territories"
               value={formatCount(dataset.salesTerritories.length)}
-              caption={`${plural(s.units.total, "workbook row")}, the company’s own grouping`}
+              caption={`from ${formatCount(s.units.total)} source records (workbook rows), the company’s own grouping`}
+              hint="Workbook Records are the rows in the company workbook. They are a different count from the reference blocks and are not reconciled with them."
             />
           </div>
           <div data-testid="kpi-allocated">
             <KpiCard
               label="Rows allocated"
+              tone="accent"
               value={formatCount(s.units.byState.allocated)}
               caption={`${formatCount(s.units.byState.conflicting)} conflicting · ${formatCount(s.units.byState.missing)} missing · ${formatCount(s.units.byState.confirmed_unallocated)} confirmed unallocated`}
             />
           </div>
           <div data-testid="kpi-outlined">
             <KpiCard
-              label="Blocks with an outline"
+              label="Block coverage"
               value={formatCount(s.blocks.withBoundary)}
-              caption={`of ${formatCount(s.blocks.total)} blocks in the current reference list, plus ${s.districts.withBoundary} of ${s.districts.total} districts. Provisional.`}
+              caption={`of ${formatCount(s.blocks.total)} reference blocks (blocks in the current reference list) have a provisional outline, plus ${s.districts.withBoundary} of ${s.districts.total} districts.`}
+              hint="Reference blocks are the blocks in the current Local Government Directory list. The total has not been independently verified as the official total, and it is a different count from the workbook records."
             />
           </div>
           <div data-testid="kpi-staffing">
             <KpiCard
               label="Staff slots filled"
+              tone="neutral"
               value={formatCount(s.staffing.namedSlots)}
               caption={`${formatCount(s.staffing.vacantSlots)} Vacant markers · ${formatCount(s.staffing.distinctNames)} distinct names (not a headcount)`}
             />
@@ -88,7 +92,7 @@ export function OverviewDashboard({ data, layerMeta }: { data: OverviewData; lay
         </div>
       </section>
 
-      <div className="grid gap-6 lg:grid-cols-2">
+      <div className="grid gap-6 xl:grid-cols-2">
         <Panel title="Workbook rows by allocation state" testId="panel-row-states">
           <StateBar counts={s.units.byState} total={s.units.total} label="Workbook rows" />
           <p className="text-xs text-ink-muted">
@@ -109,9 +113,9 @@ export function OverviewDashboard({ data, layerMeta }: { data: OverviewData; lay
       </div>
 
       <Card as="section" aria-label="Sales territories" className="overflow-hidden" data-testid="territory-table">
-        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-line px-5 py-4">
+        <div className="flex flex-wrap items-center justify-between gap-3 px-6 py-5">
           <div>
-            <h2 className="text-sm font-semibold text-ink">Sales territories</h2>
+            <h2 className="text-base font-semibold tracking-tight text-ink">Sales territories</h2>
             <p className="mt-0.5 text-xs text-ink-muted">
               Labels are the workbook’s DISTRICT column, kept as written. They are not matched to administrative districts.
             </p>
@@ -124,8 +128,8 @@ export function OverviewDashboard({ data, layerMeta }: { data: OverviewData; lay
           <table className="w-full min-w-[40rem] text-left text-sm">
             <caption className="sr-only">Rows and allocation states per sales territory</caption>
             <thead>
-              <tr className="border-b border-line text-xs text-ink-muted">
-                <th scope="col" className="px-5 py-2 font-medium">
+              <tr className="bg-surface-muted text-xs text-ink-muted">
+                <th scope="col" className="px-6 py-2.5 font-medium">
                   Sales territory
                 </th>
                 <th scope="col" className="px-2 py-2 text-right font-medium">
@@ -136,26 +140,26 @@ export function OverviewDashboard({ data, layerMeta }: { data: OverviewData; lay
                     {ALLOCATION_STATE_LABEL[state]}
                   </th>
                 ))}
-                <th scope="col" className="px-5 py-2 text-right font-medium">
+                <th scope="col" className="px-6 py-2.5 text-right font-medium">
                   With outline
                 </th>
               </tr>
             </thead>
             <tbody>
               {s.byTerritory.map((row) => (
-                <tr key={row.territoryId} className="border-b border-line last:border-0" data-territory-row={row.territoryId}>
-                  <th scope="row" className="px-5 py-2 font-medium">
-                    <Link href={`/workspace#territory=${row.territoryId}`} className="text-accent-ink underline-offset-2 hover:underline">
+                <tr key={row.territoryId} className="border-t border-line/70 hover:bg-primary-soft/40" data-territory-row={row.territoryId}>
+                  <th scope="row" className="px-6 py-2.5 font-medium">
+                    <Link href={`/workspace#territory=${row.territoryId}`} className="text-primary-ink underline-offset-2 hover:underline">
                       {row.label}
                     </Link>
                   </th>
-                  <td className="px-2 py-2 text-right tabular-nums">{row.units}</td>
+                  <td className="px-2 py-2.5 text-right tabular-nums">{row.units}</td>
                   {ALLOCATION_STATES.map((state) => (
-                    <td key={state} className="px-2 py-2 text-right tabular-nums text-ink-muted">
+                    <td key={state} className="px-2 py-2.5 text-right tabular-nums text-ink-muted">
                       {row.byState[state] || "–"}
                     </td>
                   ))}
-                  <td className="px-5 py-2 text-right tabular-nums">
+                  <td className="px-6 py-2.5 text-right tabular-nums">
                     {row.withBoundary} / {row.units}
                   </td>
                 </tr>
@@ -165,7 +169,7 @@ export function OverviewDashboard({ data, layerMeta }: { data: OverviewData; lay
         </div>
       </Card>
 
-      <div className="grid gap-6 lg:grid-cols-2">
+      <div className="grid gap-6 xl:grid-cols-2">
         <Panel title="How rows link to official geography" testId="panel-links">
           <ul className="space-y-2">
             {linkRows.map((status) => (

@@ -5,17 +5,17 @@ import { CLUSTER_COLOR, PIN_COLOR } from "../map-style";
 import type { MarkerGeometry, PinCluster, RepresentativePin } from "../representatives";
 
 /**
- * Marker sizes in screen pixels. A pin is a small Molten Orange teardrop whose tip is the anchor; the button around it is
- * 24 by 28 so the touch target stays at the WCAG minimum while the drawn mark stays small and quiet. A group of pins is a
- * different shape and a different hue: a neutral slate "stacked card" with the count in white, so a count is never mistaken
- * for a person and orange keeps meaning one thing (a representative, or the selection). Every target is at least 24 pixels
+ * Marker sizes in screen pixels. A pin is a small orange teardrop whose tip is the anchor; the button around it is
+ * 24 by 26 so the touch target stays at the WCAG minimum while the drawn mark stays small and quiet. A group of pins is a
+ * different shape and a different hue: a neutral slate "stacked card" with the count in dark ink, so a count is never
+ * mistaken for a person and orange keeps meaning one thing (a representative). Every target is at least 24 pixels
  * on each side.
  */
-const PIN_BOX = { width: 24, height: 28 };
-const GLYPH = { width: 15, height: 20 };
-const CLUSTER = 28;
+const PIN_BOX = { width: 24, height: 26 };
+const GLYPH = { width: 12, height: 16 };
+const CLUSTER = 26;
 /** The front card of a group badge; a second card shows behind it, offset to the top right. */
-const CARD = 25;
+const CARD = 22;
 
 const sizeOf = (): { width: number; height: number } => PIN_BOX;
 
@@ -29,14 +29,21 @@ const keepOffMap = {
   onDoubleClick: (e: { stopPropagation: () => void }) => e.stopPropagation(),
 };
 
-/** What a screen reader hears for a marker. Never a person's name: names appear only in the opened panel. */
+/** A block pin does not open a card of its own: it selects the block, and the details panel holds the people. */
+const opensPanel = (cluster: PinCluster) => cluster.pins.some((p) => p.kind !== "block");
+
+/** What a screen reader hears for a marker. Never a person's name: names appear only in the opened panel or the details panel. */
 export function markerLabel(cluster: PinCluster): string {
   if (cluster.pins.length > 1) {
-    return `${cluster.pins.length} representative pins grouped here. Open the list.`;
+    return opensPanel(cluster)
+      ? `${cluster.pins.length} representative pins grouped here. Open the list.`
+      : `${cluster.pins.length} representative pins grouped here. Zoom in to separate them.`;
   }
   const pin = cluster.pins[0];
   const flags = pin.contested ? " Records here disagree or overlap." : "";
-  return `${pin.title}. Provisional position. Open representatives.${flags}`;
+  return opensPanel(cluster)
+    ? `${pin.title}. Provisional position. Open representatives.${flags}`
+    : `${pin.title}. Provisional position. Show this block in the details panel.${flags}`;
 }
 
 /** The rectangle a marker covers, so the label placer can keep names clear of it. */
@@ -50,17 +57,21 @@ export function markerRect(cluster: PinCluster): Rect {
 function PinGlyph({ pin, active }: { pin: RepresentativePin; active: boolean }) {
   const fill = active ? PIN_COLOR.bodyHover : PIN_COLOR.body;
   const stroke = pin.contested ? PIN_COLOR.contested : PIN_COLOR.ring;
+  const body = "M7.5 19.4C7.5 19.4 1 12.6 1 7.6A6.5 6.5 0 1 1 14 7.6C14 12.6 7.5 19.4 7.5 19.4Z";
   return (
     <svg
-      viewBox={`0 0 ${GLYPH.width} ${GLYPH.height}`}
+      viewBox="0 0 15 20"
       width={GLYPH.width}
       height={GLYPH.height}
       aria-hidden="true"
       focusable="false"
       className="block overflow-visible"
-      style={{ filter: active ? `drop-shadow(0 0 6px ${PIN_COLOR.glow})` : "drop-shadow(0 1px 1.2px rgba(5, 9, 18, 0.65))" }}
+      style={{ filter: "drop-shadow(0 1px 1.5px rgba(28, 36, 51, 0.28))" }}
     >
-      <path d="M7.5 19.4C7.5 19.4 1 12.6 1 7.6A6.5 6.5 0 1 1 14 7.6C14 12.6 7.5 19.4 7.5 19.4Z" fill={fill} stroke={stroke} strokeWidth={pin.contested ? 1.6 : 1.2} strokeLinejoin="round" />
+      {/* Selected: a white casing and a dark outline around the same orange body. */}
+      {active ? <path d={body} fill="none" stroke={PIN_COLOR.ring} strokeWidth={4.6} strokeLinejoin="round" /> : null}
+      {active ? <path d={body} fill="none" stroke={PIN_COLOR.selectedRing} strokeWidth={3} strokeLinejoin="round" /> : null}
+      <path d={body} fill={fill} stroke={active ? PIN_COLOR.selectedRing : stroke} strokeWidth={pin.contested && !active ? 1.8 : active ? 0.9 : 1.4} strokeLinejoin="round" />
       <circle cx="7.5" cy="7.4" r="2.2" fill={PIN_COLOR.core} />
     </svg>
   );
@@ -70,18 +81,18 @@ function GroupBadge({ count, active }: { count: number; active: boolean }) {
   return (
     <span aria-hidden="true" className="relative block h-full w-full">
       <span
-        className="absolute right-0 top-0 rounded-[9px] border"
+        className="absolute right-0 top-0 rounded-lg border"
         style={{ width: CARD, height: CARD, background: CLUSTER_COLOR.back, borderColor: CLUSTER_COLOR.backEdge }}
       />
       <span
-        className="absolute bottom-0 left-0 flex items-center justify-center rounded-[9px] border text-xs font-bold tabular-nums"
+        className="absolute bottom-0 left-0 flex items-center justify-center rounded-lg border text-[0.6875rem] font-bold tabular-nums"
         style={{
           width: CARD,
           height: CARD,
           background: CLUSTER_COLOR.face,
           borderColor: active ? CLUSTER_COLOR.edgeActive : CLUSTER_COLOR.edge,
           color: CLUSTER_COLOR.ink,
-          boxShadow: active ? `0 0 0 3px ${CLUSTER_COLOR.glow}, 0 1px 3px rgba(5, 9, 18, 0.7)` : "0 1px 3px rgba(5, 9, 18, 0.7)",
+          boxShadow: active ? `0 0 0 2px #ffffff, 0 0 0 3.5px ${CLUSTER_COLOR.edgeActive}, 0 1px 3px rgba(28, 36, 51, 0.25)` : "0 1px 2px rgba(28, 36, 51, 0.22)",
         }}
       >
         {count}
@@ -100,7 +111,7 @@ interface RepresentativePinsProps {
 }
 
 /**
- * The markers, as real buttons over the map: reachable by keyboard, with an accessible name, a 24 by 28 pixel target
+ * The markers, as real buttons over the map: reachable by keyboard, with an accessible name, a 24 by 26 pixel target
  * (28 square for a group), and a visible focus ring. Each sits exactly on a verified area anchor (see
  * representatives.ts); this component only draws where it is told.
  */
@@ -129,8 +140,8 @@ export function RepresentativePins({ clusters, openIds, hidden, onOpen }: Repres
             data-pin-count={cluster.pins.length}
             data-pin-contested={!grouped && pin.contested ? "true" : undefined}
             aria-label={markerLabel(cluster)}
-            aria-haspopup="dialog"
-            aria-expanded={active}
+            aria-haspopup={opensPanel(cluster) ? "dialog" : undefined}
+            aria-expanded={opensPanel(cluster) ? active : undefined}
             onClick={(event) => {
               event.stopPropagation();
               onOpen(cluster, event.currentTarget);
@@ -155,8 +166,8 @@ export function RepresentativePins({ clusters, openIds, hidden, onOpen }: Repres
                   {pin.contested ? (
                     <span
                       aria-hidden="true"
-                      className="absolute h-2 w-2 rounded-full"
-                      style={{ left: 16, top: 6, background: PIN_COLOR.contested, boxShadow: `0 0 0 1.5px ${PIN_COLOR.ring}` }}
+                      className="absolute h-1.5 w-1.5 rounded-full"
+                      style={{ left: 15, top: 7, background: PIN_COLOR.contested, boxShadow: `0 0 0 1.5px ${PIN_COLOR.ring}` }}
                     />
                   ) : null}
                 </>

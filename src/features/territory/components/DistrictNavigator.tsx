@@ -51,7 +51,7 @@ function SummaryCard({ model, focusedId, pins }: Pick<DistrictNavigatorProps, "m
   const byState = rollup ? rollup.byState : model.summary.blocks.byState;
   return (
     <section aria-label="Summary of the current map view" data-testid="navigator-summary" className="border-b border-line px-3.5 pb-3.5 pt-3">
-      <p className="text-[0.6875rem] font-medium uppercase tracking-wide text-ink-subtle">{level}</p>
+      <p className="text-[0.6875rem] font-semibold uppercase tracking-wider text-ink-subtle">{level}</p>
       <h3 className="mt-0.5 text-base font-semibold leading-tight text-ink">{name}</h3>
       <p className="mt-1 text-xs leading-5 text-ink-muted">
         {blocks === 0 ? (
@@ -66,7 +66,7 @@ function SummaryCard({ model, focusedId, pins }: Pick<DistrictNavigatorProps, "m
       {pins ? (
         <p className="mt-2.5 flex items-center gap-1.5 text-xs text-ink-muted" data-testid="navigator-pins">
           <svg aria-hidden="true" focusable="false" viewBox="0 0 15 20" width="9" height="12" className="shrink-0 overflow-visible">
-            <path d="M7.5 19.4C7.5 19.4 1 12.6 1 7.6A6.5 6.5 0 1 1 14 7.6C14 12.6 7.5 19.4 7.5 19.4Z" fill="var(--color-ember)" />
+            <path d="M7.5 19.4C7.5 19.4 1 12.6 1 7.6A6.5 6.5 0 1 1 14 7.6C14 12.6 7.5 19.4 7.5 19.4Z" fill="var(--color-marker)" />
           </svg>
           <span>
             <span className="font-semibold tabular-nums text-ink">{pins.count}</span> {pins.kind === "territory" ? "ASM pins, one per sales territory" : "representative pins"} (provisional)
@@ -96,7 +96,7 @@ export function DistrictNavigator({ model, focusedId, pins, variant, onPick, onH
     <ul
       aria-label="Districts"
       data-testid="district-list"
-      className={cn("space-y-0.5", rail ? "min-h-0 flex-1 overflow-y-auto px-1.5 pb-2" : "max-h-96 overflow-y-auto pr-1")}
+      className={cn("space-y-0.5", rail ? "min-h-0 flex-1 overflow-y-auto px-1.5 pb-2" : "")}
     >
       {rows.map((row) => {
         const isFocused = row.id === focusedId;
@@ -114,7 +114,7 @@ export function DistrictNavigator({ model, focusedId, pins, variant, onPick, onH
               onPointerLeave={() => onHover(null)}
               onFocus={() => onHover(row.id)}
               onBlur={() => onHover(null)}
-              className="flex w-full items-center gap-2.5 rounded-lg px-2 py-1.5 text-left text-[0.8125rem] text-ink hover:bg-surface-muted aria-[current=true]:bg-ember/10 aria-[current=true]:shadow-[inset_2px_0_0_var(--color-ember)]"
+              className="flex w-full items-center gap-2.5 rounded-lg px-2 py-1.5 text-left text-[0.8125rem] text-ink hover:bg-canvas aria-[current=true]:bg-primary-soft aria-[current=true]:font-semibold aria-[current=true]:shadow-[inset_3px_0_0_var(--color-primary)]"
             >
               <span className="min-w-0 flex-1 truncate font-medium">{row.name}</span>
               <MiniBar row={row} />
@@ -138,7 +138,7 @@ export function DistrictNavigator({ model, focusedId, pins, variant, onPick, onH
     <>
       <SummaryCard model={model} focusedId={focusedId} pins={pins} />
       <div className="flex items-baseline justify-between px-3.5 pb-1 pt-3">
-        <h3 className="text-xs font-semibold uppercase tracking-wide text-ink-muted">
+        <h3 className="text-[0.6875rem] font-semibold uppercase tracking-wider text-ink-muted">
           Districts <span className="font-medium tabular-nums text-ink-subtle">{rows.length}</span>
         </h3>
         <span className="text-[0.6875rem] text-ink-subtle">blocks outlined</span>

@@ -44,7 +44,7 @@ anything marked **Proposed** is a direction, not a commitment. The prototype its
 - **Four things are kept apart:** sales territory (the workbook `DISTRICT` label), official unit
   (LGD), the crosswalk link between them, and boundary geometry. The `DISTRICT` label is never an
   input to geographic matching.
-- **The globe is a navigation entry, not the entry.** `/globe` is in the primary navigation (Globe, Overview, Workspace) as a
+- **The globe is a navigation entry, not the entry.** `/globe` is in the primary navigation (Overview, Globe, Workspace) as a
   local prototype; `/` stays the Territory Overview. `/globe-prototype` redirects to `/globe` (307). A place selected on the
   globe opens in the 2D workspace through a URL hash built from validated IDs (`features/globe/workspace-link.ts`,
   `#feature=` for a district or block, `#unit=` for a workbook row, none for the state): no shared selection store. Three.js is
@@ -77,7 +77,7 @@ anything marked **Proposed** is a direction, not a commitment. The prototype its
 ```text
 src/app/                 Routes (/, /workspace, /globe, /geo/boundaries.json, /geo/globe-boundaries.json), root layout, globals.css (design tokens), icon.svg
 src/proxy.ts             Loopback Host check, runs for every request
-src/components/layout/   AppShell, TopNav, PageHeader, NavLink
+src/components/layout/   AppShell, Sidebar, NavLink, NavIcons, PageHeader
 src/components/ui/       Badge, Card, LogoMark (domain-agnostic primitives)
 src/components/dashboard/ KpiCard, MapWorkspace (frame)
 src/features/territory/  Domain types, allocation-state rules, model, selection, server data access, UI

@@ -177,10 +177,13 @@ describe("fitClear (the map's fit, clear of its own controls)", () => {
     assert.equal(clamped.scale, 0.2);
   });
 
-  it("takes the scale bar off the fit but not off the label placer", () => {
+  it("takes the scale bar and the key off the fit but not off the label placer", () => {
     const flags = Object.fromEntries(furniture({ width: 870, height: 560 }).map((f) => [f.id, f.clearOfFit]));
-    assert.deepEqual(flags, { zoom: true, pan: true, chip: true, scale: false });
-    assert.ok(controlObstacles({ width: 870, height: 560 }).length === 4, "all four are obstacles for labels and markers");
-    assert.ok(furniture({ width: 356, height: 590 }).some((f) => f.id === "details"), "a phone also keeps the details button clear");
+    assert.deepEqual(flags, { zoom: true, pan: true, chip: true, scale: false, key: false });
+    assert.ok(controlObstacles({ width: 870, height: 560 }).length === 5, "all five are obstacles for labels and markers");
+    // The key folds to a pill on a phone, and the Details button moved out of the map into the flow below it.
+    const key = (w: number) => furniture({ width: w, height: 590 }, 0).find((f) => f.id === "key")!.rect;
+    assert.ok(key(356).width < key(870).width, "a phone reserves only the folded key");
+    assert.ok(!furniture({ width: 356, height: 590 }).some((f) => (f.id as string) === "details"), "the details button no longer sits on the map");
   });
 });

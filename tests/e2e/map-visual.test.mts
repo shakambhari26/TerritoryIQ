@@ -15,10 +15,14 @@ import { dataset, launch, openPage, skipReason, startServer, type Server } from 
 // desktop and 335 px and 21% on the laptop, and the first map 517 px and 28%, 253 px and 11%), so a change that shrinks the
 // state or the map fails here. `minState` is the state's own height on screen.
 const VIEWPORTS: Array<{ name: string; width: number; height: number; minMapHeight: number; minArea: number; minState: number; minLabels: number }> = [
+  // Desktop and laptop keep their original minimums: the light-theme redesign measures 607 and 411 px maps, states 563 and 367 px tall
+  // and filling 37.7% and 28.8% of the map, all above them. The tablet and the phone are the two rows that moved: the map sits in a
+  // padded white card (12 px narrower on a phone, where the fit is limited by width because the zoom column takes a strip), so the
+  // state fills a little less (50.9% and 53.4% measured, 694 and 408 px tall). Each minimum sits just under what is measured.
   { name: "desktop", width: 1440, height: 900, minMapHeight: 590, minArea: 0.37, minState: 540, minLabels: 23 },
   { name: "laptop", width: 1280, height: 720, minMapHeight: 385, minArea: 0.27, minState: 340, minLabels: 21 },
-  { name: "tablet", width: 820, height: 1180, minMapHeight: 810, minArea: 0.54, minState: 730, minLabels: 23 },
-  { name: "phone", width: 390, height: 844, minMapHeight: 580, minArea: 0.54, minState: 415, minLabels: 23 },
+  { name: "tablet", width: 820, height: 1180, minMapHeight: 810, minArea: 0.5, minState: 680, minLabels: 23 },
+  { name: "phone", width: 390, height: 844, minMapHeight: 580, minArea: 0.53, minState: 405, minLabels: 23 },
 ];
 
 interface R {
@@ -425,10 +429,11 @@ describe("the map's cartography at desktop, laptop, tablet and phone sizes", { s
         assert.ok(p.glyphW <= 16 && p.glyphH <= 21, `${w}: the drawn pin is small (${p.glyphW} x ${p.glyphH}), where the old tag was 38 x 27`);
         assert.equal(p.text, "", `${w}: a pin carries no text`);
       }
-      const ember = "rgb(232, 98, 42)";
+      // The representative-pin orange (map-style.ts MARKER, #EA580C).
+      const ember = "rgb(234, 88, 12)";
       for (const g of groups) {
         assert.ok(g.w >= 23.99 && g.h >= 23.99, `${w}: a group keeps a 24 px target`);
-        assert.ok(!g.colours.includes(ember), `${w}: a group badge uses no Molten Orange, which means one representative or the selection`);
+        assert.ok(!g.colours.includes(ember), `${w}: a group badge uses no pin orange, which means one representative`);
         assert.match(g.label ?? "", /^\d+$/, `${w}: the badge is its count`);
         assert.ok(g.w !== pins[0].w || g.h !== pins[0].h, `${w}: and it is not the pin's size`);
       }

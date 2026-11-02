@@ -153,6 +153,47 @@ describe("district-to-block drill-down on the real build", { skip: built ? false
     assert.equal(plan2.labels.some((l) => l.id === first) || plan2.hidden.some((h) => h.id === first), false);
   });
 
+  it("zoomed out past the fit, small districts get a dot instead of a name, and every district is still named or marked", () => {
+    const size = { width: 1000, height: 640 };
+    const bounds = unionBounds(layer.shapes.filter((s) => s.featureId.startsWith("GD-")).map((s) => s.bbox as Bounds))!;
+    const fitted = fitBounds(bounds, size, 56);
+    const anchors = anchorsOf();
+    const districtIds = districtShapeIds();
+    const at = (zoom: number) => {
+      const scale = fitted.scale * zoom;
+      const viewport = { scale, tx: size.width / 2 - ((bounds[0] + bounds[2]) / 2) * scale, ty: size.height / 2 - ((bounds[1] + bounds[3]) / 2) * scale };
+      return planLabels({ model, anchors, context: STATE_CONTEXT, viewport, size, districtIds, blockIds: new Set<string>(), selectedBlockId: null, obstacles: controlObstacles(size), zoomRatio: zoom });
+    };
+    const fit = at(1);
+    const out = at(0.6);
+    assert.equal(out.labels.length + out.hidden.length, 23, "none is dropped silently");
+    assert.ok(out.labels.length < fit.labels.length, `${out.labels.length} names zoomed out against ${fit.labels.length} at the fit`);
+    for (const l of out.labels) {
+      const r = anchors.get(l.id)![2] * fitted.scale * 0.6;
+      assert.ok(r >= 12, `${l.id} keeps a name only while it is large enough on screen (${r.toFixed(1)} px)`);
+    }
+    for (const [i, a] of out.labels.entries()) {
+      for (const b of out.labels.slice(i + 1)) {
+        const overlap = a.box.x < b.box.x + b.box.width && b.box.x < a.box.x + a.box.width && a.box.y < b.box.y + b.box.height && b.box.y < a.box.y + a.box.height;
+        assert.ok(!overlap, `${a.id} overlaps ${b.id}`);
+      }
+    }
+  });
+
+  it("district names at the overview keep at least 6 px of clear space between them", () => {
+    const size = { width: 1000, height: 640 };
+    const bounds = unionBounds(layer.shapes.filter((s) => s.featureId.startsWith("GD-")).map((s) => s.bbox as Bounds))!;
+    const viewport = fitBounds(bounds, size, 56);
+    const plan = planLabels({ model, anchors: anchorsOf(), context: STATE_CONTEXT, viewport, size, districtIds: districtShapeIds(), blockIds: new Set<string>(), selectedBlockId: null, obstacles: controlObstacles(size), zoomRatio: 1 });
+    for (const [i, a] of plan.labels.entries()) {
+      for (const b of plan.labels.slice(i + 1)) {
+        const dx = Math.max(b.box.x - (a.box.x + a.box.width), a.box.x - (b.box.x + b.box.width));
+        const dy = Math.max(b.box.y - (a.box.y + a.box.height), a.box.y - (b.box.y + b.box.height));
+        assert.ok(Math.max(dx, dy) >= 6 - 1e-6, `${a.id} and ${b.id} are ${Math.max(dx, dy).toFixed(1)} px apart`);
+      }
+    }
+  });
+
   it("inside a district only that district's blocks are named, more of them as the map zooms in, and never on top of each other", () => {
     const bankura = district("Bankura");
     const ctx = mapContext(model, { kind: "feature", id: bankura.id });

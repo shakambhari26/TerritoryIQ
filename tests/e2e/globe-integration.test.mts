@@ -120,7 +120,7 @@ describe("globe integration (Phase 1) in a real browser", { skip: skipReason, ti
   });
 
   // ------------------------------------------------------------- navigation --
-  it("the navigation lists Globe, Overview, Workspace, then the planned modules, and exactly one link is current on each page", async () => {
+  it("the navigation lists Overview, Globe, Workspace, then the planned modules, and exactly one link is current on each page", async () => {
     for (const [route, current] of [
       ["/", "Overview"],
       ["/workspace", "Workspace"],
@@ -131,19 +131,21 @@ describe("globe integration (Phase 1) in a real browser", { skip: skipReason, ti
       const items = await page.$$eval('nav[aria-label="Primary"] li', (lis) => lis.map((li) => ({ text: li.textContent ?? "", link: li.querySelector("a") !== null })));
       assert.deepEqual(
         items.map((i) => [i.text.replace(/\(planned, not yet available\)$/, "").replace(/Soon$/, ""), i.link]),
-        [["Globe", true], ["Overview", true], ["Workspace", true], ["Allocation", false], ["Analytics", false], ["Data Import", false]],
+        [["Overview", true], ["Globe", true], ["Workspace", true], ["Allocation", false], ["Analytics", false], ["Data Import", false]],
         `${route}: order, and only the three built routes are links`,
       );
       assert.ok(items.slice(3).every((i) => i.text.endsWith("Soon(planned, not yet available)")), `${route}: the planned modules say so`);
       const links = await page.$$eval('nav[aria-label="Primary"] a', (anchors) => anchors.map((a) => ({ text: a.textContent, href: a.getAttribute("href"), current: a.getAttribute("aria-current") })));
-      assert.deepEqual(links.map((l) => [l.text, l.href]), [["Globe", "/globe"], ["Overview", "/"], ["Workspace", "/workspace"]], route);
+      assert.deepEqual(links.map((l) => [l.text, l.href]), [["Overview", "/"], ["Globe", "/globe"], ["Workspace", "/workspace"]], route);
       assert.deepEqual(links.filter((l) => l.current !== null).map((l) => [l.text, l.current]), [[current, "page"]], `${route}: one current link, ${current}`);
       await context.close();
     }
   });
 
-  it("the Globe link is reachable at phone width without a sideways scroll, and works", async () => {
+  it("the Globe link is reachable at phone width from the navigation drawer, without a sideways scroll, and works", async () => {
     const { page, context } = await open("/", { width: 390, height: 844 });
+    // Below the desktop breakpoint the one navigation is an off-canvas drawer: closed it takes no focus, opened it is on screen.
+    await page.getByRole("button", { name: "Open navigation" }).click();
     const link = page.getByRole("navigation", { name: "Primary" }).getByRole("link", { name: "Globe" });
     const box = (await link.boundingBox())!;
     assert.ok(box.x >= 0 && box.x + box.width <= 390, `the Globe link is on screen at 390px (${JSON.stringify(box)})`);
@@ -458,10 +460,12 @@ describe("globe integration (Phase 1) in a real browser", { skip: skipReason, ti
           assert.ok(secondary.y >= primary.y + primary.height, "the workspace link is below the primary link");
         }
         if (width >= 1024) {
+          // The redesigned card is the Overview's main visual: the text and the two actions in one column on the left, the CSS sphere on the right.
           const text = await box(page, `${CARD} h2`);
-          assert.ok(primary.x > text.x + text.width && secondary.x > primary.x, "text on the left, actions grouped to the right");
+          assert.ok(primary.x >= text.x - 1 && secondary.x > primary.x, "the actions are grouped under the text, side by side");
           assert.ok(Math.abs(primary.y - secondary.y) < 4, "the two actions sit on one line");
-          assert.ok(card.height <= 160, `compact on a desktop (${card.height}px)`);
+          assert.ok(primary.y > text.y + text.height, "the actions sit below the heading");
+          assert.ok(card.height <= 360, `a banner, not a page (${card.height}px)`);
           const kpi = await box(page, '[data-testid="kpi-territories"]');
           assert.ok(kpi.y + kpi.height <= height, `the KPI row is visible without scrolling at ${width} x ${height} (bottom ${kpi.y + kpi.height})`);
         }
@@ -511,10 +515,14 @@ describe("globe integration (Phase 1) in a real browser", { skip: skipReason, ti
       assert.ok(home.scripts.size > 0, "/ loads scripts");
       assert.ok(home.rsc.includes("/globe") && home.rsc.includes("/workspace"), `the default prefetching ran and reached /globe and /workspace (${home.rsc})`);
       assert.deepEqual(hasThree(home.scripts), [], "/ does not load Three.js, including through prefetch");
+      assert.ok(home.paths.includes("/overview/earth-preview.webp"), "the Overview shows its one static Earth");
       assert.deepEqual(home.paths.filter((p) => p.startsWith("/globe/")), [], "no globe texture or other /globe/ asset");
       assert.equal(home.paths.includes("/geo/globe-boundaries.json"), false);
       assert.equal(home.paths.includes("/geo/boundaries.json"), false);
-      assert.deepEqual(home.paths.filter((p) => /\/(?:three|earth-)/i.test(p)), []);
+      // The one approved exception: the Overview's small static Earth (a CSS background drawn from the texture), nothing else with
+      // an earth- or three name. Its size is capped by tests/unit/earth-preview.test.mts.
+      assert.deepEqual(home.paths.filter((p) => /\/(?:three|earth-)/i.test(p) && p !== "/overview/earth-preview.webp"), []);
+      assert.deepEqual(home.paths.filter((p) => /\.(?:jpe?g|png|webp|avif)$/i.test(p) && p !== "/overview/earth-preview.webp"), [], "no other picture");
     });
   });
 });

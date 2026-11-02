@@ -96,10 +96,10 @@ export function AreaList({ model, selection, shapeIds, layerReady, onSelect }: A
 
   return (
     <Card as="section" aria-label="Areas" className="flex flex-col" data-testid="area-list">
-      <header className="space-y-3 border-b border-line px-5 py-4">
+      <header className="space-y-3 border-b border-line px-5 py-3.5">
         <div className="flex items-center justify-between gap-3">
           <h2 className="text-sm font-semibold text-ink">Areas</h2>
-          <div role="group" aria-label="List contents" className="inline-flex overflow-hidden rounded-md border border-line-strong text-xs font-medium">
+          <div role="group" aria-label="List contents" className="inline-flex gap-0.5 rounded-lg bg-surface-muted p-0.5 text-xs font-medium">
             {(
               [
                 ["rows", `Workbook rows (${model.dataset.units.length})`],
@@ -111,7 +111,7 @@ export function AreaList({ model, selection, shapeIds, layerReady, onSelect }: A
                 type="button"
                 aria-pressed={mode === value}
                 onClick={() => setMode(value)}
-                className={cn("px-2.5 py-1.5", mode === value ? "bg-navy-950 text-on-navy" : "bg-surface text-ink hover:bg-surface-muted")}
+                className={cn("rounded-md px-2.5 py-1.5", mode === value ? "bg-surface font-semibold text-primary-ink shadow-float ring-1 ring-primary/25" : "text-ink-muted hover:text-ink")}
               >
                 {label}
               </button>
@@ -204,8 +204,8 @@ export function AreaList({ model, selection, shapeIds, layerReady, onSelect }: A
               data-state={item.state}
               onClick={() => onSelect(item.selection)}
               className={cn(
-                "flex w-full items-start justify-between gap-3 px-5 py-2.5 text-left hover:bg-surface-muted",
-                selectedKey === item.key && "bg-gold-50 shadow-[inset_3px_0_0_var(--color-gold-400)]",
+                "flex w-full items-start justify-between gap-3 px-5 py-2.5 text-left hover:bg-canvas",
+                selectedKey === item.key && "bg-primary-soft shadow-[inset_3px_0_0_var(--color-primary)] hover:bg-primary-soft",
               )}
             >
               <span className="min-w-0">

@@ -2,23 +2,24 @@ import type { ComponentPropsWithoutRef } from "react";
 import { cn } from "@/lib/cn";
 
 interface BadgeProps extends ComponentPropsWithoutRef<"span"> {
-  /** Which surface family the badge sits on, so contrast holds on both. */
-  tone?: "light" | "navy";
+  /**
+   * `neutral` for planned modules and quiet labels; `warning` (muted amber) for provisional and prototype states,
+   * which must stay visible without shouting.
+   */
+  tone?: "neutral" | "warning";
 }
 
 /**
- * Small dashed-outline label. Used to flag design-only placeholders and
- * planned (not yet built) modules, so nothing reads as a working feature.
+ * Compact uppercase label. Used to flag the local-prototype status, provisional data and planned (not yet built)
+ * modules, so nothing reads as a working or approved feature. The words carry the meaning, never the colour alone.
  */
-export function Badge({ tone = "light", className, ...props }: BadgeProps) {
+export function Badge({ tone = "neutral", className, ...props }: BadgeProps) {
   return (
     <span
       className={cn(
-        "inline-flex shrink-0 items-center rounded-full border border-dashed px-2 py-0.5 text-[0.6875rem] font-medium uppercase leading-4 tracking-wide",
-        tone === "light" &&
-          "border-line-strong bg-surface-muted text-ink-muted",
-        tone === "navy" &&
-          "border-white/25 bg-white/5 text-on-navy-muted",
+        "inline-flex shrink-0 items-center rounded-full border px-2 py-0.5 text-[0.625rem] font-semibold uppercase leading-4 tracking-wider",
+        tone === "neutral" && "border-line bg-surface-muted text-ink-muted",
+        tone === "warning" && "border-warn-line bg-warn-soft text-warn-ink",
         className,
       )}
       {...props}

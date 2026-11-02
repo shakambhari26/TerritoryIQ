@@ -89,7 +89,7 @@ describe("homepage globe entry: links", () => {
 describe("homepage globe entry: wording", () => {
   it("has the heading, the badge and the description", () => {
     assert.match(card, /<h2[^>]*>\s*Explore on the globe\s*<\/h2>/);
-    assert.match(card, /<Badge>Provisional outlines<\/Badge>/);
+    assert.match(card, /<Badge( tone="warning")?>Provisional outlines<\/Badge>/);
     assert.match(visibleText, /interactive 3D globe/);
     assert.match(visibleText, /provisional geographic outlines/);
   });
@@ -138,7 +138,7 @@ describe("homepage globe entry: the Overview is unchanged around it", () => {
     assert.match(page, /<OverviewDashboard data=\{overview\} layerMeta=\{getLayerMeta\(\)\} \/>/);
     assert.match(page, /<DatasetMissing \/>/);
     assert.match(page, /href="\/workspace"[\s\S]*?Open the workspace/);
-    assert.match(page, /<Badge>Local prototype<\/Badge>/);
+    assert.match(page, /<Badge( tone="warning")?>Local prototype<\/Badge>/);
     assert.doesNotMatch(page, /href="\/globe"/, "the page itself only renders the card; the card owns the globe link");
   });
 

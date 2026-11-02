@@ -57,7 +57,7 @@ export function MapToolbar({
             type="button"
             onClick={onBack}
             data-testid="map-back"
-            className="inline-flex h-8 items-center gap-1 rounded-lg bg-surface-muted px-2.5 text-sm font-medium text-ink hover:bg-navy-700"
+            className="inline-flex h-8 items-center gap-1 rounded-lg border border-line bg-surface px-2.5 text-sm font-medium text-ink hover:bg-surface-muted"
           >
             <svg aria-hidden="true" focusable="false" viewBox="0 0 20 20" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
               <path d="M12 4 6 10l6 6" />
@@ -82,7 +82,7 @@ export function MapToolbar({
                     {crumb.label}
                   </span>
                 ) : (
-                  <button type="button" onClick={() => onCrumb(crumb)} className="truncate rounded text-accent-ink underline-offset-2 hover:underline">
+                  <button type="button" onClick={() => onCrumb(crumb)} className="truncate rounded text-primary-ink underline-offset-2 hover:underline">
                     {crumb.label}
                   </button>
                 )}
@@ -90,7 +90,7 @@ export function MapToolbar({
             ))}
           </ol>
         </nav>
-        <span data-testid="map-level" className="text-[0.6875rem] font-medium uppercase tracking-wide text-ink-subtle @max-5xl:sr-only">
+        <span data-testid="map-level" className="rounded-full bg-surface-muted px-2 py-0.5 text-[0.625rem] font-semibold uppercase tracking-wider text-ink-muted @max-5xl:sr-only">
           {LEVEL_LABEL[context.level]}
         </span>
       </div>
@@ -105,7 +105,7 @@ export function MapToolbar({
             onClick={() => onLayerMode(layer.value)}
             className={cn(
               "h-8 flex-auto whitespace-nowrap rounded-md px-2 @3xl:px-2.5 sm:flex-none",
-              layerMode === layer.value ? "bg-navy-700 text-on-navy shadow-[inset_0_-2px_0_var(--color-ember)]" : "text-ink-muted hover:text-ink",
+              layerMode === layer.value ? "bg-surface font-semibold text-primary-ink shadow-float ring-1 ring-primary/25" : "text-ink-muted hover:text-ink",
             )}
           >
             {layer.label}
@@ -120,14 +120,14 @@ export function MapToolbar({
         title={pinCount === 0 ? "No representative pins are supported by the data for this view" : `${pinsOn ? "Hide" : "Show"} the ${pinCount} representative pins`}
         className={cn(
           "inline-flex h-9 shrink-0 items-center gap-1.5 rounded-lg border px-2.5 text-xs font-medium",
-          pinsOn ? "border-ember/60 bg-ember/10 text-ink" : "border-line bg-surface text-ink hover:bg-surface-muted",
+          pinsOn ? "border-marker/50 bg-orange-50 text-ink" : "border-line bg-surface text-ink hover:bg-surface-muted",
         )}
       >
         <svg aria-hidden="true" focusable="false" viewBox="0 0 28 36" width="10" height="13" className="shrink-0 overflow-visible">
-          <path d="M14 35C14 35 3 22.5 3 13.5a11 11 0 1 1 22 0C25 22.5 14 35 14 35Z" fill={pinsOn ? "var(--color-ember)" : "none"} stroke="var(--color-ember)" strokeWidth="2.5" />
+          <path d="M14 35C14 35 3 22.5 3 13.5a11 11 0 1 1 22 0C25 22.5 14 35 14 35Z" fill={pinsOn ? "var(--color-marker)" : "none"} stroke="var(--color-marker)" strokeWidth="2.5" />
         </svg>
         <span className="@max-5xl:sr-only">Representatives</span>
-        <span className="tabular-nums text-ink-subtle">{pinCount}</span>
+        <span className="tabular-nums text-ink-muted">{pinCount}</span>
       </button>
       <div className="flex min-w-0 flex-1 items-start gap-2 sm:flex-none">
         <MapSearch index={searchIndex} districtId={context.districtId} districtName={districtName} onPick={onSearchPick} />

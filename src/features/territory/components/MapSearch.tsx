@@ -80,7 +80,7 @@ export function MapSearch({ index, districtId, districtName, onPick }: MapSearch
           aria-activedescendant={showList && activeHit ? `${uid}-opt-${activeHit.id}` : undefined}
           autoComplete="off"
           placeholder={scoped && districtName ? `Blocks in ${districtName}…` : "District or block…"}
-          className="block h-9 w-full rounded-lg border border-line-strong bg-surface pl-8 pr-2 text-[0.8125rem] text-ink placeholder:text-ink-subtle focus:border-accent-ink"
+          className="block h-9 w-full rounded-lg border border-line-strong bg-surface pl-8 pr-2 text-[0.8125rem] text-ink placeholder:text-ink-subtle focus:border-primary"
           value={query}
           onChange={(e) => {
             setQuery(e.target.value);
@@ -102,7 +102,7 @@ export function MapSearch({ index, districtId, districtName, onPick }: MapSearch
               // Keep the focus (and so the open result list) in the search box while the scope is changed.
               onMouseDown={(e) => e.preventDefault()}
               onChange={(e) => setEverywhere(!e.target.checked)}
-              className="h-3.5 w-3.5 accent-accent-ink"
+              className="h-3.5 w-3.5 accent-primary"
             />
             Only in {districtName}
           </label>

@@ -11,13 +11,13 @@ import { BlockRowsSection } from "./BlockRowsSection";
 import { WorkspaceLink } from "./WorkspaceLink";
 
 const stateChip: Record<UnitState, { label: string; className: string }> = {
-  represented: { label: "Provisional representative link", className: "border-orange-300/50 bg-orange-400/15 text-orange-200" },
-  "no-representative": { label: "Confirmed: no representative", className: "border-white/50 bg-white/15 text-white" },
-  unresolved: { label: "Unresolved or unverified", className: "border-slate-400/40 bg-slate-400/10 text-slate-200" },
+  represented: { label: "Provisional representative link", className: "border-orange-300 bg-orange-50 text-orange-900" },
+  "no-representative": { label: "Confirmed: no representative", className: "border-line-strong bg-white text-ink" },
+  unresolved: { label: "Unresolved or unverified", className: "border-line bg-surface-muted text-ink-muted" },
 };
 
 function Dot({ colour, ring }: { colour: string; ring?: boolean }) {
-  return <span aria-hidden="true" className={cn("inline-block size-2.5 shrink-0 rounded-full", ring && "ring-1 ring-white/50")} style={{ backgroundColor: colour }} />;
+  return <span aria-hidden="true" className={cn("inline-block size-2.5 shrink-0 rounded-full", ring && "ring-1 ring-ink/40")} style={{ backgroundColor: colour }} />;
 }
 
 export function StateChip({ state, kind }: { state: UnitState; kind: "district" | "block" }) {
@@ -31,10 +31,12 @@ interface SearchProps {
   districts: readonly Target[];
   onSelect: (target: Target) => void;
   disabled: boolean;
+  /** The district or block the globe is on, marked in the list. */
+  activeId?: string | null;
 }
 
 /** Search box and a plain list of places. Every entry is a button, so it works with the keyboard alone. */
-export function PlaceSearch({ targets, districts, onSelect, disabled }: SearchProps) {
+export function PlaceSearch({ targets, districts, onSelect, disabled, activeId = null }: SearchProps) {
   const [query, setQuery] = useState("");
   const listRef = useRef<HTMLUListElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -60,64 +62,82 @@ export function PlaceSearch({ targets, districts, onSelect, disabled }: SearchPr
   }
 
   return (
-    <section aria-labelledby={`${id}-title`} className="space-y-2">
-      <h2 id={`${id}-title`} className="text-xs font-semibold uppercase tracking-wide text-ink-subtle">
+    <section aria-labelledby={`${id}-title`} className="flex min-h-0 flex-col gap-4 lg:flex-1">
+      <h2 id={`${id}-title`} className="text-base font-semibold tracking-tight text-ink">
         Go to a place
       </h2>
       <label className="sr-only" htmlFor={`${id}-input`}>
         Search West Bengal, a district or a block
       </label>
-      <input
-        id={`${id}-input`}
-        ref={inputRef}
-        type="search"
-        value={query}
-        disabled={disabled}
-        autoComplete="off"
-        spellCheck={false}
-        placeholder="Search West Bengal, a district or a block"
-        onChange={(event) => setQuery(event.target.value)}
-        onKeyDown={(event) => {
-          if (event.key === "Enter" && results[0]) {
-            event.preventDefault();
-            onSelect(results[0]);
-          } else move(event, "input");
-        }}
-        className="w-full rounded-md border border-line-strong bg-surface-muted px-3 py-2 text-sm text-ink placeholder:text-ink-subtle disabled:opacity-50"
-      />
+      <div className="relative">
+        <svg aria-hidden="true" focusable="false" viewBox="0 0 20 20" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-ink-subtle">
+          <circle cx="9" cy="9" r="5.5" />
+          <path d="m13.5 13.5 3.5 3.5" />
+        </svg>
+        <input
+          id={`${id}-input`}
+          ref={inputRef}
+          type="search"
+          value={query}
+          disabled={disabled}
+          autoComplete="off"
+          spellCheck={false}
+          placeholder="Search districts or blocks"
+          onChange={(event) => setQuery(event.target.value)}
+          onKeyDown={(event) => {
+            if (event.key === "Enter" && results[0]) {
+              event.preventDefault();
+              onSelect(results[0]);
+            } else move(event, "input");
+          }}
+          className="h-11 w-full rounded-xl bg-surface-muted pl-9 pr-3 text-sm text-ink placeholder:text-ink-subtle focus-visible:bg-white disabled:opacity-50"
+        />
+      </div>
       {stateTarget && query.trim() === "" ? (
         <button
           type="button"
           disabled={disabled}
           onClick={() => onSelect(stateTarget)}
-          className="flex w-full items-center justify-between gap-2 rounded-md border border-accent/40 bg-accent-soft px-3 py-2 text-left text-sm font-semibold text-ink hover:border-accent disabled:opacity-50"
+          className="flex min-h-11 w-full flex-col items-start justify-center rounded-xl bg-primary px-3.5 py-2 text-left text-sm font-semibold leading-tight text-white shadow-float hover:bg-primary-hover disabled:opacity-50"
         >
-          <span>Fly to West Bengal</span>
-          <span className="text-[0.6875rem] font-medium text-accent-ink">validated target</span>
+          <span className="whitespace-nowrap">Fly to West Bengal</span>
+          <span className="text-[0.6875rem] font-medium text-white">validated target</span>
         </button>
       ) : null}
-      <p className="text-[0.6875rem] text-ink-subtle" aria-live="polite">
+      <p className="border-t border-line pt-3 text-xs font-medium text-ink-muted" aria-live="polite">
         {query.trim() === "" ? `${districts.length} districts` : `${results.length === 0 ? "No" : results.length} ${results.length === 1 ? "match" : "matches"}`}
       </p>
-      <ul ref={listRef} className="max-h-56 space-y-0.5 overflow-y-auto pr-1" aria-label="Places">
-        {showing.map((target, index) => (
-          <li key={`${target.kind}-${target.id}`}>
-            <button
-              type="button"
-              disabled={disabled}
-              onClick={() => onSelect(target)}
-              onKeyDown={(event) => move(event, index)}
-              className="flex w-full items-center gap-2 rounded px-2 py-1.5 text-left text-sm text-ink hover:bg-surface-muted disabled:opacity-50"
-            >
-              <Dot colour={(target.kind === "block" ? BLOCK_STYLE : DISTRICT_STYLE)[target.state].fill} ring={target.state === "no-representative"} />
-              <span className="min-w-0 flex-1 truncate">{target.name}</span>
-              <span className="shrink-0 text-[0.6875rem] text-ink-subtle">
-                {target.kind === "block" ? `block · ${target.context ?? "no district"}` : target.kind}
-                {target.kind !== "state" && !target.drawn ? " · no outline" : ""}
-              </span>
-            </button>
-          </li>
-        ))}
+      <ul ref={listRef} className="-mx-2 -mt-2 max-h-56 min-h-0 space-y-1 overflow-y-auto px-2 pb-1 lg:max-h-none lg:min-h-[7rem] lg:flex-1" aria-label="Places">
+        {showing.map((target, index) => {
+          const active = activeId !== null && target.kind !== "state" && target.id === activeId;
+          return (
+            <li key={`${target.kind}-${target.id}`}>
+              <button
+                type="button"
+                disabled={disabled}
+                onClick={() => onSelect(target)}
+                onKeyDown={(event) => move(event, index)}
+                aria-current={active ? "true" : undefined}
+                className={cn(
+                  "flex min-h-11 w-full items-center gap-3 rounded-xl px-3 py-1.5 text-left text-[0.9375rem] leading-5 disabled:opacity-50",
+                  active ? "bg-primary-soft font-semibold text-primary-ink" : "text-ink hover:bg-surface-muted",
+                )}
+              >
+                <Dot colour={(target.kind === "block" ? BLOCK_STYLE : DISTRICT_STYLE)[target.state].fill} ring={target.state === "no-representative"} />
+                <span className="min-w-0 flex-1 truncate">{target.name}</span>
+                {/* Every row of the plain list is a district, so the kind is repeated only where the list mixes kinds. */}
+                <span className={cn("shrink-0 text-xs font-normal", active ? "text-primary-ink" : "text-ink-muted")}>
+                  {target.kind === "district" && query.trim() === ""
+                    ? ""
+                    : target.kind === "block"
+                      ? `block · ${target.context ?? "no district"}`
+                      : target.kind}
+                  {target.kind !== "state" && !target.drawn ? (target.kind === "district" && query.trim() === "" ? "No outline" : " · no outline") : ""}
+                </span>
+              </button>
+            </li>
+          );
+        })}
       </ul>
     </section>
   );
@@ -147,37 +167,40 @@ export function GlobeDetails({ overlay, level, district, block, onSelectBlock, o
   const href = target ? workspaceHref(overlay, target) : null;
 
   return (
-    <section aria-label="Details" className="space-y-3 text-sm">
+    <section aria-label="Details" className="flex min-h-0 flex-col gap-5 text-sm leading-6 lg:flex-1 lg:overflow-y-auto">
       {level === "globe" ? (
         <div className="space-y-2">
-          <h2 className="text-base font-semibold text-ink">Earth</h2>
+          <h2 className="text-xl font-semibold tracking-tight text-ink">Earth</h2>
           <p className="text-ink-muted">
             The globe turns until you choose a place. Pick West Bengal in the list, search for a district or block, or press the marker on the globe.
           </p>
-          <p className="text-xs text-ink-subtle">Drag the globe to turn it by hand while it is turning.</p>
+          <p className="text-xs leading-5 text-ink-muted">Drag the globe to turn it by hand while it is turning.</p>
         </div>
       ) : null}
 
       {level === "state" ? (
         <div className="space-y-2">
-          <h2 className="text-base font-semibold text-ink">{overlay.state.name}</h2>
+          <h2 className="text-xl font-semibold tracking-tight text-ink">{overlay.state.name}</h2>
           <p className="text-ink-muted">
             {counts.districtsDrawn} of {counts.districts} district outlines passed validation; {drawnClause(outlines, counts.districtsDrawn)}.{" "}
             {counts.districtsRepresented} of them have at least one block with a provisional link to a named representative.
           </p>
-          <p className="text-xs text-ink-subtle">{overlay.state.basis}</p>
-          {overlay.state.bbox ? (
-            <p className="font-mono text-[0.6875rem] text-ink-subtle">
-              target box {overlay.state.bbox[0].toFixed(2)}E to {overlay.state.bbox[2].toFixed(2)}E, {overlay.state.bbox[1].toFixed(2)}N to {overlay.state.bbox[3].toFixed(2)}N
-            </p>
-          ) : null}
           {href ? <WorkspaceLink href={href} /> : null}
+          <details className="group text-xs text-ink-subtle">
+            <summary className="cursor-pointer font-medium text-primary-ink">About this target</summary>
+            <p className="mt-1.5">{overlay.state.basis}</p>
+            {overlay.state.bbox ? (
+              <p className="mt-1.5 font-mono text-[0.6875rem]">
+                target box {overlay.state.bbox[0].toFixed(2)}E to {overlay.state.bbox[2].toFixed(2)}E, {overlay.state.bbox[1].toFixed(2)}N to {overlay.state.bbox[3].toFixed(2)}N
+              </p>
+            ) : null}
+          </details>
         </div>
       ) : null}
 
       {level === "district" && district ? (
         <div className="space-y-2">
-          <h2 className="text-base font-semibold text-ink">{district.name}</h2>
+          <h2 className="text-xl font-semibold tracking-tight text-ink">{district.name}</h2>
           <StateChip state={district.state} kind="district" />
           {href ? <WorkspaceLink href={href} /> : null}
           <p className="text-ink-muted">{district.reason}</p>
@@ -185,15 +208,15 @@ export function GlobeDetails({ overlay, level, district, block, onSelectBlock, o
             {district.drawnBlockCount} of {district.blockCount} blocks in the current reference list have a validated outline here.
             {outlines === "ready" ? "" : outlines === "loading" ? " None is drawn yet: the outline data is still loading." : " None is drawn: the outline data is unavailable."}
           </p>
-          <h3 className="pt-1 text-xs font-semibold uppercase tracking-wide text-ink-subtle">Blocks</h3>
-          <ul className="max-h-48 space-y-0.5 overflow-y-auto pr-1" aria-label={`Blocks in ${district.name}`}>
+          <h3 className="pt-1 text-[0.6875rem] font-semibold uppercase tracking-wider text-ink-muted">Blocks</h3>
+          <ul className="space-y-0.5" aria-label={`Blocks in ${district.name}`}>
             {blocks.map((b) => (
               <li key={b.id}>
                 <button
                   type="button"
                   disabled={disabled}
                   onClick={() => onSelectBlock(b.id)}
-                  className="flex w-full items-center gap-2 rounded px-2 py-1 text-left text-sm text-ink hover:bg-surface-muted disabled:opacity-50"
+                  className="flex h-9 w-full items-center gap-2 rounded-lg px-2 text-left text-sm text-ink hover:bg-surface-muted disabled:opacity-50"
                 >
                   <Dot colour={BLOCK_STYLE[b.state].fill} />
                   <span className="min-w-0 flex-1 truncate">{b.name}</span>
@@ -207,11 +230,11 @@ export function GlobeDetails({ overlay, level, district, block, onSelectBlock, o
 
       {level === "block" && block ? (
         <div className="space-y-2">
-          <h2 className="text-base font-semibold text-ink">{block.name}</h2>
+          <h2 className="text-xl font-semibold tracking-tight text-ink">{block.name}</h2>
           {parent ? (
             <p className="text-xs text-ink-subtle">
               Block in{" "}
-              <button type="button" disabled={disabled} onClick={() => onSelectDistrict(parent.id)} className="font-medium text-accent-ink underline underline-offset-2 disabled:opacity-50">
+              <button type="button" disabled={disabled} onClick={() => onSelectDistrict(parent.id)} className="font-medium text-primary-ink underline underline-offset-2 disabled:opacity-50">
                 {parent.name}
               </button>
             </p>
@@ -220,12 +243,12 @@ export function GlobeDetails({ overlay, level, district, block, onSelectBlock, o
           {href ? <WorkspaceLink href={href} /> : null}
           <p className="text-ink-muted">{block.reason}</p>
           {block.contested ? (
-            <p className="rounded-md border border-amber-300/40 bg-amber-400/10 px-2 py-1.5 text-xs text-amber-100">
+            <p className="rounded-lg border border-warn-line bg-warn-soft px-2.5 py-1.5 text-xs text-warn-ink">
               More than one workbook row is linked to this block. They are listed separately and not merged.
             </p>
           ) : null}
           {!block.geometry ? (
-            <p className="rounded-md border border-line-strong bg-surface-muted px-2 py-1.5 text-xs text-ink-muted">
+            <p className="rounded-lg border border-line bg-surface-muted px-2.5 py-1.5 text-xs text-ink-muted">
               No outline is drawn for this block: {block.noGeometryReason}. The globe shows its district instead.
             </p>
           ) : null}
@@ -233,7 +256,7 @@ export function GlobeDetails({ overlay, level, district, block, onSelectBlock, o
         </div>
       ) : null}
 
-      <p className="border-t border-line pt-2 text-[0.6875rem] leading-4 text-ink-subtle">
+      <p className="mt-auto rounded-xl bg-surface-muted px-3 py-2.5 text-xs leading-5 text-ink-muted">
         Colour shows a provisional, unreviewed link only. It does not change the allocation classifications (Assigned, Vacant, Unallocated, Data Missing / Unknown), which are not shown here.
       </p>
     </section>
