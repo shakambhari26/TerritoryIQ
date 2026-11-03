@@ -100,7 +100,9 @@ function hash(text: string): number {
 
 /** mulberry32: small, fast, good enough for sample data; returns a function giving numbers in [0, 1). */
 function rng(seed: number): () => number {
-  let a = seed >>> 0;
+  // Scramble the seed first: ids that differ in one character ("so-GD-1-2", "so-GD-1-3") otherwise start alike.
+  let a = Math.imul(seed ^ (seed >>> 16), 0x45d9f3b) >>> 0;
+  a = Math.imul(a ^ (a >>> 16), 0x45d9f3b) >>> 0;
   return () => {
     a = (a + 0x6d2b79f5) >>> 0;
     let t = a;
