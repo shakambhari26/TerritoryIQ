@@ -7,20 +7,22 @@
  * query. The response holds only that block's rows. Every response, errors included, is `private, no-store` and
  * `nosniff`, and an error is a fixed code and sentence that never echo the request or any data.
  *
- * This narrows what a page load carries; it is not authentication or access control. Anyone who can reach the local
- * server (and passes the loopback Host check) can ask for any block ID, and the IDs can be enumerated.
+ * This narrows what a page load carries; it is not per-user access control. Anyone who passes `isRequestAuthorized`
+ * (src/lib/auth.ts: the loopback Host check locally, the shared sign-in when hosted) can ask for any block ID, and the
+ * IDs can be enumerated.
  */
 
-import { isLoopbackHost } from "../../lib/loopback.ts";
+import { isRequestAuthorized } from "../../lib/auth.ts";
 import { BLOCK_ID_PATTERN, BLOCK_ROWS_ERRORS, MAX_REQUEST_BYTES, type BlockRow, type BlockRowsErrorCode } from "./block-rows.ts";
 
 const HEADERS = { "Cache-Control": "private, no-store", "X-Content-Type-Options": "nosniff" } as const;
 
-export interface BlockRowsSource {
+/** `T` is a workbook row here, and a customer for POST /api/globe/block-customers, which uses the same handler. */
+export interface BlockRowsSource<T = BlockRow> {
   /** False when the manifest has not been built. */
   available: boolean;
   /** An exact lookup: the block's rows (possibly none), or null for an unknown ID. */
-  rows: (blockId: string) => BlockRow[] | null;
+  rows: (blockId: string) => T[] | null;
 }
 
 export function blockRowsError(code: BlockRowsErrorCode): Response {
@@ -66,9 +68,9 @@ async function readCapped(request: Request): Promise<string | null> {
   }
 }
 
-export async function handleBlockRowsRequest(request: Request, source: BlockRowsSource): Promise<Response> {
-  // Second layer after src/proxy.ts, which already refuses a non-loopback Host for every path.
-  if (!isLoopbackHost(request.headers.get("host"))) return blockRowsError("host");
+export async function handleBlockRowsRequest<T>(request: Request, source: BlockRowsSource<T>): Promise<Response> {
+  // Second layer after src/proxy.ts, which already applies the same check to every path.
+  if (!isRequestAuthorized(request.headers)) return blockRowsError("host");
   if (request.method !== "POST") return blockRowsError("method");
   if (!isJson(request.headers.get("content-type"))) return blockRowsError("mediatype");
 

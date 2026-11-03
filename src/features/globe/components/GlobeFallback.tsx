@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import { cn } from "@/lib/cn";
 import { DISTRICT_STYLE } from "../styles";
+import type { CustomerSummary } from "../customers";
 import type { GlobeInsights } from "../insights";
 import type { GlobeManifest } from "../types";
 import { GlobeDetails, PlaceSearch } from "./GlobePanel";
@@ -13,7 +14,7 @@ import { buildTargets, type Target } from "../targets";
  * globe, and a static picture of the Earth: the same-origin NASA texture, shown as a CSS disc. Nothing moves, and
  * nothing is drawn that has not passed validation: districts are listed as text with their provisional status.
  */
-export function GlobeFallback({ overlay, reason, insights = null }: { overlay: GlobeManifest; reason: string; insights?: GlobeInsights | null }) {
+export function GlobeFallback({ overlay, reason, insights = null, customers = null }: { overlay: GlobeManifest; reason: string; insights?: GlobeInsights | null; customers?: CustomerSummary | null }) {
   const targets = useMemo(() => buildTargets(overlay), [overlay]);
   const districts = useMemo(() => targets.filter((t) => t.kind === "district").sort((a, b) => a.name.localeCompare(b.name)), [targets]);
   const blocks = useMemo(() => targets.filter((t) => t.kind === "block").sort((a, b) => a.name.localeCompare(b.name)), [targets]);
@@ -55,6 +56,7 @@ export function GlobeFallback({ overlay, reason, insights = null }: { overlay: G
           disabled={false}
           outlines="unavailable"
           insights={insights}
+          customers={customers}
           onSelectBlock={(id) => setSelected(targets.find((t) => t.kind === "block" && t.id === id) ?? null)}
           onSelectDistrict={(id) => setSelected(targets.find((t) => t.kind === "district" && t.id === id) ?? null)}
         />

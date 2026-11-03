@@ -44,6 +44,11 @@ const nextConfig: NextConfig = {
       { source: "/", headers: PRIVATE_NO_STORE },
       { source: "/workspace", headers: PRIVATE_NO_STORE },
       { source: "/globe", headers: PRIVATE_NO_STORE },
+      // Sales-visit notes, customer names and rep scores from the Visit Intelligence service.
+      { source: "/visit-insights", headers: PRIVATE_NO_STORE },
+      { source: "/visit-insights/:path*", headers: PRIVATE_NO_STORE },
+      // A rep's reply link: one head-office message and its to-dos.
+      { source: "/r/:path*", headers: PRIVATE_NO_STORE },
       { source: "/geo/:path*", headers: PRIVATE_NO_STORE },
       { source: "/api/:path*", headers: PRIVATE_NO_STORE },
     ];

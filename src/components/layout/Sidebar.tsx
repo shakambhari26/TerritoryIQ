@@ -27,6 +27,20 @@ function Brand({ rail }: { rail: boolean }) {
   );
 }
 
+/** Hosted sign-out: a plain form post, so it works before any script loads and a cross-site link cannot sign anyone out. */
+function SignOut({ className }: { className?: string }) {
+  return (
+    <form method="post" action="/logout" className={className}>
+      <button
+        type="submit"
+        className="inline-flex h-9 w-full items-center justify-center rounded-lg border border-line-strong px-3 text-sm font-medium text-ink-muted hover:bg-surface-muted hover:text-ink"
+      >
+        Sign out
+      </button>
+    </form>
+  );
+}
+
 /**
  * The application's one navigation: a persistent left sidebar from `lg`, and below that the same element as an
  * off-canvas drawer opened from a slim top bar. It is a single `<nav>` in both cases, so there is one "Primary"
@@ -38,7 +52,7 @@ function Brand({ rail }: { rail: boolean }) {
  * so only the width and the labels animate; `prefers-reduced-motion` turns the animation off. The labels are in the
  * document either way, so assistive technology reads the same menu.
  */
-export function Sidebar() {
+export function Sidebar({ hosted = false }: { hosted?: boolean }) {
   const pathname = usePathname();
   const searchId = useId();
   const menuRef = useRef<HTMLButtonElement>(null);
@@ -98,9 +112,13 @@ export function Sidebar() {
           <Menu />
         </button>
         <Brand rail={false} />
-        <Badge tone="warning" className="ml-auto hidden sm:inline-flex">
-          Local prototype
-        </Badge>
+        {hosted ? (
+          <SignOut className="ml-auto" />
+        ) : (
+          <Badge tone="warning" className="ml-auto hidden sm:inline-flex">
+            Local prototype
+          </Badge>
+        )}
       </header>
 
       {open ? <div aria-hidden="true" onClick={closeDrawer} className="fixed inset-0 z-40 bg-ink/30 lg:hidden" /> : null}
@@ -184,9 +202,13 @@ export function Sidebar() {
           </nav>
 
           <div className="px-3 pb-4 pt-3">
-            <Badge tone="warning" className={cn("w-full justify-center whitespace-normal py-1 text-center", RAIL_FADE, "rail:h-8 rail:overflow-hidden rail:whitespace-nowrap")}>
-              Local prototype · not for deployment
-            </Badge>
+            {hosted ? (
+              <SignOut className={cn("w-full justify-center", RAIL_FADE, "rail:h-8 rail:overflow-hidden rail:whitespace-nowrap")} />
+            ) : (
+              <Badge tone="warning" className={cn("w-full justify-center whitespace-normal py-1 text-center", RAIL_FADE, "rail:h-8 rail:overflow-hidden rail:whitespace-nowrap")}>
+                Local prototype · not for deployment
+              </Badge>
+            )}
           </div>
         </aside>
       </div>

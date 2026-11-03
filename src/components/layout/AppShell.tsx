@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import { Sidebar } from "@/components/layout/Sidebar";
+import { authMode } from "@/lib/auth";
 import { SITE } from "@/lib/site";
 
 export function AppShell({ children }: { children: ReactNode }) {
@@ -11,7 +12,7 @@ export function AppShell({ children }: { children: ReactNode }) {
       >
         Skip to main content
       </a>
-      <Sidebar />
+      <Sidebar hosted={authMode().kind === "hosted"} />
       <div className="flex min-w-0 flex-1 flex-col">
         <main id="main" className="mx-auto w-full max-w-[1760px] flex-1 px-4 py-5 sm:px-6 lg:px-8 lg:py-7">
           {children}

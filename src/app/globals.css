@@ -56,6 +56,15 @@
   --color-primary-soft: #eaf1ff;
   --color-primary-ink: #1d4ed8;
 
+  /* Dark navy: solid buttons and chips on the Visit Insights pages (text on them uses on-navy). */
+  --color-navy-950: #0b1220;
+  --color-navy-900: #111a2e;
+  --color-navy-800: #18233b;
+  --color-navy-700: #223152;
+  --color-on-navy: #ffffff;
+  --color-on-navy-muted: #cbd5e1;
+  --color-on-navy-subtle: #94a3b8;
+
   /* Teal: allocated, positive states */
   --color-accent: #0f8b78;
   --color-accent-ink: #0b6b5d;

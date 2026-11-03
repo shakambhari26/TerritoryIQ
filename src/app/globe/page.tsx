@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Badge } from "@/components/ui/Badge";
 import { GlobeLoader } from "@/features/globe/components/GlobeLoader";
+import { getCustomerSummary } from "@/features/globe/customers.server";
 import { buildGlobeInsights } from "@/features/globe/insights";
 import { getGlobeManifest } from "@/features/globe/overlay.server";
 import { getOverviewData } from "@/features/territory/dataset.server";
@@ -26,6 +27,8 @@ export default function GlobePage() {
   const manifest = getGlobeManifest();
   const overview = getOverviewData();
   const insights = overview ? buildGlobeInsights(overview) : null;
+  // Counts only: customer names are fetched for one selected block (POST /api/globe/block-customers).
+  const customers = getCustomerSummary();
   return (
     <>
       <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
@@ -44,7 +47,7 @@ export default function GlobePage() {
       </div>
       <div className="mt-3">
         {manifest ? (
-          <GlobeLoader manifest={manifest} insights={insights} />
+          <GlobeLoader manifest={manifest} insights={insights} customers={customers} />
         ) : (
           <div className="rounded-card bg-surface p-6 shadow-card" role="alert">
             <p className="text-base font-semibold text-ink">The globe data has not been built</p>

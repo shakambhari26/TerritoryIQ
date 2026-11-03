@@ -10,6 +10,8 @@
     "dev": "next dev -H 127.0.0.1",
     "build": "next build",
     "start": "next start -H 127.0.0.1",
+    "start:hosted": "node scripts/start-hosted.mjs",
+    "auth:hash-password": "node scripts/hash-password.mts",
     "lint": "eslint",
     "typecheck": "tsc --noEmit",
     "test": "node --test \"tests/*.test.ts\" \"tests/unit/**/*.test.mts\"",
@@ -19,7 +21,8 @@
     "check": "npm run typecheck && npm run lint && npm test",
     "data:verify": "node scripts/verify-sources.mts",
     "data:fetch-osm": "node scripts/fetch-osm.mts",
-    "data:build": "node scripts/build-data.mts"
+    "data:build": "node scripts/build-data.mts",
+    "data:build-customers": "node scripts/build-customers.mts"
   },
   "dependencies": {
     "next": "16.4.1",
