@@ -64,6 +64,48 @@ This key can **only send** visits. It is refused on every other endpoint.
 
 On a network error or a `5xx` response, retry with backoff; it's safe because of `Visit ID`.
 
+**What comes back.** The `200` response arrives within about a second, so Frontier can show it to the rep straight
+after they save the visit. The fields worth using (the body has more, for our own screens):
+
+```json
+{
+  "visit_key": "a1b2c3d4e5f6a7b8",
+  "segment": { "code": "COMPETITOR_PRICE", "name": "Competitor / Price Fight", "group": "Market & Competition",
+               "confidence": 0.85 },
+  "urgency": { "level": "P1", "reason": "competitor price pressure" },
+  "action": { "owner": "Supervisor", "text": "Ask the rep for brand and price; call the customer within 48h" },
+  "note_quality": { "score": 9, "issues": [] },
+  "rep_headline": { "word": "COMPETITOR", "segment": "COMPETITOR_PRICE" },
+  "extracted": {
+    "quantity": { "value_mt": 3.0 },
+    "competitors": [ { "brand": "SRMB" } ],
+    "follow_up": { "date": "2026-11-05" }
+  },
+  "needs_human_review": false
+}
+```
+
+| Field | Meaning | Values |
+|---|---|---|
+| `segment.code` | What the visit was about | `HOT_ORDER`, `PAYMENT`, `COMPETITOR_PRICE`, `COMPLAINT_ESCALATE`, `SITE_PIPELINE`, `NEW_LEAD`, `TECH_SUPPORT`, `HAPPY_CUSTOMER`, `LOW_VALUE_VISIT`, `UNCLEAR_RECORDING` |
+| `urgency.level` | How fast someone must act | `P0` same day, `P1` 24–48 hours, `P2` this week, `P3` for reports |
+| `action` | Who should do what next | Free text |
+| `note_quality.score` | How complete the rep's note is | 0–10 |
+| `note_quality.issues` | What the note is missing | e.g. `"no tonnes or rupees"`, `"no next step with a date"`, `"brand not named"` |
+| `rep_headline` | The headline the rep said, if any | `null` when the note does not start with "Headline:" |
+| `extracted` | Tonnes, rupees, rival brands and the next date found in the note | Any part can be `null` |
+| `needs_human_review` | The system was not sure; a supervisor will check it | `true` / `false` |
+
+**Suggested feature in the Frontier app: a "note check" card.** Right after the rep saves a visit, show:
+
+- the score as stars or a bar, e.g. "Your note: 9/10";
+- each item in `note_quality.issues` as a tip, e.g. "Add the tonnes or rupees next time";
+- the group and the next step, e.g. "Competitor / Price Fight · Supervisor will call within 48 hours";
+- if `rep_headline` is `null`, a reminder: "Start your next note with Headline: and one of the 9 words".
+
+This teaches reps the format from the [rep guides](rep-guide/) at the moment it matters, and better notes make the
+classification more accurate for everyone.
+
 **Try it:**
 
 ```bash
