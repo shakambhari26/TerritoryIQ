@@ -1,0 +1,9 @@
+# Never upload customer data, local databases or keys. The trained model in models/ IS uploaded.
+data/
+reports/
+*.db
+.api-key.local
+.venv/
+tests/
+experiments/
+.env*

@@ -63,8 +63,9 @@ request is, what it sends, what happens offline and how to turn each off:
 
 Next.js 16 (App Router, Turbopack, Cache Components) · React 19 · TypeScript (strict) ·
 Tailwind CSS 4 · ESLint 9. The map is a dependency-free SVG renderer. Everything else in the
-architecture doc (MapLibre, PostGIS/Supabase, Power BI, Excel import, authentication) is
-**proposed, not implemented**.
+architecture doc (MapLibre, PostGIS, Power BI, Excel import) is **proposed, not implemented**.
+Hosted sign-in and a Supabase database (`supabase/`, `scripts/load-supabase.py`) are in place, and the Visit
+Intelligence service (Python) lives in `services/visit-intel`.
 
 ## Layout
 

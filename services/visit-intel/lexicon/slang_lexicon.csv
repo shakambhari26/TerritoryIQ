@@ -1,0 +1,112 @@
+term_id,language,canonical,variants,native_script,meaning_en,maps_to,map_type,review_status
+L001,bn,dam,dam|daam|daame,দাম,price,PRICE_TALK,flag,draft
+L002,bn,dam beshi,dam beshi|daam beshi|rate beshi|dam besi|rate besi,দাম বেশি,price is too high,COMPETITOR_PRICE,segment,draft
+L003,bn,sosta,sosta|shosta|dam kom|rate kom,সস্তা / দাম কম,cheaper,COMPETITOR_PRICE,segment,draft
+L004,bn,onno company,onno company|onno brand|onyo company|onno maal,অন্য কোম্পানি,other company / rival brand,COMPETITOR_PRICE,segment,draft
+L005,bn,chhar,chhar|char diye|chhar chai|discount chai,ছাড়,discount,SCHEME_ASK,flag,draft
+L006,bn,dhar,dhar|dhaar|dhare|dhar e,ধার,goods on credit,PAYMENT,segment,draft
+L007,bn,baki,baki|baaki|baki ache|baki taka,বাকি,amount still due / outstanding,PAYMENT,segment,draft
+L008,bn,taka diyeche,taka diyeche|taka dilo|payment hoye geche|payment diyeche|taka peyechi,টাকা দিয়েছে,payment received,PAYMENT_RECEIVED,flag,draft
+L009,bn,taka debe,taka debe|pore debe|pore dibe|taka dibe,টাকা দেবে,will pay later (promise),PAYMENT_PROMISED,flag,draft
+L010,bn,maal nei,maal nei|mal nei|stock nei|maal sesh|stock sesh,মাল নেই,out of stock,STOCK_OUT,flag,draft
+L011,bn,gari asheni,gari asheni|gaari aseni|gari ashe ni|gari pouchayni,গাড়ি আসেনি,delivery truck did not arrive,DELIVERY_PROBLEM,segment,draft
+L012,bn,deri,deri|deri hocche|deri holo|late hoyeche,দেরি,delay,COMPLAINT_ESCALATE,segment,draft
+L013,bn,jhamela,jhamela|jhamele,ঝামেলা,trouble / hassle,COMPLAINT_ESCALATE,segment,draft
+L014,bn,obhijog,obhijog|abhijog,অভিযোগ,complaint,COMPLAINT_ESCALATE,segment,draft
+L015,bn,kharap,kharap|kharap maal|bhalo na,খারাপ,bad / poor,COMPLAINT_ESCALATE,segment,draft
+L016,bn,morche,morche|morcha|morche dhoreche,মরচে,rust,QUALITY_ISSUE,flag,draft
+L017,bn,bhenge jacche,bhenge jacche|bhenge geche|fete jacche,ভেঙে যাচ্ছে,breaking or cracking on bending,QUALITY_ISSUE,flag,draft
+L018,bn,khub bhalo,khub bhalo|bhalo maal|darun,খুব ভালো,very good,HAPPY_CUSTOMER,segment,draft
+L019,bn,khushi,khushi|khusi|sontushto|santushta,খুশি / সন্তুষ্ট,happy / satisfied,HAPPY_CUSTOMER,segment,draft
+L020,bn,rajmistri,rajmistri|raj mistri|head mistri,রাজমিস্ত্রি,head mason,MASON,entity,draft
+L021,bn,mistri,mistri|mistiri,মিস্ত্রি,mason,MASON,entity,draft
+L022,bn,thikadar,thikadar|thikadaar|thikedar,ঠিকাদার,contractor,BULK_PROJECT,flag,draft
+L023,bn,malik,malik|bari r malik|barir malik,মালিক,house owner,IHB,entity,draft
+L024,bn,dokandar,dokandar|dokan|dokaner malik,দোকানদার,shopkeeper / retailer,RETAILER,entity,draft
+L025,bn,khoddar,khoddar|khoddor|kheddar,খদ্দের,customer,CUSTOMER,entity,draft
+L026,bn,chhad dhalai,chhad dhalai|chad dhalai|chhader dhalai|roof dhalai,ছাদ ঢালাই,roof casting,SITE_PIPELINE,segment,draft
+L027,bn,dhalai,dhalai|dhalay,ঢালাই,concrete casting,SITE_PIPELINE,segment,draft
+L028,bn,bhit,bhit|bhitt|bhit pujo,ভিত,foundation stage,SITE_STAGE_FOUNDATION,flag,draft
+L029,bn,kaj cholche,kaj cholche|kaaj cholche|kaj chalu|site e kaj cholche,কাজ চলছে,work is ongoing,SITE_PIPELINE,segment,draft
+L030,bn,kaj bondho,kaj bondho|kaaj bondho|kaj thema ache|kaj bandh,কাজ বন্ধ,work has stopped,CONSTRUCTION_PAUSED,flag,draft
+L031,bn,lok nei,lok nei|labour nei|mistri nei,লোক নেই,no labour available,CONSTRUCTION_PAUSED,flag,draft
+L032,bn,brishti,brishti|borsha|bristi,বৃষ্টি / বর্ষা,rain / monsoon,CONSTRUCTION_PAUSED,flag,draft
+L033,bn,pujo,pujo|pujor por|durga pujo,পুজো,festival season (work slows),SEASONAL,flag,draft
+L034,bn,notun site,notun site|natun site|notun kaj,নতুন সাইট,new construction site,NEW_LEAD,segment,draft
+L035,bn,notun party,notun party|natun party|notun khoddar,নতুন পার্টি,new customer,NEW_LEAD,segment,draft
+L036,bn,order dilo,order dilo|order diyeche|order debe|order dibe,অর্ডার দিল,placed / will place order,HOT_ORDER,segment,draft
+L037,bn,bhebe dekhbe,bhebe dekhbe|bhabchhe|bhebe janabe,ভেবে দেখবে,will think and decide (undecided),UNDECIDED,flag,draft
+L038,bn,porer shoptahe,porer shoptahe|porer saptahe|next week e,পরের সপ্তাহে,next week,FOLLOW_UP,flag,draft
+L039,bn,abar ashbo,abar ashbo|abar asbo|abar jabo,আবার আসব,will visit again,FOLLOW_UP,flag,draft
+L040,bn,phone korbe,phone korbe|phone korbo|phone dibe,ফোন করবে,will call,FOLLOW_UP,flag,draft
+L041,bn,kal,kal|kaal,কাল,tomorrow OR yesterday (ambiguous),FOLLOW_UP,flag,ambiguous
+L042,bn,upohar,upohar|uphar,উপহার,gift,SCHEME_ASK,flag,draft
+L043,bn,sut,sut|soot|suta,সুত,local rod-size unit (approx 1/8 inch); confirm mm mapping with field team,SIZE_UNIT,unit,ambiguous
+L044,bn,local rod,local rod|local maal|bina brand,লোকাল রড,unbranded local steel,COMPETITOR_PRICE,segment,draft
+L045,bn,rod,rod|rad|rodd,রড,steel bar (rebar),PRODUCT,entity,draft
+L046,hi,sariya,sariya|saria|sariyaa|sarya,सरिया,steel bar (rebar),PRODUCT,entity,draft
+L047,hi,bhav,bhav|bhaav|rate kya hai,भाव,price / rate,PRICE_TALK,flag,draft
+L048,hi,mehenga,mehenga|mehnga|rate zyada|rate jyada|bhav zyada,महंगा,expensive,COMPETITOR_PRICE,segment,draft
+L049,hi,sasta,sasta|sastaa|rate kam,सस्ता,cheap,COMPETITOR_PRICE,segment,draft
+L050,hi,dusri company,dusri company|doosri company|dusra brand|doosra brand,दूसरी कंपनी,other company / rival brand,COMPETITOR_PRICE,segment,draft
+L051,hi,chhoot,chhoot|chhut|discount chahiye,छूट,discount,SCHEME_ASK,flag,draft
+L052,hi,udhaar,udhaar|udhar|udhari,उधार,goods on credit,PAYMENT,segment,draft
+L053,hi,bakaya,bakaya|baaki|baki hai,बकाया / बाकी,amount still due / outstanding,PAYMENT,segment,draft
+L054,hi,paisa aa gaya,paisa aa gaya|payment mil gaya|paisa mil gaya|payment ho gaya,पैसा आ गया,payment received,PAYMENT_RECEIVED,flag,draft
+L055,hi,baad mein dega,baad mein dega|baad me denge|paisa dega,बाद में देगा,will pay later (promise),PAYMENT_PROMISED,flag,draft
+L056,hi,maal nahi hai,maal nahi hai|maal khatam|stock khatam|stock nahi,माल नहीं है,out of stock,STOCK_OUT,flag,draft
+L057,hi,gaadi nahi aayi,gaadi nahi aayi|gadi nahi aayi|gaadi nahi pahunchi,गाड़ी नहीं आई,delivery truck did not arrive,DELIVERY_PROBLEM,segment,draft
+L058,hi,der,der|der ho gayi|der ho rahi,देर,delay,COMPLAINT_ESCALATE,segment,draft
+L059,hi,shikayat,shikayat|shikayat hai|complain kiya,शिकायत,complaint,COMPLAINT_ESCALATE,segment,draft
+L060,hi,jang,jang|zang|jang lag gaya,जंग,rust,QUALITY_ISSUE,flag,draft
+L061,hi,toot raha,toot raha|toot gaya|crack ho gaya,टूट रहा,breaking or cracking,QUALITY_ISSUE,flag,draft
+L062,hi,khush,khush|santusht|badhiya|accha maal,खुश / संतुष्ट,happy / satisfied,HAPPY_CUSTOMER,segment,draft
+L063,hi,thekedar,thekedar|thekedaar|theka,ठेकेदार,contractor,BULK_PROJECT,flag,draft
+L064,hi,raj mistri,raj mistri|rajmistri|mistri,राज मिस्त्री,(head) mason,MASON,entity,draft
+L065,hi,chhat dhalai,chhat dhalai|chhat ki dhalai|lenter|lintel dhalai|lantar,छत ढलाई / लेंटर,roof or lintel casting,SITE_PIPELINE,segment,draft
+L066,hi,neev,neev|niv|foundation ka kaam,नींव,foundation stage,SITE_STAGE_FOUNDATION,flag,draft
+L067,hi,kaam chal raha,kaam chal raha|kaam chalu hai|kaam shuru,काम चल रहा,work is ongoing,SITE_PIPELINE,segment,draft
+L068,hi,kaam band,kaam band|kaam ruka|kaam band hai,काम बंद,work has stopped,CONSTRUCTION_PAUSED,flag,draft
+L069,hi,majdoor nahi,majdoor nahi|labour nahi|mazdoor nahi,मजदूर नहीं,no labour available,CONSTRUCTION_PAUSED,flag,draft
+L070,hi,barsaat,barsaat|baarish,बरसात / बारिश,rain / monsoon,CONSTRUCTION_PAUSED,flag,draft
+L071,hi,nayi site,nayi site|naya kaam|naya party|nayi party,नई साइट / नई पार्टी,new site / new customer,NEW_LEAD,segment,draft
+L072,hi,order pakka,order pakka|pakka order|order de diya|order dega,ऑर्डर पक्का,order confirmed,HOT_ORDER,segment,draft
+L073,hi,soch ke batayega,soch ke batayega|sochenge|baad mein batayega,सोच के बताएगा,will think and decide (undecided),UNDECIDED,flag,draft
+L074,hi,agle hafte,agle hafte|agle week,अगले हफ्ते,next week,FOLLOW_UP,flag,draft
+L075,hi,kal,kal,कल,tomorrow OR yesterday (ambiguous),FOLLOW_UP,flag,ambiguous
+L076,hi,inaam,inaam|inam|gift chahiye,इनाम,gift / reward,SCHEME_ASK,flag,draft
+L077,mixed,party,party|parti,পার্টি / पार्टी,customer (trade slang),CUSTOMER,entity,draft
+L078,mixed,pakka,pakka|paka|confirm,পাক্কা / पक्का,confirmed,HOT_ORDER,segment,draft
+L079,mixed,maal,maal|mal,মাল / माल,goods / stock,PRODUCT,entity,draft
+L080,mixed,dalal,dalal|broker|middleman,দালাল / दलाल,broker / middleman,CHANNEL,entity,draft
+L081,mixed,commission,commission|commision|cut money,,commission / kickback ask,SCHEME_ASK,flag,draft
+L082,mixed,quintal,quintal|kuintal|qtl,কুইন্টাল / क्विंटल,100 kg (0.1 MT),QUANTITY_UNIT,unit,draft
+L083,mixed,gaadi,gaadi|gari|truck load,গাড়ি / गाड़ी,truckload (size varies; ask for MT),QUANTITY_UNIT,unit,ambiguous
+L084,en,mt,mt|metric ton|metric tonne|ton|tonne|tons,,metric tonne,QUANTITY_UNIT,unit,verified
+L085,en,bundle,bundle|bandil|bundil,,bundle of bars,QUANTITY_UNIT,unit,verified
+L086,en,fe 500d,fe 500d|fe500d|500d,,TMT grade Fe 500D,PRODUCT_GRADE,entity,verified
+L087,en,fe 550d,fe 550d|fe550d|550d,,TMT grade Fe 550D,PRODUCT_GRADE,entity,verified
+L088,en,binding wire,binding wire|binding tar|bandhai tar,,binding wire,PRODUCT,entity,verified
+L089,en,test certificate,test certificate|tc|mill certificate|lab report,,quality test certificate,QUALITY_PROOF,flag,verified
+L090,en,bis,bis|isi|is 1786|isi mark,,BIS / IS 1786 standard mark,QUALITY_PROOF,flag,verified
+L091,en,pop,pop|point of purchase|poster|signboard|wall painting|display board,,branding material,BRANDING_NEEDED,flag,verified
+L092,en,lintel,lintel|plinth|column|beam|slab|casting,,construction element / stage,SITE_PIPELINE,segment,verified
+L093,en,outstanding,outstanding|overdue|due amount|pending payment,,unpaid amount,PAYMENT,segment,verified
+L094,en,cheque bounce,cheque bounce|check bounce|cheque return,,payment failed,CREDIT_RISK,flag,verified
+L095,en,advance,advance|advance payment|full payment,,paid before delivery,PAYMENT_RECEIVED,flag,verified
+L096,en,scheme,scheme|offer|mason meet|loyalty points|reward,,trade scheme or offer,SCHEME_ASK,flag,verified
+L097,en,builder,builder|developer|apartment|project site|bulk order,,large project buyer,BULK_PROJECT,flag,verified
+L098,en,tender,tender|pwd|panchayat|government work|school building,,government or institutional project,GOVT_LEAD,flag,verified
+L099,en,new dealer,new dealer|dealership|stockist|distributorship,,wants to become a dealer,NEW_DEALER_INTEREST,flag,verified
+L100,brand,shyam,shyam|shyam steel|shyam sariya|shyam rod,,Shyam Steel (competitor),COMPETITOR:SHYAM,entity,ambiguous
+L101,brand,srmb,srmb|s r m b|es ar em bi|srmb steel,,SRMB Steel (competitor),COMPETITOR:SRMB,entity,verified
+L102,brand,rashmi,rashmi|rashmi steel|rashmi tmt,,Rashmi (competitor),COMPETITOR:RASHMI,entity,verified
+L103,brand,kamdhenu,kamdhenu|kamdhenu steel|kamdhenu sariya,,Kamdhenu (competitor),COMPETITOR:KAMDHENU,entity,verified
+L104,brand,tata tiscon,tata tiscon|tiscon|tata steel|tata rod|tata sariya,,Tata Tiscon (competitor),COMPETITOR:TATA,entity,verified
+L105,brand,jsw neosteel,jsw|jsw neosteel|neosteel,,JSW Neosteel (competitor),COMPETITOR:JSW,entity,verified
+L106,brand,jindal panther,jindal|jindal panther|panther,,Jindal Panther (competitor),COMPETITOR:JINDAL,entity,verified
+L107,brand,captain,captain|captain steel|captain tmt,,Captain Steel (competitor),COMPETITOR:CAPTAIN,entity,verified
+L108,brand,maithan,maithan|maithan steel|maithan tmt,,Maithan (competitor),COMPETITOR:MAITHAN,entity,verified
+L109,brand,sail,sail|sail tmt|sail rod,,SAIL (competitor),COMPETITOR:SAIL,entity,verified
+L110,brand,vizag,vizag|rinl|vizag steel,,RINL Vizag Steel (competitor),COMPETITOR:VIZAG,entity,verified
+L111,brand,elegant,elegant|elegant steel|elegant tmt|elegant rod|elegant sariya,,Elegant Steel (our brand),OUR_BRAND,entity,verified
