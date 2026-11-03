@@ -4,7 +4,7 @@
  * nothing here runs on the server.
  *
  * What it owns
- *   Earth, cloud shell, atmosphere glow, stars   built once; textures are loaded from same-origin files.
+ *   Earth, cloud shell, atmosphere glow          built once; textures are loaded from same-origin files.
  *   overlay meshes                               built lazily, once per feature, cached, released on dispose.
  *   camera pose                                  a CameraController (camera.ts); the globe is rotated, not the camera.
  *   frame loop                                   renders only while something moves or changed, so a held view is idle.
@@ -14,7 +14,6 @@
 
 import {
   BackSide,
-  BufferAttribute,
   BufferGeometry,
   CircleGeometry,
   Color,
@@ -27,10 +26,7 @@ import {
   Mesh,
   MeshBasicMaterial,
   NoColorSpace,
-  NormalBlending,
   PerspectiveCamera,
-  Points,
-  PointsMaterial,
   Quaternion,
   RingGeometry,
   Raycaster,
@@ -52,11 +48,14 @@ import { LineSegmentsGeometry } from "three/examples/jsm/lines/LineSegmentsGeome
 import { CameraController, IDLE_POSE_LAT, type FlightKind } from "./camera";
 import {
   angularDistance,
+  clamp,
   distanceForBox,
   boxCentre,
   faceRotation,
   homeDistance,
   lngLatToVector,
+  MAX_DIST,
+  MIN_DIST,
   smootherstep,
   vectorToLngLat,
   type Pose,
@@ -82,6 +81,9 @@ export interface RendererOptions {
 }
 
 export const FOV = 32;
+
+/** How much of the shorter side of the stage the whole Earth fills at rest. The glow reaches a little beyond it. */
+export const HOME_FILL = 0.88;
 
 // Layering. Every overlay sits at one radius, just above the sphere, and render order stacks them. Separate radii
 // would shift the layers against each other (parallax) when the camera is close: at the closest zoom a height
@@ -140,17 +142,6 @@ interface LabelItem {
   radius: number;
 }
 
-function mulberry32(seed: number): () => number {
-  let a = seed;
-  return () => {
-    a |= 0;
-    a = (a + 0x6d2b79f5) | 0;
-    let t = Math.imul(a ^ (a >>> 15), 1 | a);
-    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
-    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-  };
-}
-
 export function webglAvailable(): boolean {
   try {
     const canvas = document.createElement("canvas");
@@ -180,7 +171,6 @@ export class GlobeRenderer {
   private readonly scene = new Scene();
   private readonly view: PerspectiveCamera;
   private readonly earth = new Group();
-  private readonly stars: Points;
   private readonly labelLayer: HTMLDivElement;
   private readonly textures: Texture[] = [];
   private readonly disposables: Array<{ dispose(): void }> = [];
@@ -288,8 +278,6 @@ export class GlobeRenderer {
       vertexShader: GLOW_VERTEX,
       fragmentShader: GLOW_FRAGMENT,
       side: BackSide,
-      // Normal, not additive: added light vanishes against the light background, a tint shows.
-      blending: NormalBlending,
       transparent: true,
       depthWrite: false,
       uniforms: { uSunDir: { value: SUN.clone() }, uThickness: { value: 0.16 }, uFade: { value: 1 } },
@@ -300,31 +288,7 @@ export class GlobeRenderer {
     this.scene.add(glow);
     this.disposables.push(glowGeometry, this.glowMaterial);
 
-    // Stars: restrained, fixed in space, deterministic.
-    const random = mulberry32(20260101);
-    const count = 1400;
-    const positions = new Float32Array(count * 3);
-    const colours = new Float32Array(count * 3);
-    for (let i = 0; i < count; i++) {
-      const u = random() * 2 - 1;
-      const t = random() * Math.PI * 2;
-      const r = Math.sqrt(1 - u * u);
-      positions.set([r * Math.cos(t) * 90, u * 90, r * Math.sin(t) * 90], i * 3);
-      const level = 0.25 + Math.pow(random(), 3) * 0.75;
-      const tint = random();
-      colours.set([level * (0.85 + 0.15 * tint), level * 0.92, level * (1 - 0.1 * tint)], i * 3);
-    }
-    const starGeometry = new BufferGeometry();
-    starGeometry.setAttribute("position", new BufferAttribute(positions, 3));
-    starGeometry.setAttribute("color", new BufferAttribute(colours, 3));
-    const starMaterial = new PointsMaterial({ size: 1.3, sizeAttenuation: false, vertexColors: true, transparent: true, opacity: 0.85, depthWrite: false });
-    this.stars = new Points(starGeometry, starMaterial);
-    this.stars.renderOrder = -1;
-    // The globe sits on a light background, where stars would only read as grey specks.
-    this.stars.visible = false;
-    this.scene.add(this.stars);
-    this.disposables.push(starGeometry, starMaterial);
-
+    // No starfield: the page draws a soft sky behind the transparent canvas, and the Earth stays the only subject.
     this.scene.add(this.earth);
 
     // Overlay layers (empty until revealed).
@@ -384,11 +348,12 @@ export class GlobeRenderer {
   static async create(host: HTMLElement, events: RendererEvents, options: RendererOptions, onProgress?: (fraction: number) => void): Promise<GlobeRenderer> {
     let renderer: WebGLRenderer;
     try {
-      renderer = new WebGLRenderer({ antialias: true, alpha: false, powerPreference: "high-performance" });
+      renderer = new WebGLRenderer({ antialias: true, alpha: true, powerPreference: "high-performance" });
     } catch {
       throw new Error("WebGL is not available in this browser.");
     }
-    renderer.setClearColor(0xf8fafc, 1);
+    // Transparent, so the sky gradient behind the canvas (GlobeExperience) is the background.
+    renderer.setClearColor(0x000000, 0);
     renderer.outputColorSpace = SRGBColorSpace;
 
     const nav = navigator as Navigator & { deviceMemory?: number };
@@ -433,7 +398,7 @@ export class GlobeRenderer {
   // ------------------------------------------------------------------ view --
 
   private homePose(): Pose {
-    return { lng: this.camera.pose.lng, lat: IDLE_POSE_LAT, dist: homeDistance(FOV, this.width / Math.max(this.height, 1)) };
+    return { lng: this.camera.pose.lng, lat: IDLE_POSE_LAT, dist: homeDistance(FOV, this.width / Math.max(this.height, 1), HOME_FILL) };
   }
 
   get aspect(): number {
@@ -454,6 +419,12 @@ export class GlobeRenderer {
   flyHome(): void {
     this.camera.flyTo(this.homePose(), "home");
     this.dirty = true;
+  }
+
+  /** Moves the camera closer (factor below 1) or further (above 1) along the line it is on, within the camera's limits. */
+  zoomBy(factor: number): void {
+    const pose = this.camera.pose;
+    this.flyTo({ lng: pose.lng, lat: pose.lat, dist: clamp(pose.dist * factor, MIN_DIST, MAX_DIST) });
   }
 
   setReducedMotion(value: boolean): void {
@@ -512,7 +483,7 @@ export class GlobeRenderer {
     this.earth.add(group);
     this.disposables.push(dotGeometry, ringGeometry, dotMaterial, ringMaterial);
     const label = document.createElement("span");
-    label.className = "absolute left-0 top-0 whitespace-nowrap rounded bg-navy-950/70 px-1.5 py-0.5 text-[11px] font-semibold leading-none text-white opacity-0 transition-opacity duration-300";
+    label.className = "absolute left-0 top-0 whitespace-nowrap rounded-md border border-line bg-white/95 px-1.5 py-0.5 text-[11px] font-semibold leading-none text-ink opacity-0 shadow-sm transition-opacity duration-300";
     label.textContent = target.name;
     this.labelLayer.appendChild(label);
     this.marker = { group, ring, ref: target.ref, lng: target.lng, lat: target.lat, label };
@@ -671,7 +642,8 @@ export class GlobeRenderer {
       );
       layer.progress = 0;
       this.startReveal(layer, 1);
-      this.layers.districts.dimTarget = 0.4;
+      // Context districts step back far enough that the satellite imagery stays readable around the opened district.
+      this.layers.districts.dimTarget = 0.18;
     }
     this.updateLabels();
   }
@@ -726,7 +698,7 @@ export class GlobeRenderer {
       for (const feature of layer.features) {
         if (!feature.anchor) continue;
         const element = document.createElement("span");
-        element.className = "absolute left-0 top-0 whitespace-nowrap text-[11px] font-medium leading-none text-white opacity-0 transition-opacity duration-300 [text-shadow:0_1px_3px_rgba(2,6,15,0.95),0_0_2px_rgba(2,6,15,0.9)]";
+        element.className = "absolute left-0 top-0 whitespace-nowrap text-[11px] font-semibold leading-none text-ink opacity-0 transition-opacity duration-300 [text-shadow:0_0_2px_#fff,0_0_3px_#fff,0_0_5px_rgba(255,255,255,0.95),0_0_8px_rgba(255,255,255,0.8)]";
         element.textContent = feature.name;
         this.labelLayer.appendChild(element);
         this.labels.push({ element, feature, radius: Math.hypot(feature.bbox[2] - feature.bbox[0], feature.bbox[3] - feature.bbox[1]) });

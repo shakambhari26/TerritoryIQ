@@ -68,6 +68,11 @@ export interface LabelPlanInput {
 }
 
 const MIN_BLOCK_RADIUS_PX = 4;
+/** Clear space kept between two district names, a little more than the placer's own minimum so crowded corners stay calm. */
+const NAME_GAP = 6;
+/** Below this zoom (the whole state drawn smaller than fitted) only districts at least this large on screen keep a name; the rest get a dot and are named on hover. */
+const DECLUTTER_BELOW = 0.85;
+const DECLUTTER_MIN_RADIUS_PX = 12;
 
 export function planLabels(input: LabelPlanInput): LabelPlan {
   const { model, anchors, context, viewport, size } = input;
@@ -97,7 +102,7 @@ export function planLabels(input: LabelPlanInput): LabelPlan {
   ): string[] => {
     const list = requests.filter((r): r is NonNullable<typeof r> => r !== null);
     if (list.length === 0) return [];
-    const result = placeLabels(list, { area, fontSize, mode, obstacles, avoid: input.avoid, maxLeader: LEADER_MAX });
+    const result = placeLabels(list, { area, fontSize, mode, obstacles, avoid: input.avoid, maxLeader: LEADER_MAX, gap: mode === "free" ? NAME_GAP : undefined });
     for (const placed of result.placed) {
       labels.push({ ...placed, kind: kindOf(placed.id), tone, fontSize });
       obstacles.push(placed.box);
@@ -106,10 +111,14 @@ export function planLabels(input: LabelPlanInput): LabelPlan {
   };
 
   // A district is named only when its outline is tied to it by the LGD district code.
-  const namedDistricts = input.districtIds.filter((id) => {
+  const lgdDistricts = input.districtIds.filter((id) => {
     const feature = model.featureById.get(id);
     return feature?.kind === "district" && feature.boundary?.basis === "lgd-district-code";
   });
+  // Zoomed out past the fit, small districts are given a dot instead of a name (the pointer still names them).
+  const declutter = context.districtId === null && input.zoomRatio < DECLUTTER_BELOW;
+  const tooSmall = (id: string) => declutter && (at(id)?.r ?? 0) < DECLUTTER_MIN_RADIUS_PX;
+  const namedDistricts = lgdDistricts.filter((id) => !tooSmall(id));
   const nameOf = (id: string) => model.featureById.get(id)?.name ?? id;
 
   if (context.districtId === null) {
@@ -134,7 +143,7 @@ export function planLabels(input: LabelPlanInput): LabelPlan {
       omitted.forEach((id, i) => boost.set(id, 1e6 + i));
     }
     labels.push(...best!.labels);
-    for (const id of best!.omitted) {
+    for (const id of [...best!.omitted, ...lgdDistricts.filter(tooSmall)]) {
       const p = at(id);
       if (p) hidden.push({ id, name: nameOf(id), at: { x: p.x, y: p.y } });
     }

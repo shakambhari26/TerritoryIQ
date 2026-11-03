@@ -20,10 +20,10 @@ export default function OverviewPage() {
         description="Company sales territories and their block rows, set against the blocks in the current Local Government Directory reference list (its total has not been independently verified). Allocated, confirmed unallocated, missing or unverified, and conflicting data are shown separately."
         aside={
           <div className="flex items-center gap-2">
-            <Badge>Local prototype</Badge>
+            <Badge tone="warning">Local prototype</Badge>
             <Link
               href="/workspace"
-              className="inline-flex items-center rounded-md bg-navy-950 px-3 py-2 text-sm font-semibold text-on-navy hover:bg-navy-800"
+              className="inline-flex items-center rounded-lg bg-primary px-3 py-2 text-sm font-semibold text-white hover:bg-primary-hover"
             >
               Open the workspace
             </Link>

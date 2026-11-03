@@ -29,6 +29,7 @@ import { DetailsPanel } from "./DetailsPanel";
 import { DistrictNavigator, type NavigatorPins } from "./DistrictNavigator";
 import { GeoMap, type LayerLoad } from "./GeoMap";
 import { LocalChangesBar } from "./LocalChangesBar";
+import { MapKpiStrip } from "./MapKpiStrip";
 import { MapLegend } from "./MapLegend";
 import { MapToolbar } from "./MapToolbar";
 import { RAIL_SHOWS_PANEL_CLOSED, RAIL_SHOWS_PANEL_OPEN } from "./layout-classes";
@@ -192,14 +193,19 @@ export function Workspace({ dataset }: { dataset: TerritoryDataset }) {
   const describe = useCallback(
     (featureId: string) => {
       const feature = model.featureById.get(featureId);
-      if (!feature) return { title: featureId, detail: "" };
+      if (!feature) return { title: featureId, detail: "", brief: "" };
       if (feature.kind === "district") {
         const blocks = model.districtRollup.get(featureId)?.blocks ?? 0;
-        return { title: feature.name, detail: `District · ${STATE_NAME} · ${blocks} ${blocks === 1 ? "block" : "blocks"}` };
+        const count = `${blocks} ${blocks === 1 ? "block" : "blocks"}`;
+        return { title: feature.name, detail: `District · ${STATE_NAME} · ${count}`, brief: `District · ${count}` };
       }
       const allocation = model.featureAllocation.get(featureId)!;
       const district = model.featureById.get(feature.districtId!)?.name ?? "";
-      return { title: feature.name, detail: `Block · ${district} district · ${ALLOCATION_STATE_LABEL[allocation.state]} · provisional outline` };
+      return {
+        title: feature.name,
+        detail: `Block · ${district} district · ${ALLOCATION_STATE_LABEL[allocation.state]} · provisional outline`,
+        brief: `Block · ${ALLOCATION_STATE_LABEL[allocation.state]}`,
+      };
     },
     [model],
   );
@@ -266,7 +272,7 @@ export function Workspace({ dataset }: { dataset: TerritoryDataset }) {
         {announcement}
       </p>
 
-      <div className={cn("@container grid gap-4 lg:gap-6", detailsOpen ? "lg:grid-cols-[minmax(0,1fr)_26rem] xl:grid-cols-[minmax(0,1fr)_30rem]" : "lg:grid-cols-[minmax(0,1fr)]")}>
+      <div className={cn("@container grid gap-4 lg:gap-5", detailsOpen ? "lg:grid-cols-[minmax(0,1fr)_20rem] xl:grid-cols-[minmax(0,1fr)_22rem]" : "lg:grid-cols-[minmax(0,1fr)]")}>
         <div className="min-w-0 lg:col-start-1 lg:row-start-1">
           <MapWorkspace
             title="Territory map"
@@ -274,7 +280,7 @@ export function Workspace({ dataset }: { dataset: TerritoryDataset }) {
               <aside
                 aria-label="District navigator"
                 data-testid="district-rail"
-                className={cn("hidden w-64 shrink-0 flex-col border-r border-line bg-surface/80", detailsOpen ? RAIL_SHOWS_PANEL_OPEN : RAIL_SHOWS_PANEL_CLOSED)}
+                className={cn("hidden w-64 shrink-0 flex-col overflow-hidden rounded-xl bg-surface", detailsOpen ? RAIL_SHOWS_PANEL_OPEN : RAIL_SHOWS_PANEL_CLOSED)}
               >
                 {renderNavigator("rail")}
               </aside>
@@ -331,17 +337,27 @@ export function Workspace({ dataset }: { dataset: TerritoryDataset }) {
                     </p>
                   ) : null}
                   {gapNotice ? (
-                    <p role="status" data-testid="map-gap-notice" className="border-l-2 border-amber-400/60 pl-2 text-ink">
+                    <p role="status" data-testid="map-gap-notice" className="border-l-2 border-warn pl-2 text-ink">
                       {gapNotice}
                     </p>
                   ) : null}
                 </>
               ) : undefined
             }
+            kpis={<MapKpiStrip summary={model.summary} territories={dataset.salesTerritories.length} />}
             footer={
-              <MapLegend
+              <>
+                {selection ? (
+                  <button
+                    type="button"
+                    onClick={openDetails}
+                    className="mb-1.5 inline-flex h-8 items-center rounded-lg border border-line-strong bg-surface px-3 text-xs font-medium text-ink hover:bg-surface-muted lg:hidden"
+                  >
+                    Details ↓
+                  </button>
+                ) : null}
+                <MapLegend
                 meta={layer?.meta ?? null}
-                layerMode={layerMode}
                 pins={layer && pins.length > 0 ? { kind: pinSet.mode === "territory" ? "territory" : "block", count: pins.length } : null}
                 coverage={{
                   districtsDrawn: model.summary.districts.withBoundary,
@@ -349,7 +365,8 @@ export function Workspace({ dataset }: { dataset: TerritoryDataset }) {
                   blocksDrawn: model.summary.blocks.withBoundary,
                   blocksTotal: model.summary.blocks.total,
                 }}
-              />
+                />
+              </>
             }
           >
             <GeoMap
@@ -361,6 +378,7 @@ export function Workspace({ dataset }: { dataset: TerritoryDataset }) {
               qualityOf={qualityOf}
               highlighted={highlighted}
               focusId={focusId}
+              selectionKey={selectionToHash(selection)}
               dimOthers={dimOthers}
               describe={describe}
               revealToken={revealToken}
@@ -372,30 +390,23 @@ export function Workspace({ dataset }: { dataset: TerritoryDataset }) {
               onShowUnit={showUnit}
               onShowTerritory={showTerritory}
               hoverFeatureId={navHover}
+              keyPins={layer && pins.length > 0 ? { kind: pinSet.mode === "territory" ? "territory" : "block", count: pins.length } : null}
             />
             {layer ? (
               <p
                 role="status"
                 data-testid="map-provisional"
-                className="pointer-events-none absolute left-3 top-3 z-10 rounded-md bg-amber-50/95 px-2 py-1 text-[0.6875rem] font-medium leading-4 text-amber-800 ring-1 ring-amber-500/50 backdrop-blur"
+                className="pointer-events-none absolute left-3 top-3 z-10 rounded-full bg-surface px-2.5 py-1 text-[0.6875rem] font-semibold leading-4 text-warn-ink shadow-float ring-1 ring-warn-line"
               >
                 Provisional boundaries
               </p>
             ) : null}
-            {selection ? (
-              <button
-                type="button"
-                onClick={openDetails}
-                className="absolute bottom-3 right-3 z-10 rounded-lg border border-line-strong bg-surface/90 px-3 py-1.5 text-xs font-medium text-ink shadow-lg hover:bg-surface-muted lg:hidden"
-              >
-                Details ↓
-              </button>
-            ) : null}
+
           </MapWorkspace>
         </div>
 
         <div id={detailsId} className={cn("min-w-0 scroll-mt-20 lg:col-start-2 lg:row-span-2 lg:row-start-1 lg:self-start", !detailsOpen && "hidden")}>
-          <div className="lg:sticky lg:top-20 lg:max-h-[calc(100dvh-6rem)] lg:overflow-y-auto lg:rounded-2xl">
+          <div className="lg:rounded-card">
             <DetailsPanel
               model={model}
               selection={selection}

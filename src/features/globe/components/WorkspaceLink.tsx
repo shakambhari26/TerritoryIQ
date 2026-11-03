@@ -13,7 +13,7 @@ export function WorkspaceLink({ href, label = "Open in 2D workspace", testId = "
       href={href}
       prefetch={false}
       data-testid={testId}
-      className="inline-flex items-center gap-1.5 rounded-md border border-accent/40 bg-accent-soft px-3 py-1.5 text-xs font-semibold text-ink hover:border-accent"
+      className="inline-flex items-center gap-1.5 rounded-lg border border-primary/30 bg-primary-soft px-3 py-1.5 text-xs font-semibold text-primary-ink hover:border-primary"
     >
       {label}
       <span aria-hidden="true">{"→"}</span>

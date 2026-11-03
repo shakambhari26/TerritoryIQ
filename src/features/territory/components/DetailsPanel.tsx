@@ -4,6 +4,7 @@ import type { ReactNode } from "react";
 import type { Change } from "@/features/allocation/overlay";
 import { Badge } from "@/components/ui/Badge";
 import { Card } from "@/components/ui/Card";
+import { InfoTip } from "@/components/ui/InfoTip";
 import {
   COVERAGE_LABEL,
   LINK_LABEL,
@@ -53,7 +54,7 @@ function RowButton({ onClick, children }: { onClick: () => void; children: React
     <button
       type="button"
       onClick={onClick}
-      className="flex w-full items-center justify-between gap-2 rounded-md border border-line bg-surface px-2.5 py-1.5 text-left text-sm hover:bg-surface-muted"
+      className="flex w-full items-center justify-between gap-2 rounded-lg border border-line bg-surface px-2.5 py-1.5 text-left text-sm hover:border-primary/40 hover:bg-canvas"
     >
       {children}
     </button>
@@ -127,7 +128,7 @@ function UnitDetails({ model, id, shapeIds, layerReady, changes, onSelect, submi
   const drawn = feature ? shapeIds.has(feature.id) : false;
 
   return (
-    <div className="space-y-4" data-testid="details-unit" data-unit-id={id}>
+    <div className="space-y-5" data-testid="details-unit" data-unit-id={id}>
       <header>
         <p className="text-xs text-ink-muted">
           Workbook row {unit.sourceRow} · {id}
@@ -142,13 +143,14 @@ function UnitDetails({ model, id, shapeIds, layerReady, changes, onSelect, submi
 
       <Section title="Sales territory">
         <p>
-          <button type="button" className="font-semibold text-accent-ink underline-offset-2 hover:underline" onClick={() => onSelect({ kind: "territory", id: territory.id })}>
+          <button type="button" className="font-semibold text-primary-ink underline-offset-2 hover:underline" onClick={() => onSelect({ kind: "territory", id: territory.id })}>
             {territory.label}
           </button>
         </p>
-        <p className="text-xs text-ink-muted">
-          This is the company’s own grouping (the workbook’s DISTRICT column). It is not an administrative district and was never used to find geography.
-        </p>
+        <details className="text-xs leading-5 text-ink-muted">
+          <summary className="cursor-pointer font-medium text-primary-ink">What is a sales territory?</summary>
+          <p className="mt-1">This is the company’s own grouping (the workbook’s DISTRICT column). It is not an administrative district and was never used to find geography.</p>
+        </details>
       </Section>
 
       <Section title="Why this state">
@@ -279,7 +281,10 @@ function GeoConfidence({ model, districtId, shapeIds }: { model: TerritoryModel;
           No outline for {quality.withoutOutline.map((id) => model.featureById.get(id)?.name ?? id).join(", ")}. They are listed below and show as dotted gaps on the map, which is missing geography and not unallocated area.
         </Note>
       ) : null}
-      <p className="text-xs text-ink-muted">Block-to-district parentage is the district code printed in the LGD block report. Outlines are matched to blocks by name and stay provisional.</p>
+      <details className="text-xs leading-5 text-ink-muted">
+        <summary className="cursor-pointer font-medium text-primary-ink">How blocks are matched</summary>
+        <p className="mt-1">Block-to-district parentage is the district code printed in the LGD block report. Outlines are matched to blocks by name and stay provisional.</p>
+      </details>
     </div>
   );
 }
@@ -292,7 +297,7 @@ function FeatureDetails({ model, id, shapeIds, layerReady, onSelect }: DetailsPa
     const roll = model.districtRollup.get(id)!;
     const blocks = model.dataset.features.filter((f) => f.kind === "block" && f.districtId === id);
     return (
-      <div className="space-y-4" data-testid="details-district" data-feature-id={id}>
+      <div className="space-y-5" data-testid="details-district" data-feature-id={id}>
         <header>
           <p className="text-xs text-ink-muted">Official district · LGD code {feature.lgdCode} · {id}</p>
           <h3 className="mt-0.5 text-lg font-semibold text-ink">{feature.name}</h3>
@@ -300,9 +305,12 @@ function FeatureDetails({ model, id, shapeIds, layerReady, onSelect }: DetailsPa
             <Badge>{shapeIds.has(id) ? "Outline available" : layerReady ? "No outline" : "Layer not loaded"}</Badge>
           </div>
         </header>
-        <Note>
-          This is an official administrative district. The company’s sales territories (the workbook’s DISTRICT labels) are a different grouping and are not joined to it.
-        </Note>
+        <details className="rounded-lg border border-line bg-canvas px-3 py-2 text-xs leading-5 text-ink-muted">
+          <summary className="cursor-pointer font-medium text-primary-ink">Districts and sales territories</summary>
+          <p className="mt-1.5">
+            This is an official administrative district. The company’s sales territories (the workbook’s DISTRICT labels) are a different grouping and are not joined to it.
+          </p>
+        </details>
         <Section title={`Blocks in this district (${blocks.length})`}>
           {blocks.length === 0 ? (
             <p className="text-ink-muted">The LGD block report lists no block under this district. Any urban units or wards are not in the supplied data, so nothing is drawn or counted for them.</p>
@@ -313,7 +321,7 @@ function FeatureDetails({ model, id, shapeIds, layerReady, onSelect }: DetailsPa
                 {roll.withBoundary} of {roll.blocks} blocks have a provisional outline. The counts roll up by block, not by sales-territory label.
               </p>
               <GeoConfidence model={model} districtId={id} shapeIds={shapeIds} />
-              <ul className="max-h-64 space-y-1 overflow-y-auto pr-1">
+              <ul className="space-y-1">
                 {blocks.map((block) => (
                   <li key={block.id}>
                     <RowButton onClick={() => onSelect({ kind: "feature", id: block.id })}>
@@ -333,7 +341,7 @@ function FeatureDetails({ model, id, shapeIds, layerReady, onSelect }: DetailsPa
   const allocation = model.featureAllocation.get(id)!;
   const drawn = shapeIds.has(id);
   return (
-    <div className="space-y-4" data-testid="details-feature" data-feature-id={id}>
+    <div className="space-y-5" data-testid="details-feature" data-feature-id={id}>
       <header>
         <p className="text-xs text-ink-muted">Official block · LGD code {feature.lgdCode} · {id}</p>
         <h3 className="mt-0.5 text-lg font-semibold text-ink">{feature.name}</h3>
@@ -405,7 +413,7 @@ function FeatureDetails({ model, id, shapeIds, layerReady, onSelect }: DetailsPa
           <>
             <p>
               Outline from OpenStreetMap relation{" "}
-              <a className="font-medium text-accent-ink underline" href={`https://www.openstreetmap.org/relation/${feature.boundary.relationId}`} target="_blank" rel="noopener noreferrer">
+              <a className="font-medium text-primary-ink underline" href={`https://www.openstreetmap.org/relation/${feature.boundary.relationId}`} target="_blank" rel="noopener noreferrer">
                 {feature.boundary.relationId}
               </a>
               , matched to this official block by exact name within its district. Provisional and unreviewed.
@@ -427,7 +435,7 @@ function TerritoryDetails({ model, id, shapeIds, onSelect }: DetailsPanelProps &
     return !(fid && shapeIds.has(fid));
   });
   return (
-    <div className="space-y-4" data-testid="details-territory" data-territory-id={id}>
+    <div className="space-y-5" data-testid="details-territory" data-territory-id={id}>
       <header>
         <p className="text-xs text-ink-muted">Sales territory · {id}</p>
         <h3 className="mt-0.5 text-lg font-semibold text-ink">{territory.label}</h3>
@@ -446,7 +454,7 @@ function TerritoryDetails({ model, id, shapeIds, onSelect }: DetailsPanelProps &
         </p>
       </Section>
       <Section title="Rows">
-        <ul className="max-h-72 space-y-1 overflow-y-auto pr-1">
+        <ul className="space-y-1">
           {territory.unitIds.map((uid) => {
             const unit = model.unitById.get(uid)!;
             const fid = model.links.get(uid)!.featureId;
@@ -468,23 +476,60 @@ function TerritoryDetails({ model, id, shapeIds, onSelect }: DetailsPanelProps &
   );
 }
 
+/** One headline figure with its denominator named, so the two counts on this panel are never read as the same metric. */
+function Metric({ title, value, unit, note, hint, align }: { title: string; value: string; unit: string; note: string; hint: ReactNode; align: "left" | "right" }) {
+  return (
+    <div className="rounded-xl border border-line bg-canvas p-3" data-testid={`metric-${title.toLowerCase().replace(/\s+/g, "-")}`}>
+      <p className="flex items-center gap-0.5 text-[0.6875rem] font-semibold uppercase tracking-wider text-ink-muted">
+        {title}
+        <InfoTip label={`About ${title}`} align={align}>
+          {hint}
+        </InfoTip>
+      </p>
+      <p className="mt-0.5 text-2xl font-semibold leading-8 tracking-tight tabular-nums text-ink">{value}</p>
+      <p className="text-xs font-medium text-ink">{unit}</p>
+      <p className="mt-0.5 text-xs leading-4 text-ink-muted">{note}</p>
+    </div>
+  );
+}
+
 function NothingSelected({ model, districtList }: { model: TerritoryModel; districtList?: ReactNode }) {
   const s = model.summary;
   return (
-    <div className="space-y-4" data-testid="details-empty">
-      <div className="rounded-lg border-l-4 border-gold-400 bg-gold-50 px-4 py-3">
-        <p className="text-xs font-semibold uppercase tracking-wide text-gold-700">Selection</p>
-        <p className="mt-1 text-sm text-ink">Nothing selected. Choose an outline on the map or an area from the list. Both select by internal ID.</p>
+    <div className="space-y-5" data-testid="details-empty">
+      <div className="flex gap-3 rounded-xl border border-primary/20 bg-primary-soft p-3.5">
+        <svg aria-hidden="true" focusable="false" viewBox="0 0 20 20" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" className="mt-0.5 shrink-0 text-primary-ink">
+          <path d="M5 3.5 15.5 9l-4.3 1.5L9.5 15 5 3.5Z" />
+        </svg>
+        <div>
+          <p className="text-[0.6875rem] font-semibold uppercase tracking-wider text-primary-ink">Selection</p>
+          <p className="mt-0.5 text-sm text-ink">Nothing selected. Choose an outline on the map or an area from the list. Both select by internal ID.</p>
+        </div>
       </div>
-      <Section title="What you are looking at">
-        <p>
-          {plural(s.units.total, "workbook row")} under {plural(model.dataset.salesTerritories.length, "sales territory", "sales territories")}, set against {plural(s.blocks.total, "block")} in the current reference list (a Local Government Directory extract).
-        </p>
-        <p className="text-xs text-ink-muted">
+      <section aria-label="Figures on this map" className="space-y-2">
+        <div className="grid grid-cols-2 gap-2">
+          <Metric
+            title="Block Coverage"
+            value={formatCount(s.blocks.total)}
+            unit="reference blocks"
+            note={`${formatCount(s.blocks.withBoundary)} have a provisional outline`}
+            align="left"
+            hint="Blocks in the current reference list (a Local Government Directory extract). The total has not been independently verified as the official total."
+          />
+          <Metric
+            title="Workbook Records"
+            value={formatCount(s.units.total)}
+            unit="source records"
+            note={`under ${plural(model.dataset.salesTerritories.length, "sales territory", "sales territories")}`}
+            align="right"
+            hint="Rows in the company workbook. This is a different count from the reference blocks, and the two are not reconciled here."
+          />
+        </div>
+        <p className="text-xs leading-5 text-ink-muted">
           {formatCount(s.blocks.withBoundary)} of {formatCount(s.blocks.total)} blocks in the reference list and {formatCount(s.districts.withBoundary)} districts have provisional outlines. Everything else is listed without a drawn boundary rather than given an invented one. The block total has not been independently verified as the official total.
         </p>
-      </Section>
-      <Section title="Rows by allocation state">
+      </section>
+      <Section title="Records by allocation state">
         <StateBar counts={s.units.byState} total={s.units.total} label="Workbook rows" compact />
       </Section>
       {districtList ? (
@@ -509,8 +554,8 @@ export function DetailsPanel(props: DetailsPanelProps) {
 
   return (
     <Card as="aside" aria-label="Details" className="flex flex-col" data-testid="details-panel">
-      <header className="flex items-center justify-between gap-3 border-b border-line px-5 py-3">
-        <h2 className="text-sm font-semibold text-ink">Details</h2>
+      <header className="sticky top-0 z-10 flex min-h-14 items-center justify-between gap-3 rounded-t-card border-b border-line bg-surface px-5 py-3">
+        <h2 className="text-base font-semibold tracking-tight text-ink">Details</h2>
         {props.selection && valid ? (
           <button type="button" className={buttonClass} onClick={() => props.onSelect(null)}>
             Clear selection

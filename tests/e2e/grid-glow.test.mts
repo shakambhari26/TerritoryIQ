@@ -391,10 +391,11 @@ describe("coordinate grid toggle and selection glow in a real browser", { skip: 
         highlightCount: document.querySelectorAll("[data-highlight]").length,
       };
     });
-    assert.deepEqual(layers.order, ["glow", "glow", "casing", "line"], "every glow first, then the wash and casing, then the orange line on top");
-    assert.equal(layers.glowStroke, "#E8622A");
+    assert.deepEqual(layers.order, ["glow", "glow", "casing", "line"], "every glow first, then the wash and casing, then the blue line on top");
+    // The selection colour is the light theme's primary blue (map-style.ts SELECTED); orange is now only the representative pin.
+    assert.equal(layers.glowStroke, "#2563EB");
     assert.equal(layers.glowFill, "none", "the glow is a halo and adds no fill over the area");
-    assert.equal(layers.lineStroke, "#E8622A");
+    assert.equal(layers.lineStroke, "#2563EB");
     assert.ok(layers.lineWidth >= 2.5, "the line is as strong as before");
     assert.equal(layers.pointerEvents, "none", "the glow never takes a click");
     assert.equal(layers.glowCount, layers.highlightCount * 2, "every selected outline has both glow layers");
@@ -425,7 +426,8 @@ describe("coordinate grid toggle and selection glow in a real browser", { skip: 
     assert.ok(members > 1);
     assert.equal(await page.locator('path[data-glow="outer"]').count(), members);
     const widths = await page.locator('path[data-glow="outer"]').evaluateAll((els) => els.map((e) => Number(e.getAttribute("stroke-width"))));
-    assert.ok(widths.every((w) => w === 15), "member glow is the softer one");
+    // The map redesign (warm, restrained) made the glow a faint halo: members 8 wide, the single focus 12.
+    assert.ok(widths.every((w) => w === 8), "member glow is the softer one");
     await context.close();
   });
 

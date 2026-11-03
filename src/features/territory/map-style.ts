@@ -4,8 +4,9 @@
  * the same specs, so a swatch can never drift from what the map draws.
  *
  * Rules the palette follows:
- *   - Light surfaces with restrained fills; outlines and labels carry the map. Molten Orange is kept for
- *     the selection and the representative pins, and teal for assigned areas, so neither means anything else.
+ *   - A light, neutral geographic canvas; white block strokes and slate district outlines keep every boundary
+ *     readable, and dark labels carry a light halo. Blue is the selection, teal is "allocated", amber is conflicting
+ *     data, and orange is reserved for representative pins, so none of them means anything else.
  *   - Colour is never the only cue: every state that is not plainly "has data"
  *     also has a pattern, and every pattern has a text label in the legend.
  *   - Two different things look different. A block whose allocation is missing
@@ -24,58 +25,66 @@ export const MAP_LAYERS: ReadonlyArray<{ value: MapLayerMode; label: string; hin
   { value: "quality", label: "Data quality", hint: "How well each block is tied to the workbook" },
 ];
 
-/** Molten Orange (selected regions, representative pins) and the subtle teal for assigned areas. */
-export const EMBER = "#E8622A";
-export const TEAL = "#14B8A6";
+/** The selection (primary blue), the representative pin (orange) and the faint teal lift around the state. */
+export const SELECTED = "#2563EB";
+export const MARKER = "#EA580C";
+export const TEAL = "#0F8B78";
 
 export const MAP_COLOR = {
-  /** Near-white. A soft shade toward the edge (see `MAP_BACKDROP`) keeps the canvas from reading as a flat slab. */
-  canvas: "#f8fafc",
+  /** Warm off-white. The map is a flat sheet: no image, no gradient, no request. */
+  canvas: "#f0eee8",
   /** Orientation only, and off until asked for. Quiet even when on, so the outlines stay the first thing the eye finds. */
-  graticule: "rgba(71, 85, 105, 0.16)",
-  graticuleText: "#64748b",
-  /** Quiet grey-blue steps, cycled over districts so neighbours read as separate regions without colour. */
-  districtTints: ["#e8edf5", "#e4eaf3", "#ebf0f7", "#e6ecf4"],
-  districtContext: "#f1f5f9",
-  districtLine: "#94a3b8",
-  districtLineStrong: "#334155",
-  blockFill: "#dfe6f0",
-  blockLine: "#8796ad",
-  ink: "#0b1220",
-  inkSoft: "#475569",
-  halo: "#ffffff",
-  leader: "#64748b",
+  graticule: "rgba(107, 101, 88, 0.22)",
+  graticuleText: "#7a7466",
+  /** Warm paper steps, cycled over districts so neighbours read as separate regions without colour. */
+  districtTints: ["#ebe8e0", "#e8e5dc", "#edeae3", "#e9e6de"],
+  districtContext: "#eae7e0",
+  /** Thin, muted warm grey: boundaries stay visible and understated. */
+  districtLine: "#b4ae9f",
+  districtLineStrong: "#6d675a",
+  blockFill: "#f6f5f0",
+  /** Block outlines on the boundaries layer, where the fill is almost white. */
+  blockLine: "#cdc8bb",
+  /** Block outlines on a status fill (allocation, data quality): white, so each block reads as its own cell. */
+  blockLineOnFill: "#ffffff",
+  ink: "#1c2433",
+  inkSoft: "#5d5b54",
+  /** The light halo behind every name and dot. */
+  halo: "#f8f7f3",
+  leader: "#8a857a",
   selectedCasing: "#ffffff",
-  selected: EMBER,
-  selectedGlow: "rgba(232, 98, 42, 0.16)",
+  selected: SELECTED,
+  selectedGlow: "rgba(37, 99, 235, 0.07)",
 } as const;
 
-/** The canvas: a white centre shading slightly toward the edge, with no image and no request. */
-export const MAP_BACKDROP = "radial-gradient(125% 95% at 50% 42%, #ffffff 0%, #f8fafc 55%, #eef2f7 100%)";
+/** The canvas is flat: kept as a name so the map and its tests share one definition. */
+export const MAP_BACKDROP = "none";
 
-/** Pin colours. Orange marks a representative; the white ring and dark core keep it legible on every fill. */
+/** Pin colours. Orange marks a representative; the white ring and core keep it legible on every fill. */
 export const PIN_COLOR = {
-  body: EMBER,
-  bodyHover: "#f0763f",
+  body: MARKER,
+  bodyHover: "#f06a1f",
   ring: "#ffffff",
-  core: "#0b1220",
-  glow: "rgba(232, 98, 42, 0.45)",
+  core: "#ffffff",
+  glow: "rgba(234, 88, 12, 0.3)",
+  /** The selected marker: a dark outline around the same orange body. */
+  selectedRing: "#1c2433",
   /** Territory pins whose ASM names disagree, or blocks claimed by several rows, get an amber ring, not a new colour. */
-  contested: "#f2b84b",
+  contested: "#d97706",
 } as const;
 
 /**
- * A group of pins is neutral slate, never orange: orange means one representative (or the selection), so a count on a
- * badge cannot be read as a person. The badge is also a different shape (a stacked card, not a teardrop).
+ * A group of pins is neutral slate, never orange: orange means one representative, so a count on a badge cannot be
+ * read as a person. The badge is also a different shape (a stacked card, not a teardrop).
  */
 export const CLUSTER_COLOR = {
   face: "#ffffff",
-  back: "#e2e8f0",
-  backEdge: "#94a3b8",
-  edge: "#475569",
-  edgeActive: "#0b1220",
-  ink: "#0b1220",
-  glow: "rgba(71, 85, 105, 0.28)",
+  back: "#f1efe9",
+  backEdge: "#c9c4b8",
+  edge: "#6f6b61",
+  edgeActive: "#1c2433",
+  ink: "#1c2433",
+  glow: "rgba(28, 36, 51, 0.28)",
 } as const;
 
 // ------------------------------------------------------------- patterns ----
@@ -92,10 +101,10 @@ export interface PatternSpec {
 }
 
 export const PATTERNS = {
-  missing: { id: "pat-missing", kind: "diagonal", base: "#eef2f7", ink: "#94a3b8", size: 6, weight: 1.2 },
-  conflicting: { id: "pat-conflicting", kind: "cross", base: "#fdf3d8", ink: "#d39a1c", size: 7, weight: 1.3 },
-  variant: { id: "pat-variant", kind: "vertical", base: "#f8f0d6", ink: "#b8901f", size: 6, weight: 1.3 },
-  gap: { id: "pat-gap", kind: "dots", base: "#f1f5f9", ink: "#94a3b8", size: 8, weight: 1.05 },
+  missing: { id: "pat-missing", kind: "diagonal", base: "#ece9e1", ink: "#b3ad9f", size: 6, weight: 1.2 },
+  conflicting: { id: "pat-conflicting", kind: "cross", base: "#fbefd9", ink: "#d99a3a", size: 7, weight: 1.2 },
+  variant: { id: "pat-variant", kind: "vertical", base: "#f6f0d6", ink: "#b99a35", size: 6, weight: 1.2 },
+  gap: { id: "pat-gap", kind: "dots", base: "#f5f3ee", ink: "#c3bdaf", size: 8, weight: 1 },
 } as const satisfies Record<string, PatternSpec>;
 
 export const patternUrl = (spec: PatternSpec): string => `url(#${spec.id})`;
@@ -118,15 +127,15 @@ export function patternSwatch(spec: PatternSpec): string {
 // ----------------------------------------------------------------- fills ----
 
 export const ALLOCATION_FILL: Readonly<Record<AllocationState, string>> = {
-  allocated: "#7fcfc4",
-  confirmed_unallocated: "#9db4ea",
+  allocated: "#9bcdb9",
+  confirmed_unallocated: "#a6bde6",
   missing: patternUrl(PATTERNS.missing),
   conflicting: patternUrl(PATTERNS.conflicting),
 };
 
 export const QUALITY_FILL: Readonly<Record<GeoQuality, string>> = {
-  reviewed: "#8f9bec",
-  provisional: "#c9d0f2",
+  reviewed: "#8e9ddb",
+  provisional: "#c6cfee",
   contested: patternUrl(PATTERNS.conflicting),
   variant: patternUrl(PATTERNS.variant),
   unlisted: patternUrl(PATTERNS.missing),

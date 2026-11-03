@@ -69,7 +69,7 @@ still renders, turns and flies and the searchable places list works; no outline 
 - **Redirect.** `next.config.ts` redirects `/globe-prototype` and `/globe-prototype/:path*` to `/globe` with `permanent: false`
   (307), the same convention as `/territory-map`. Old bookmarks still work. (Next.js itself first answers a trailing slash with
   a 308 to the slash-less path.)
-- **Navigation.** `NAV_ITEMS` in `src/lib/site.ts` is now Globe, Overview, Workspace, then the three "Soon" entries. `NavLink` is
+- **Navigation.** `NAV_ITEMS` in `src/lib/site.ts` is now Overview, Globe, Workspace, then the three "Soon" entries (the light-theme redesign moved Overview first and turned the top bar into a left sidebar). `NavLink` is
   unchanged: exactly one link carries `aria-current="page"` (`/globe` for `/globe`, `/` only for `/`). The navigation is
   responsive as before (own row below `xl`, scrolls on phones). The top bar still says "Local prototype · not for deployment".
 - **Three.js stays on `/globe`.** The nav link is a plain `next/link`; Three.js and the renderer are still one lazy chunk

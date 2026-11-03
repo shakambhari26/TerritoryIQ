@@ -81,8 +81,6 @@ void main() {
   float alpha = smoothstep(0.18, 0.95, c) * uOpacity;
   float diffuse = smoothstep(-0.15, 0.55, dot(normalize(vNormalW), normalize(uSunDir)));
   vec3 colour = vec3(0.97, 0.98, 1.0) * (diffuse * 1.05 + 0.03);
-  // Shadowed cloud fades out rather than turning grey: past the limb it would show as smudges on the light page.
-  alpha *= smoothstep(0.0, 0.35, diffuse);
   gl_FragColor = vec4(colour, alpha);
   #include <colorspace_fragment>
 }
@@ -113,7 +111,8 @@ void main() {
   float b = length(closest);
   float f = clamp(1.0 - (b - 1.0) / uThickness, 0.0, 1.0);
   float lit = 0.30 + 0.70 * smoothstep(-0.45, 0.65, dot(normalize(closest), normalize(uSunDir)));
-  float a = pow(f, 2.6) * lit * uFade;
-  gl_FragColor = vec4(vec3(0.36, 0.6, 1.0), a * 0.55);
+  // Normal blending over the page's light sky: a straight-alpha blue halo, strongest at the limb.
+  float a = pow(f, 2.2) * lit * uFade;
+  gl_FragColor = vec4(vec3(0.27, 0.55, 0.98), a * 0.85);
 }
 `;

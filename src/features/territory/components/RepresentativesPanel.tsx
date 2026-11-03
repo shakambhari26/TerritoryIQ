@@ -34,7 +34,7 @@ function Implied({ children }: { children: string }) {
 function Person({ person }: { person: PinPerson }) {
   return (
     <li className="flex flex-wrap items-baseline gap-x-2 py-0.5">
-      <span className="w-20 shrink-0 text-xs font-medium text-ink-subtle">{person.slotLabel}</span>
+      <span className="w-20 shrink-0 text-xs font-medium text-ink-muted">{person.slotLabel}</span>
       {person.vacant ? (
         <span className="text-sm italic text-ink-muted">Vacant (as written in the workbook)</span>
       ) : (
@@ -50,21 +50,21 @@ function Record({ pin, record, onShowUnit }: { pin: RepresentativePin; record: P
   return (
     <li className="rounded-lg border border-line bg-surface-muted/60 px-3 py-2.5">
       <dl className="grid grid-cols-[5.5rem_minmax(0,1fr)] gap-x-2 gap-y-0.5 text-xs leading-5">
-        <dt className="text-ink-subtle">Territory</dt>
+        <dt className="text-ink-muted">Territory</dt>
         <dd className="min-w-0 break-words text-ink">{record.territoryLabel}</dd>
         {territoryPin ? (
           <>
-            <dt className="text-ink-subtle">Listed on</dt>
+            <dt className="text-ink-muted">Listed on</dt>
             <dd className="text-ink">{record.blockLabel}</dd>
           </>
         ) : (
           <>
-            <dt className="text-ink-subtle">Block / area</dt>
+            <dt className="text-ink-muted">Block / area</dt>
             <dd className="min-w-0 break-words text-ink">
               {record.blockLabel}
               {record.blockLabel !== record.blockName ? <span className="text-ink-muted"> (official: {record.blockName})</span> : null}
             </dd>
-            <dt className="text-ink-subtle">District</dt>
+            <dt className="text-ink-muted">District</dt>
             <dd className="text-ink">{record.districtName}</dd>
           </>
         )}
@@ -127,7 +127,7 @@ export function RepresentativesPanel({ pins, compact, sheetBottom, onClose, onSh
       onClick={(e) => e.stopPropagation()}
       onDoubleClick={(e) => e.stopPropagation()}
       onWheel={(e) => e.stopPropagation()}
-      className="absolute z-20 flex flex-col overflow-hidden rounded-xl border bg-surface shadow-2xl outline-none"
+      className="absolute z-20 flex flex-col overflow-hidden rounded-xl border bg-surface shadow-float outline-none"
       style={{
         borderColor: PIN_COLOR.body,
         ...(compact
@@ -158,7 +158,7 @@ export function RepresentativesPanel({ pins, compact, sheetBottom, onClose, onSh
       </header>
 
       <div className="min-h-0 flex-1 space-y-3 overflow-y-auto px-3.5 py-3">
-        <p id={`${uid}-notice`} className="rounded-md border border-amber-400/40 bg-amber-500/10 px-2.5 py-1.5 text-[0.6875rem] leading-4 text-amber-100 sm:text-xs sm:leading-5">
+        <p id={`${uid}-notice`} className="rounded-lg border border-warn-line bg-warn-soft px-2.5 py-1.5 text-[0.6875rem] leading-4 text-warn-ink sm:text-xs sm:leading-5">
           {PROVISIONAL_NOTICE} {NAME_NOTICE}
         </p>
         {onZoomTo ? (
@@ -175,7 +175,7 @@ export function RepresentativesPanel({ pins, compact, sheetBottom, onClose, onSh
           <details key={pin.id} open={pins.length === 1} className="group rounded-lg" data-testid="representatives-group" data-pin-id={pin.id}>
             <summary className="flex cursor-pointer list-none items-center justify-between gap-2 rounded-md py-1 text-sm font-semibold text-ink">
               <span className="min-w-0 break-words">{pin.title}</span>
-              <span aria-hidden="true" className="text-ink-subtle transition-transform group-open:rotate-90 motion-reduce:transition-none">
+              <span aria-hidden="true" className="text-ink-muted transition-transform group-open:rotate-90 motion-reduce:transition-none">
                 ›
               </span>
             </summary>
@@ -193,7 +193,7 @@ export function RepresentativesPanel({ pins, compact, sheetBottom, onClose, onSh
                       <Implied>{notice}</Implied>
                     </li>
                   ) : (
-                    <li key={notice} className="text-xs leading-5 text-amber-100">
+                    <li key={notice} className="text-xs leading-5 text-warn-ink">
                       <span className="font-semibold">Note: </span>
                       {notice}
                     </li>
@@ -205,8 +205,8 @@ export function RepresentativesPanel({ pins, compact, sheetBottom, onClose, onSh
                 type="button"
                 onClick={() => onShowTerritory(pin.territoryIds[0])}
                 data-testid="representatives-show-territory"
-                className="mt-2.5 inline-flex h-8 items-center rounded-md px-2.5 text-xs font-semibold"
-                style={{ background: PIN_COLOR.body, color: PIN_COLOR.core }}
+                className="mt-2.5 inline-flex h-8 items-center rounded-lg border px-2.5 text-xs font-semibold"
+                style={{ background: "#fff7ed", borderColor: PIN_COLOR.body, color: "#9a3412" }}
               >
                 Show this territory&apos;s blocks and pins
               </button>

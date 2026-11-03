@@ -23,26 +23,26 @@ export interface StateStyle {
 export const STATE_STYLE: Readonly<Record<AllocationState, StateStyle>> = {
   allocated: {
     fill: ALLOCATION_FILL.allocated,
-    chip: "border-accent-ink/30 bg-accent-soft text-accent-ink",
-    bar: "bg-accent",
+    chip: "border-status-allocated/30 bg-accent-soft text-accent-ink",
+    bar: "bg-status-allocated",
     swatch: ALLOCATION_SWATCH.allocated,
   },
   confirmed_unallocated: {
     fill: ALLOCATION_FILL.confirmed_unallocated,
-    chip: "border-blue-700/30 bg-blue-50 text-blue-800",
-    bar: "bg-blue-400",
+    chip: "border-status-confirmed/30 bg-blue-50 text-blue-800",
+    bar: "bg-status-confirmed",
     swatch: ALLOCATION_SWATCH.confirmed_unallocated,
   },
   missing: {
     fill: ALLOCATION_FILL.missing,
     chip: "border-dashed border-line-strong bg-surface-muted text-ink-muted",
-    bar: "bg-slate-400",
+    bar: "bg-status-missing",
     swatch: ALLOCATION_SWATCH.missing,
   },
   conflicting: {
     fill: ALLOCATION_FILL.conflicting,
-    chip: "border-amber-700/30 bg-amber-50 text-amber-900",
-    bar: "bg-amber-500",
+    chip: "border-warn-line bg-warn-soft text-warn-ink",
+    bar: "bg-status-conflict",
     swatch: ALLOCATION_SWATCH.conflicting,
   },
 };

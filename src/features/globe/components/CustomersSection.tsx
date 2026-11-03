@@ -13,9 +13,9 @@ import { BLOCK_ROWS_TIMEOUT_MS } from "./BlockRowsSection";
  */
 
 const confidenceChip: Record<Confidence, { label: string; className: string }> = {
-  good: { label: "Inferred · good", className: "border-sky-300/50 bg-sky-400/15 text-sky-100" },
-  medium: { label: "Inferred · medium", className: "border-amber-300/50 bg-amber-400/15 text-amber-100" },
-  low: { label: "Inferred · low", className: "border-rose-300/50 bg-rose-400/15 text-rose-100" },
+  good: { label: "Inferred · good", className: "border-sky-300 bg-sky-50 text-sky-900" },
+  medium: { label: "Inferred · medium", className: "border-amber-300 bg-amber-50 text-amber-900" },
+  low: { label: "Inferred · low", className: "border-rose-300 bg-rose-50 text-rose-900" },
 };
 
 function ConfidenceChip({ confidence }: { confidence: Confidence }) {
@@ -141,7 +141,7 @@ export function BlockCustomersSection({ customers, blockId }: { customers: Custo
         </p>
       ) : current.kind === "error" ? (
         <>
-          <p role="alert" className="rounded-md border border-amber-300/40 bg-amber-400/10 px-2 py-1.5 text-xs text-amber-100">
+          <p role="alert" className="rounded-md border border-amber-300 bg-amber-50 px-2 py-1.5 text-xs text-amber-900">
             The customers for this block could not be loaded.
           </p>
           <button
@@ -177,7 +177,7 @@ export function BlockCustomersSection({ customers, blockId }: { customers: Custo
               {c.flags.length > 0 ? (
                 <ul className="space-y-0.5">
                   {c.flags.map((flag) => (
-                    <li key={flag} className="text-[0.6875rem] text-amber-200">
+                    <li key={flag} className="text-[0.6875rem] text-amber-800">
                       ⚠ {CUSTOMER_FLAGS[flag]}
                     </li>
                   ))}

@@ -114,10 +114,19 @@ describe("globe names on demand", { skip: skipReason, timeout: 900_000 }, () => 
     });
     page.on("response", async (response) => {
       if (!TEXT_TYPES.has(response.request().resourceType())) return;
+      const bodyPath = new URL(response.url()).pathname;
       try {
-        bodies.push({ path: new URL(response.url()).pathname, text: await response.text() });
+        bodies.push({ path: bodyPath, text: await response.text() });
       } catch {
-        /* a body that went away (a navigation, an abort) is not evidence either way */
+        // Chrome's inspector sometimes no longer holds a large body ("No data found for resource"; seen on an untouched main build too,
+        // where it lost the Workspace body in about 1 run in 4 and made test 5b's positive control fail). A lost body must not count as
+        // evidence either way, so a GET is asked for again, with the same request, from the context. POSTs are never repeated.
+        if (response.request().method() !== "GET") return;
+        try {
+          bodies.push({ path: bodyPath, text: await (await context.request.fetch(response.request())).text() });
+        } catch {
+          /* the page or the server went away: not evidence either way */
+        }
       }
     });
     await page.goto(`${server.baseUrl}${url}`, { waitUntil: "load" });
@@ -207,8 +216,14 @@ describe("globe names on demand", { skip: skipReason, timeout: 900_000 }, () => 
       const label = JSON.stringify(extra);
       const response = await fetch(`${server.baseUrl}/globe`, { headers: { RSC: "1", ...extra } });
       const text = await response.text();
-      assert.equal(response.status, 200, label);
-      assert.match(response.headers.get("content-type") ?? "", /^text\/x-component/, label);
+      // Next inlines a root layout that is small enough into its child segment and then emits no `/_index` file for it. The
+      // sidebar is a client component, so the layout's own payload is small and `/_index` is now answered with a 404; the
+      // layout still reaches the browser inside the other variants. Every response, a 404 included, must still hold no name.
+      const inlined = response.status === 404 && extra["Next-Router-Segment-Prefetch"] === "/_index";
+      if (!inlined) {
+        assert.equal(response.status, 200, label);
+        assert.match(response.headers.get("content-type") ?? "", /^text\/x-component/, label);
+      }
       assert.equal(leakedNames(text, names), 0, `staff names in the /globe RSC ${label}`);
       assert.doesNotMatch(text, /blockLabel|namedPeople/, label);
       bytes += text.length;
@@ -575,7 +590,8 @@ describe("globe names on demand", { skip: skipReason, timeout: 900_000 }, () => 
 
   // ------------------------------------------------------ the real server --
   describe("the real server's responses", () => {
-    const url = `http://127.0.0.1:3227${ENDPOINT}`;
+    // The server this file started (never a fixed port): the raw-socket test below talks to the same one.
+    const url = () => `${server.baseUrl}${ENDPOINT}`;
     const post = (body: BodyInit | null, headers: Record<string, string> = { "content-type": "application/json" }, method = "POST") =>
       fetch(`${server.baseUrl}${ENDPOINT}`, { method, headers, body });
     const baseline = (response: Response, label: string) => {
@@ -640,9 +656,9 @@ describe("globe names on demand", { skip: skipReason, timeout: 900_000 }, () => 
 
     it("11. a non-loopback Host is refused with 403 before any lookup, with no rows and no cache", async () => {
       const [a] = pair();
-      for (const host of ["evil.example", "localhost.evil.example", "127.0.0.1.evil.example:3227", "192.168.1.5"]) {
+      for (const host of ["evil.example", "localhost.evil.example", `127.0.0.1.evil.example:${new URL(server.baseUrl).port}`, "192.168.1.5"]) {
         const refused = await new Promise<{ status: number; headers: http.IncomingHttpHeaders; body: string }>((resolve, reject) => {
-          const target = new URL(url);
+          const target = new URL(url());
           const request = http.request({ hostname: target.hostname, port: target.port, path: ENDPOINT, method: "POST", headers: { Host: host, "Content-Type": "application/json" } }, (response) => {
             const chunks: Buffer[] = [];
             response.on("data", (c: Buffer) => chunks.push(c));
