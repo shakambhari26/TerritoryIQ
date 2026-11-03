@@ -29,8 +29,8 @@ const visibleText = card
 describe("homepage globe entry: imports", () => {
   const importsOf = (source: string) => [...source.matchAll(/^\s*import\s[^;]*?from\s+["']([^"']+)["']|^\s*import\s+["']([^"']+)["']/gm)].map((m) => m[1] ?? m[2]);
 
-  it("the card imports only Next's Link and the two shared UI primitives", () => {
-    assert.deepEqual(importsOf(card).sort(), ["@/components/ui/Badge", "@/components/ui/Card", "next/link"]);
+  it("the card imports only Next's Link, the two shared UI primitives and the rotating Earth (checked in earth-preview.test.mts)", () => {
+    assert.deepEqual(importsOf(card).sort(), ["@/components/dashboard/RotatingEarth", "@/components/ui/Badge", "@/components/ui/Card", "next/link"]);
   });
 
   for (const [name, source] of [["card", card], ["homepage", page]] as const) {

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { RotatingEarth } from "@/components/dashboard/RotatingEarth";
 import { Badge } from "@/components/ui/Badge";
 import { Card } from "@/components/ui/Card";
 
@@ -11,8 +12,9 @@ const secondaryLinkClass =
  * Homepage entry to the globe, and the Overview's main geographic visual. A server component with no data of its own:
  * it never reads the geographic data, so it is shown whether or not that data is present (the /globe route handles its
  * own missing-data state), and it imports nothing from the globe feature, so the Overview downloads no Three.js,
- * textures or outline data. The Earth is one small static picture (a CSS background, see globals.css) that says nothing about any place. The notice is
- * permanent and carries no figures. Links keep the default Next.js prefetching.
+ * globe textures or outline data. The Earth is a small still picture (a CSS background, see globals.css) with the small
+ * RotatingEarth canvas turning over it; neither says anything about any place. The notice is permanent and carries no
+ * figures. Links keep the default Next.js prefetching.
  */
 export function GlobeEntryCard() {
   return (
@@ -43,10 +45,14 @@ export function GlobeEntryCard() {
           </div>
         </div>
 
-        {/* One static picture of the Earth (public/overview/earth-preview.webp, drawn from the NASA texture the globe uses): a CSS background,
-            so the Overview loads no Three.js, no globe texture and no boundary data. It names no place and carries no figures. */}
+        {/* The Earth: a still picture (public/overview/earth-preview.webp, a CSS background) that shows first, with scripts off and under
+            reduced motion, and RotatingEarth turning over it from one small world map (public/overview/earth-map.webp). Both are drawn
+            from the NASA texture the globe uses; the Overview still loads no Three.js, none of the globe's own textures and no boundary data. It
+            names no place and carries no figures. */}
         <div className="relative grid min-h-64 place-items-center bg-[radial-gradient(ellipse_at_50%_46%,#f6faff_0%,#dfeafa_58%,#c9dbf2_100%)] py-8">
-          <div className="earth-preview size-52 rounded-full shadow-[0_0_0_1px_rgb(140_185_240/0.55),0_0_34px_6px_rgb(110_170_245/0.38),0_38px_56px_-26px_rgb(20_60_140/0.6)] sm:size-56" />
+          <div className="earth-preview relative size-52 rounded-full shadow-[0_0_0_1px_rgb(140_185_240/0.55),0_0_34px_6px_rgb(110_170_245/0.38),0_38px_56px_-26px_rgb(20_60_140/0.6)] sm:size-56">
+            <RotatingEarth />
+          </div>
         </div>
       </div>
     </Card>

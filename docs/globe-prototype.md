@@ -388,11 +388,13 @@ python -I scripts/globe/build_overlay.py     # data/generated/globe-boundaries.j
   interactive 3D globe and inspecting provisional geographic outlines, and a permanent notice: the outlines use unofficial
   OpenStreetMap geometry, are not official boundaries, and do not provide complete district or block coverage. Two links:
   "Explore on the globe" to `/globe` and "Go to the 2D workspace" to `/workspace`. It carries no number, percentage or claim of
-  verified, confirmed, live or complete coverage, and no image or decorative SVG.
+  verified, confirmed, live or complete coverage, and no decorative SVG. Its Earth is a still CSS-background picture with a small
+  2D canvas (`RotatingEarth`, one 54 KB world map, no Three.js) turning over it.
 - **Always shown.** It is a server component with no props and does not read the geographic data, so it renders when the
   dataset is missing too (the Overview then shows its "data has not been built" state below it, and `/globe` shows its own
   "globe data has not been built" state).
-- **Nothing globe-related loads on `/`.** The card imports only `next/link`, `Badge` and `Card`. The links keep Next.js's
+- **Nothing globe-related loads on `/`.** The card imports only `next/link`, `Badge`, `Card` and `RotatingEarth` (which imports only
+  React). The links keep Next.js's
   default prefetching; a browser test observes `/` long enough for that to run (and checks it did, for `/globe` and
   `/workspace`) and finds no Three.js, no `/globe/` texture, and no request for `/geo/globe-boundaries.json` or
   `/geo/boundaries.json`, with `/globe` and `/workspace` as positive controls. A unit test keeps the card and the page free of
