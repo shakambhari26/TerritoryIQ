@@ -12,12 +12,15 @@ export function AppShell({ children }: { children: ReactNode }) {
       >
         Skip to main content
       </a>
-      <Sidebar hosted={authMode().kind === "hosted"} />
+      {/* data-app-chrome: hidden in embed mode (inside Frontier; see EMBED_SCRIPT in app/layout.tsx). */}
+      <div data-app-chrome className="contents">
+        <Sidebar hosted={authMode().kind === "hosted"} />
+      </div>
       <div className="flex min-w-0 flex-1 flex-col">
         <main id="main" className="mx-auto w-full max-w-[1760px] flex-1 px-4 py-5 sm:px-6 lg:px-8 lg:py-7">
           {children}
         </main>
-        <footer>
+        <footer data-app-chrome>
           <p className="mx-auto max-w-[1760px] px-4 pb-5 text-xs text-ink-muted sm:px-6 lg:px-8">
             {SITE.name} · Local prototype. Overview and Workspace use the company workbook and Local Government Directory exports with provisional
             boundaries; the Territory Map page is a data-free layout preview.

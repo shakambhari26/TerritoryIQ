@@ -189,10 +189,14 @@ describe("hosted sign-in: redirects and guessing", () => {
 });
 
 describe("hosted sign-in: wiring", () => {
-  it("the proxy gates every path: no matcher, only the sign-in page is public", () => {
+  it("the proxy gates every path: no matcher, only the sign-in page (and Frontier's signed /sso) is public", () => {
     const proxy = read("src/proxy.ts");
     assert.doesNotMatch(proxy, /export const config/);
-    assert.match(proxy, /new Set\(\["\/login", "\/logout", "\/icon\.svg"\]\)/);
+    // /sso is public because it is a way in: it starts a session only for a valid signed token (frontier-sso.test.mts).
+    assert.match(proxy, /new Set\(\["\/login", "\/logout", "\/icon\.svg", "\/sso"\]\)/);
+    const sso = read("src/app/sso/route.ts");
+    assert.ok(sso.indexOf("verifyFrontierToken(") > 0 && sso.indexOf("verifyFrontierToken(") < sso.indexOf("sessionCookie("), "/sso checks the token before it sets a session");
+    assert.match(sso, /if \(!result\.ok\)[\s\S]*status: 401/);
     assert.match(proxy, /isRequestAuthorized\(request\.headers, mode\)/);
     assert.match(proxy, /mode\.kind === "misconfigured"[\s\S]*status: 503/);
   });

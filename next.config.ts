@@ -1,4 +1,7 @@
 import type { NextConfig } from "next";
+import { embedOrigins } from "./src/lib/frontier-sso.ts";
+
+const FRAME_ORIGINS = embedOrigins();
 
 /**
  * Response headers (checked on real responses by tests/e2e/response-headers.test.mts).
@@ -16,9 +19,15 @@ const BASELINE_HEADERS = [
   { key: "X-Content-Type-Options", value: "nosniff" },
   // Nothing here needs the referrer, and the one outbound link (OpenStreetMap) is user-clicked.
   { key: "Referrer-Policy", value: "no-referrer" },
-  // Clickjacking: the CSP directive is the standard; X-Frame-Options covers old browsers.
-  { key: "Content-Security-Policy", value: "frame-ancestors 'none'; base-uri 'self'; object-src 'none'" },
-  { key: "X-Frame-Options", value: "DENY" },
+  // Clickjacking: the CSP directive is the standard; X-Frame-Options covers old browsers. Framing stays off unless
+  // FRONTIER_EMBED_ORIGINS names the Frontier web app's https origin(s); then only those (and this site) may frame it,
+  // and X-Frame-Options, which cannot list an origin, is left out. Read at build time, so set it before deploying.
+  ...(FRAME_ORIGINS.length
+    ? [{ key: "Content-Security-Policy", value: `frame-ancestors 'self' ${FRAME_ORIGINS.join(" ")}; base-uri 'self'; object-src 'none'` }]
+    : [
+        { key: "Content-Security-Policy", value: "frame-ancestors 'none'; base-uri 'self'; object-src 'none'" },
+        { key: "X-Frame-Options", value: "DENY" },
+      ]),
   {
     key: "Permissions-Policy",
     value:
