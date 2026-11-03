@@ -12,8 +12,18 @@ interface NavLinkProps {
 }
 
 /**
- * Sidebar link that marks itself as the current page. In the icon rail (`rail:`, see globals.css) the label stays in the
- * document for assistive technology but is not drawn. Only the link whose
+ * How a sidebar label fades with the icon rail (`rail:`, see globals.css): transparent at rest and fading in a moment after
+ * the sidebar starts to widen (so the text never wraps against a narrow edge), and out at once. The text stays in the
+ * document for assistive technology either way.
+ */
+export const RAIL_FADE = "transition-opacity duration-150 delay-75 rail:opacity-0 rail:delay-0 motion-reduce:transition-none";
+/** The same for a one-line label, which never wraps (the sidebar's edge cuts it off at rest). */
+export const RAIL_LABEL = `whitespace-nowrap ${RAIL_FADE}`;
+
+/**
+ * Sidebar link that marks itself as the current page. In the icon rail the label stays in the document for assistive
+ * technology but is not drawn, and the icon does not move when the sidebar opens (its row has the same padding in both
+ * states, 16 px, which centres a 20 px icon in the 52 px of a rail row). Only the link whose
  * route matches gets `aria-current`; with more than one available route, the
  * markup must not claim every link is the current page.
  *
@@ -30,7 +40,7 @@ export function NavLink({ href, icon, children }: NavLinkProps) {
       prefetch={href === "/workspace" ? false : undefined}
       aria-current={active ? "page" : undefined}
       className={cn(
-        "group relative flex h-11 items-center gap-3 rounded-xl px-3 text-sm font-medium transition-colors rail:justify-center rail:px-0",
+        "group relative flex h-11 items-center gap-3 rounded-xl px-4 text-sm font-medium transition-colors",
         active ? "bg-primary-soft font-semibold text-primary-ink" : "text-ink-muted hover:bg-surface-muted hover:text-ink",
       )}
     >
@@ -38,7 +48,7 @@ export function NavLink({ href, icon, children }: NavLinkProps) {
       <span aria-hidden="true" className={cn("shrink-0", active ? "text-primary" : "text-ink-subtle group-hover:text-ink-muted")}>
         {icon}
       </span>
-      <span className="rail:sr-only">{children}</span>
+      <span className={RAIL_LABEL}>{children}</span>
     </Link>
   );
 }

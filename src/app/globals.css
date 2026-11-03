@@ -1,18 +1,21 @@
 @import "tailwindcss";
 
 /*
- * `rail:` styles the sidebar as the icon rail. It applies from `lg` (below that the sidebar is the drawer) and only inside
- * an element marked `data-rail`: always for "on" (the visitor collapsed it), and for "auto" (no choice made) only below
- * `2xl`, so a laptop keeps its map width and a wide monitor gets the labels. "off" (the visitor expanded it) never does.
+ * The sidebar is an icon rail that opens by itself: `rail:` is the rail at rest (icons only), `rail-peek:` is the rail while
+ * it is open over the page, which is while the pointer is on it or keyboard focus is inside it. Both apply from `lg` (below
+ * that the sidebar is the drawer) and only inside an element marked `data-rail`. A mouse click does not leave focus-visible,
+ * so a link just clicked does not hold the menu open once the pointer leaves.
  */
 @custom-variant rail {
   @media (width >= 64rem) {
-    &:where([data-rail="on"], [data-rail="on"] *) {
+    &:where([data-rail]:not(:hover):not(:has(:focus-visible)), [data-rail]:not(:hover):not(:has(:focus-visible)) *) {
       @slot;
     }
   }
-  @media (width >= 64rem) and (width < 96rem) {
-    &:where([data-rail="auto"], [data-rail="auto"] *) {
+}
+@custom-variant rail-peek {
+  @media (width >= 64rem) {
+    &:where([data-rail]:is(:hover, :has(:focus-visible)), [data-rail]:is(:hover, :has(:focus-visible)) *) {
       @slot;
     }
   }
