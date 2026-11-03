@@ -49,7 +49,7 @@ This key can **only send** visits. It is refused on every other endpoint.
 - **Always send `Visit ID`.** Re-sending the same ID updates that visit rather than adding a duplicate, so retries are safe.
 - **Dates:** `DD-MM-YYYY` with a 12-hour time, as above. ISO `YYYY-MM-DD HH:MM` also works.
 - **Text:** send the Bengali and Hindi transcript as it is, in UTF-8.
-- **Keep the rep's headline.** Reps are trained ([rep guide](rep-guide/rep-voice-note-guide.pdf)) to open every note
+- **Keep the rep's headline.** Reps are trained ([rep guides in Bengali, Hindi and English](rep-guide/)) to open every note
   with "Headline:" and one of 9 words (ORDER, PAYMENT, COMPETITOR, COMPLAINT, SITE, NEW CUSTOMER, ENGINEER, HAPPY,
   NO RESULT). If the transcript is summarised before sending, keep those opening words exactly, at the very start:
   they are the rep's own label for the visit and train the classifier.

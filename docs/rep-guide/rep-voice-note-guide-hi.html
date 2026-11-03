@@ -1,0 +1,549 @@
+<!doctype html>
+<html lang="hi">
+<head>
+<meta charset="utf-8">
+<title>राजू का वॉइस नोट · Raju's Voice Note</title>
+<!-- GENERATED from rep-voice-note-guide-bn.html by build_variants.py (hi). Do not edit. -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700;800&family=Hind:wght@400;500;600;700&display=block" rel="stylesheet">
+<style>
+  :root {
+    --navy: #0b1220; --ink: #172b4d; --muted: #475569; --line: #dce5ef; --paper: #fffdf8;
+    --teal: #0f8b78; --teal-soft: #e3f4f1; --red: #dc2626; --red-soft: #fef2f2; --amber: #d97706; --amber-soft: #fef3e2;
+    --sky: #0284c7; --sky-soft: #e0f2fe; --violet: #7c3aed; --violet-soft: #f3e8ff; --green: #16a34a; --green-soft: #ecfdf3;
+  }
+  @page { size: A4; margin: 0; }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; background: #e5e7eb; }
+  body { font-family: "Hind", sans-serif; color: var(--ink); -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .page { width: 210mm; height: 297mm; padding: 16mm 15mm 14mm; background: var(--paper); position: relative; overflow: hidden;
+          page-break-after: always; margin: 0 auto; display: flex; flex-direction: column; }
+  .fill { flex: 1; align-content: stretch; }
+  .kicker, .cover .tag { align-self: flex-start; }
+  .fill > .panel { justify-content: space-between; }
+  .page:last-child { page-break-after: auto; }
+  h1, h2, h3, .display { font-family: "Baloo 2", "Hind", sans-serif; margin: 0; line-height: 1.15; }
+  h2 { font-size: 30pt; font-weight: 800; color: var(--navy); }
+  h3 { font-size: 15pt; font-weight: 700; }
+  p { margin: 0; font-size: 12.5pt; line-height: 1.6; }
+  .en { font-family: "Hind", sans-serif; color: var(--muted); font-size: 10.5pt; font-weight: 500; }
+  .kicker { display: inline-flex; align-items: center; gap: 6px; font-size: 10pt; font-weight: 700; letter-spacing: .08em;
+            text-transform: uppercase; color: var(--teal); background: var(--teal-soft); border-radius: 99px; padding: 3px 12px; }
+  .pageno { position: absolute; bottom: 8mm; right: 15mm; font-size: 9pt; color: #94a3b8; }
+  .footer-brand { position: absolute; bottom: 8mm; left: 15mm; font-size: 9pt; color: #94a3b8; }
+  .say { font-family: "Baloo 2", sans-serif; font-weight: 800; letter-spacing: .02em; }
+  .bubble { position: relative; background: #fff; border: 2px solid var(--navy); border-radius: 18px; padding: 10px 14px; font-size: 12pt; line-height: 1.5; }
+  .bubble:after { content: ""; position: absolute; bottom: -12px; left: 26px; border: 10px solid transparent; border-top-color: var(--navy); border-bottom: 0; }
+  .card { background: #fff; border: 1.5px solid var(--line); border-radius: 16px; padding: 12px 14px; }
+  .row { display: flex; gap: 12px; }
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .grid3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+  svg { display: block; }
+  .ic { width: 24px; height: 24px; }
+  .ic-lg { width: 46px; height: 46px; flex: none; }
+
+  /* cover */
+  .cover { background: radial-gradient(120% 80% at 20% 0%, #134e4a 0%, var(--navy) 60%); color: #fff; }
+  .cover h1 { font-size: 52pt; font-weight: 800; }
+  .cover .sub { font-size: 16pt; color: #cbd5e1; margin-top: 6px; font-family: "Baloo 2"; font-weight: 500; }
+  .cover .tag { margin-top: 16px; display: inline-block; background: #fbbf24; color: var(--navy); font-weight: 700;
+                border-radius: 14px; padding: 10px 18px; font-size: 15pt; line-height: 1.4; }
+  .cover .tag .en { color: #334155; display: block; font-size: 11pt; }
+
+  /* comic */
+  .panel { background: #fff; border: 2.5px solid var(--navy); border-radius: 14px; padding: 10px; display: flex; flex-direction: column; gap: 8px; }
+  .panel .num { width: 26px; height: 26px; border-radius: 50%; background: var(--navy); color: #fff; display: grid; place-items: center;
+                font-weight: 700; font-size: 11pt; }
+  .panel p { font-size: 12.5pt; line-height: 1.5; }
+  .moral { border-radius: 16px; padding: 14px 18px; display: flex; gap: 14px; align-items: center; }
+
+  /* headline cards */
+  .hl { border-radius: 16px; padding: 10px 12px; border: 2px solid; background: #fff; display: flex; flex-direction: column; gap: 4px; }
+  .hl .word { font-family: "Baloo 2"; font-weight: 800; font-size: 17pt; letter-spacing: .02em; line-height: 1.1; }
+  .hl .icon { width: 38px; height: 38px; border-radius: 12px; display: grid; place-items: center; }
+  .hl p { font-size: 10.5pt; line-height: 1.45; }
+
+  /* five fingers */
+  .finger { display: grid; grid-template-columns: 46px 1fr; gap: 10px; align-items: center; background: #fff; border: 1.5px solid var(--line);
+            border-radius: 14px; padding: 8px 12px; }
+  .finger .n { width: 46px; height: 46px; border-radius: 50%; display: grid; place-items: center; color: #fff; font-family: "Baloo 2";
+               font-weight: 800; font-size: 20pt; }
+  .finger h3 { font-size: 14pt; }
+
+  .note { border-radius: 14px; padding: 12px 16px; font-size: 12.5pt; line-height: 1.55; }
+  .bad { background: var(--red-soft); border: 2px dashed #fca5a5; }
+  .good { background: var(--green-soft); border: 2px solid #86efac; }
+  .score { font-family: "Baloo 2"; font-weight: 800; font-size: 13pt; border-radius: 99px; padding: 1px 10px; color: #fff; white-space: nowrap; }
+  .meter { display: flex; gap: 3px; margin-top: 6px; }
+  .meter span { height: 8px; flex: 1; border-radius: 4px; background: #e2e8f0; }
+  .tagline { color: var(--teal); font-weight: 700; }
+
+  .pocket { border: 2px dashed #94a3b8; border-radius: 18px; padding: 14px 16px; background: #fff; }
+  .chip { display: inline-block; border-radius: 99px; padding: 2px 10px; font-weight: 700; font-size: 10.5pt; margin: 2px 2px 0 0; }
+  .flow { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+  .flow .step { background: var(--navy); color: #fff; border-radius: 10px; padding: 5px 10px; font-weight: 700; font-size: 11pt; }
+  .flow .arrow { color: var(--teal); font-weight: 800; }
+  ul.clean { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+  ul.clean li { display: grid; grid-template-columns: 34px 1fr; gap: 10px; align-items: start; font-size: 12pt; line-height: 1.5; }
+  .x, .tick { width: 30px; height: 30px; border-radius: 50%; display: grid; place-items: center; color: #fff; font-weight: 800; }
+  .x { background: var(--red); } .tick { background: var(--green); }
+</style>
+</head>
+<body>
+
+<!-- Reusable drawings -->
+<svg width="0" height="0" style="position:absolute">
+  <defs>
+    <!-- Raju, the rep: navy shirt, ID card, phone -->
+    <symbol id="raju" viewBox="0 0 120 150">
+      <circle cx="60" cy="38" r="24" fill="#f2c094"/>
+      <path d="M36 34c2-18 46-22 48 0-6-6-14-9-24-9s-18 3-24 9Z" fill="#1f2937"/>
+      <circle cx="51" cy="40" r="2.6" fill="#1f2937"/><circle cx="69" cy="40" r="2.6" fill="#1f2937"/>
+      <path d="M51 50c5 5 13 5 18 0" stroke="#1f2937" stroke-width="2.6" fill="none" stroke-linecap="round"/>
+      <path d="M22 150c0-38 16-62 38-62s38 24 38 62Z" fill="#1e3a8a"/>
+      <rect x="64" y="104" width="16" height="20" rx="3" fill="#fff"/><rect x="67" y="108" width="10" height="3" fill="#0f8b78"/>
+      <rect x="86" y="86" width="16" height="28" rx="4" fill="#0b1220" transform="rotate(14 94 100)"/>
+      <circle cx="96" cy="94" r="3" fill="#34d399"/>
+    </symbol>
+    <!-- Ratan-da, the dealer: white kurta, moustache, glasses -->
+    <symbol id="ratan" viewBox="0 0 120 150">
+      <circle cx="60" cy="40" r="25" fill="#d9a066"/>
+      <path d="M35 36c0-20 50-20 50 0-4-9-13-12-25-12s-21 3-25 12Z" fill="#9ca3af"/>
+      <circle cx="51" cy="41" r="6" fill="none" stroke="#1f2937" stroke-width="2"/><circle cx="69" cy="41" r="6" fill="none" stroke="#1f2937" stroke-width="2"/>
+      <path d="M57 41h6" stroke="#1f2937" stroke-width="2"/>
+      <path d="M48 53c4-3 8-3 12 0 4-3 8-3 12 0" stroke="#374151" stroke-width="4" fill="none" stroke-linecap="round"/>
+      <path d="M20 150c0-40 18-62 40-62s40 22 40 62Z" fill="#f8fafc" stroke="#cbd5e1" stroke-width="2"/>
+      <path d="M60 92v30" stroke="#cbd5e1" stroke-width="2"/>
+    </symbol>
+    <symbol id="building" viewBox="0 0 120 120">
+      <rect x="18" y="34" width="56" height="80" rx="4" fill="#0f8b78"/>
+      <g fill="#e3f4f1"><rect x="28" y="46" width="12" height="12" rx="2"/><rect x="52" y="46" width="12" height="12" rx="2"/>
+      <rect x="28" y="68" width="12" height="12" rx="2"/><rect x="52" y="68" width="12" height="12" rx="2"/></g>
+      <rect x="40" y="94" width="14" height="20" fill="#0b1220"/>
+      <rect x="78" y="58" width="30" height="56" rx="3" fill="#134e4a"/>
+      <text x="46" y="28" font-family="Baloo 2" font-size="14" font-weight="800" fill="#0b1220" text-anchor="middle">HEAD OFFICE</text>
+    </symbol>
+    <symbol id="truck" viewBox="0 0 140 80">
+      <rect x="4" y="16" width="82" height="42" rx="5" fill="#0f8b78"/>
+      <g stroke="#e3f4f1" stroke-width="3"><path d="M14 30h62M14 40h62M14 50h62"/></g>
+      <path d="M86 28h28l18 18v12H86Z" fill="#0b1220"/><rect x="94" y="33" width="18" height="11" rx="2" fill="#bae6fd"/>
+      <circle cx="28" cy="62" r="10" fill="#1f2937"/><circle cx="28" cy="62" r="4" fill="#9ca3af"/>
+      <circle cx="108" cy="62" r="10" fill="#1f2937"/><circle cx="108" cy="62" r="4" fill="#9ca3af"/>
+    </symbol>
+    <symbol id="mic" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5.5 11a6.5 6.5 0 0 0 13 0M12 17.5V21"/></g></symbol>
+    <symbol id="i-cart" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 4.5h2l2.2 10.2a1.5 1.5 0 0 0 1.5 1.2h7.6a1.5 1.5 0 0 0 1.5-1.1l1.5-6.3H6.6"/><circle cx="10" cy="19.5" r="1.25"/><circle cx="17" cy="19.5" r="1.25"/></g></symbol>
+    <symbol id="i-rupee" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 4.5h10M7 9h10"/><path d="M9.5 4.5c3.3 0 5 1.3 5 4.5s-2.4 4.5-6.5 4.5h-1l7.5 7"/></g></symbol>
+    <symbol id="i-swords" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m4 4 9.5 9.5M4 4v3.5M4 4h3.5"/><path d="M20 4 10.5 13.5M20 4v3.5M20 4h-3.5"/><path d="m8 16-3 3M16 16l3 3M6.5 13.5l4 4M17.5 13.5l-4 4"/></g></symbol>
+    <symbol id="i-alert" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4 21 19.5H3L12 4Z"/><path d="M12 10v4.5M12 17.2v.1"/></g></symbol>
+    <symbol id="i-crane" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 20.5V4.5l12 3M6 7.5h12M18 7.5v4"/><path d="M16.5 11.5h3v2.5h-3z"/><path d="M3.5 20.5h6M6 11l3-3.5M6 15l3-3.5"/></g></symbol>
+    <symbol id="i-sprout" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20.5V11"/><path d="M12 11c0-3.6-2.4-6-6.5-6 0 3.6 2.4 6 6.5 6Z"/><path d="M12 13.5c0-3 2-5 5.5-5 0 3-2 5-5.5 5Z"/></g></symbol>
+    <symbol id="i-wrench" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 6.5a4 4 0 0 0 5 5L12 19a2.1 2.1 0 0 1-3-3l7.5-7.5a4 4 0 0 1-2-2Zm0 0L17 4"/></g></symbol>
+    <symbol id="i-star" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 4 2.4 4.9 5.4.8-3.9 3.8.9 5.4-4.8-2.6-4.8 2.6.9-5.4-3.9-3.8 5.4-.8L12 4Z"/></g></symbol>
+    <symbol id="i-moon" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 14.5A7.5 7.5 0 0 1 9.5 5a7.5 7.5 0 1 0 9.5 9.5Z"/></g></symbol>
+    <symbol id="i-broken" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20s-7.5-4.6-7.5-10A4.2 4.2 0 0 1 12 7.4 4.2 4.2 0 0 1 19.5 10c0 5.4-7.5 10-7.5 10Z"/><path d="m12 7.5-1.5 4 3 1.5-1.5 4"/></g></symbol>
+    <symbol id="i-trophy" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 4.5h8v5a4 4 0 0 1-8 0v-5Z"/><path d="M8 6.5H5a3 3 0 0 0 3 4M16 6.5h3a3 3 0 0 1-3 4M12 13.5v3.5M8.5 20h7M10 17h4v3h-4z"/></g></symbol>
+    <symbol id="i-bolt" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 3.5 5.5 13.5H11l-1 7 7.5-10H12l1-7Z"/></g></symbol>
+    <symbol id="i-hands" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3.5 11 4-4 3 1 3-2 3.5 1 3.5 4"/><path d="m7.5 7 4.5 6a1.6 1.6 0 0 0 2.3-2.2L12 8"/><path d="m3.5 11 6 6.5a1.5 1.5 0 0 0 2.2 0l.3-.3 1 1a1.5 1.5 0 0 0 2.1-2.1M20.5 11l-4.5 5"/></g></symbol>
+    <symbol id="i-phone" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6.5 3.5h3l1.5 4-2 1.3a10 10 0 0 0 6.2 6.2l1.3-2 4 1.5v3a2 2 0 0 1-2.2 2A16.5 16.5 0 0 1 4.5 5.7a2 2 0 0 1 2-2.2Z"/></g></symbol>
+    <symbol id="i-sparkle" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 4.5 11.6 9l4.4 1.6-4.4 1.6L10 16.5l-1.6-4.3L4 10.6 8.4 9 10 4.5Z"/><path d="M17.5 14.5l.8 2.2 2.2.8-2.2.8-.8 2.2-.8-2.2-2.2-.8 2.2-.8.8-2.2Z"/></g></symbol>
+  </defs>
+</svg>
+
+<!-- 1. Cover -->
+<section class="page cover">
+  <span class="kicker" style="background:rgba(255,255,255,.12);color:#99f6e4">Elegant Steel · सेल्स टीम के लिए</span>
+  <h1 style="margin-top:22mm">राजू का<br>वॉइस नोट</h1>
+  <p class="sub">Raju's Voice Note — a story for every sales rep</p>
+  <div class="tag">30 सेकंड का एक अच्छा नोट<br>= जल्दी मदद, ज़्यादा बिक्री<span class="en">One good 30-second note = faster help, more sales</span></div>
+
+  <svg viewBox="0 0 420 330" style="position:absolute; right:10mm; bottom:22mm; width:150mm">
+    <circle cx="250" cy="170" r="150" fill="#134e4a" opacity=".55"/>
+    <circle cx="250" cy="170" r="105" fill="#0f8b78" opacity=".35"/>
+    <use href="#raju" x="150" y="40" width="200" height="250"/>
+    <g fill="none" stroke="#fbbf24" stroke-width="7" stroke-linecap="round">
+      <path d="M352 120c14 14 14 38 0 52"/><path d="M372 100c26 26 26 66 0 92"/><path d="M392 80c38 38 38 94 0 132"/>
+    </g>
+    <g transform="translate(0 56)">
+      <rect width="168" height="44" rx="22" fill="#fff"/>
+      <text x="84" y="29" font-family="Baloo 2" font-weight="800" font-size="17" fill="#0b1220" text-anchor="middle">हेडलाइन: ORDER</text>
+    </g>
+    <g transform="translate(0 124)">
+      <rect width="140" height="40" rx="20" fill="#fff" opacity=".9"/>
+      <text x="70" y="26" font-family="Hind" font-weight="700" font-size="15" fill="#0b1220" text-anchor="middle">रतन साहा · डीलर</text>
+    </g>
+    <g transform="translate(20 188)">
+      <rect width="110" height="40" rx="20" fill="#fff" opacity=".9"/>
+      <text x="55" y="26" font-family="Hind" font-weight="700" font-size="15" fill="#0b1220" text-anchor="middle">5 टन · कल</text>
+    </g>
+  </svg>
+
+  <div style="position:absolute; left:15mm; bottom:16mm; color:#cbd5e1; font-size:11pt; line-height:1.6">
+    <b style="color:#fff">अंदर क्या है / Inside</b><br>
+    1. राजू का बुरा दिन · 2. राजू का अच्छा दिन<br>
+    3. एक शब्द का जादू: हेडलाइन · 4. पाँच उँगलियों का नियम<br>
+    5. अच्छा बनाम बुरा नोट · 6. पॉकेट कार्ड
+  </div>
+</section>
+
+<!-- 2. The bad day -->
+<section class="page">
+  <span class="kicker">कहानी · अध्याय 1</span>
+  <h2 style="margin-top:8px">राजू का बुरा दिन</h2>
+  <p class="en">Chapter 1 — Raju's bad day</p>
+
+  <div class="grid2 fill" style="margin-top:12px">
+    <div class="panel">
+      <div class="row" style="align-items:center"><span class="num">1</span><b>सुबह 10 बजे, रतन दा की दुकान</b></div>
+      <div class="bubble" style="border-color:var(--red); margin-left:38%">“तीन दिन हो गए, 5 टन सरिया अभी तक नहीं आया! SRMB कह रहा है कल ही दे देगा।”</div>
+      <div class="row" style="justify-content:space-around; align-items:flex-end">
+        <svg viewBox="0 0 120 150" style="width:96px"><use href="#raju"/></svg>
+        <svg viewBox="0 0 120 150" style="width:96px"><use href="#ratan"/></svg>
+      </div>
+      <p>रतन दा बहुत नाराज़ हैं।<br><span class="en">Ratan-da, the dealer, is angry: his order is late.</span></p>
+    </div>
+    <div class="panel">
+      <div class="row" style="align-items:center"><span class="num">2</span><b>राजू जल्दी में है</b></div>
+      <div style="display:flex; align-items:center; gap:10px">
+        <div style="width:96px;height:96px;border-radius:24px;background:var(--red-soft);display:grid;place-items:center;color:var(--red)"><svg style="width:42px;height:42px"><use href="#mic"/></svg></div>
+        <div class="bubble" style="flex:1">“Visit done. Discussion हुआ।”</div>
+      </div>
+      <p>सिर्फ़ 4 शब्द। कौन? क्या हुआ? कितना? कब? — कुछ भी नहीं।<br><span class="en">Just 4 words. Who? What? How much? When? Nothing.</span></p>
+    </div>
+    <div class="panel">
+      <div class="row" style="align-items:center"><span class="num">3</span><b>हेड ऑफ़िस में नोट पहुँचा</b></div>
+      <div style="display:flex; align-items:center; gap:10px">
+        <svg viewBox="0 0 120 120" style="width:130px"><use href="#building"/></svg>
+        <div class="bubble" style="flex:1">“कौन-सी दुकान? क्या समस्या? कुछ समझ नहीं आ रहा…”</div>
+      </div>
+      <p>किसी को समझ नहीं आया, इसलिए किसी ने कुछ नहीं किया।<br><span class="en">Nobody understood, so nobody acted.</span></p>
+    </div>
+    <div class="panel" style="border-color:var(--red)">
+      <div class="row" style="align-items:center"><span class="num" style="background:var(--red)">4</span><b>एक हफ़्ते बाद</b></div>
+      <div style="display:flex; align-items:center; gap:10px">
+        <svg viewBox="0 0 120 150" style="width:96px"><use href="#ratan"/></svg>
+        <div class="bubble" style="flex:1">“अब मैं दूसरी कंपनी का सरिया ले रहा हूँ।”</div>
+      </div>
+      <p>रतन दा चले गए। राजू का ऑर्डर हाथ से निकल गया।<br><span class="en">Ratan-da left for a rival. Raju lost the order.</span></p>
+    </div>
+  </div>
+
+  <div class="moral" style="background:var(--red-soft); margin-top:14px">
+    <svg class="ic-lg" style="color:var(--red)"><use href="#i-broken"/></svg>
+    <div>
+      <h3 style="color:var(--red)">छोटा नोट = खोया मौका</h3>
+      <p>समस्या छोटी थी। हेड ऑफ़िस एक दिन में ठीक कर सकता था — अगर उसे पता होता।<br><span class="en">The problem was small. Head office could have fixed it in a day — if they had known.</span></p>
+    </div>
+  </div>
+  <span class="footer-brand">राजू का वॉइस नोट</span><span class="pageno">2</span>
+</section>
+
+<!-- 3. The good day -->
+<section class="page">
+  <span class="kicker">कहानी · अध्याय 2</span>
+  <h2 style="margin-top:8px">राजू का अच्छा दिन</h2>
+  <p class="en">Chapter 2 — same shop, same problem, a better note</p>
+
+  <div class="card" style="margin-top:12px; border:2.5px solid var(--green); background:var(--green-soft)">
+    <div class="row" style="align-items:center; gap:10px">
+      <div style="width:44px;height:44px;border-radius:14px;background:var(--green);color:#fff;display:grid;place-items:center"><svg style="width:26px;height:26px"><use href="#mic"/></svg></div>
+      <div><b>इस बार राजू ने 30 सेकंड लिए और कहा:</b><br><span class="en">This time Raju took 30 seconds and said:</span></div>
+    </div>
+    <p style="margin-top:10px; font-size:13.5pt; line-height:1.7">
+      “<b class="say" style="color:var(--red)">हेडलाइन: COMPLAINT.</b>
+      <mark style="background:#dbeafe">रतन साहा, डीलर, बारासात।</mark>
+      <mark style="background:#fde68a">3 दिन पहले 5 टन का ऑर्डर दिया था, सरिया अभी तक नहीं आया। वे बहुत नाराज़ हैं।</mark>
+      <mark style="background:#fbcfe8">SRMB कह रहा है कल ही दे देगा।</mark>
+      <mark style="background:#ddd6fe">मैं कल सुबह 11 बजे फिर फ़ोन करूँगा।</mark>”
+    </p>
+    <p class="en" style="margin-top:6px">“Headline: COMPLAINT. Ratan Saha, dealer, Barasat. Ordered 5 tonnes 3 days ago, still not delivered. He is very angry. SRMB says they can deliver tomorrow. I'll call him again tomorrow at 11.”</p>
+  </div>
+
+  <div class="grid3 fill" style="margin-top:14px">
+    <div class="panel"><div class="row" style="align-items:center"><span class="num">1</span><b>1 मिनट में समझ आ गया</b></div>
+      <svg viewBox="0 0 120 120" style="width:130px; margin:0 auto"><use href="#building"/></svg>
+      <p>हेड ऑफ़िस तुरंत समझ गया: देरी की शिकायत, 5 टन, नाराज़ डीलर।<br><span class="en">Head office understood in one minute.</span></p></div>
+    <div class="panel"><div class="row" style="align-items:center"><span class="num">2</span><b>अगली सुबह गाड़ी</b></div>
+      <svg viewBox="0 0 140 80" style="width:170px; margin:8px auto"><use href="#truck"/></svg>
+      <p>डिपो ने उसी दिन ऑर्डर ढूँढा और अगली सुबह माल भेज दिया।<br><span class="en">The depot found the order and delivered next morning.</span></p></div>
+    <div class="panel" style="border-color:var(--green)"><div class="row" style="align-items:center"><span class="num" style="background:var(--green)">3</span><b>रतन दा खुश</b></div>
+      <svg viewBox="0 0 120 150" style="width:100px; margin:0 auto"><use href="#ratan"/></svg>
+      <p>“अब 3 टन और भेज दो।” रतन दा हमारे साथ रहे।<br><span class="en">“Send 3 more tonnes.” Ratan-da stayed with us.</span></p></div>
+  </div>
+
+  <div class="moral" style="background:var(--green-soft); margin-top:14px">
+    <svg class="ic-lg" style="color:var(--green)"><use href="#i-trophy"/></svg>
+    <div>
+      <h3 style="color:var(--green)">वही दुकान, वही समस्या — बस नोट अलग था</h3>
+      <p>रंगीन हिस्से देखिए। हर रंग एक सवाल का जवाब है। अगले पन्नों में सीखेंगे कैसे।<br>
+      <span class="en">Same shop, same problem — only the note was different. Each colour answers one question. The next pages show how.</span></p>
+    </div>
+  </div>
+  <span class="footer-brand">राजू का वॉइस नोट</span><span class="pageno">3</span>
+</section>
+
+<!-- 4. Headline words -->
+<section class="page">
+  <span class="kicker">चरण 1 · Step 1</span>
+  <h2 style="margin-top:8px">एक शब्द का जादू: <span style="color:var(--teal)">हेडलाइन</span></h2>
+  <p style="margin-top:6px">हर नोट शुरू कीजिए <b class="say">“हेडलाइन”</b> बोलकर, फिर नीचे दिए <b>9 शब्दों में से एक</b> बोलिए — अंग्रेज़ी में, बिल्कुल जैसा लिखा है।
+  <br><span class="en">Start every note with “Headline”, then ONE of these 9 English words — say it exactly as written. This one word tells the computer what the visit was about.</span></p>
+
+  <div class="grid3" style="margin-top:12px">
+    <div class="hl" style="border-color:#86efac"><div class="row" style="align-items:center"><div class="icon" style="background:var(--green-soft)"><svg class="ic" style="color:var(--green)"><use href="#i-cart"/></svg></div><span class="word" style="color:var(--green)">ORDER</span></div>
+      <p>ग्राहक ख़रीदना चाहते हैं या ऑर्डर दे दिया।<br><span class="en">They want to buy, or ordered.</span></p></div>
+    <div class="hl" style="border-color:#fcd34d"><div class="row" style="align-items:center"><div class="icon" style="background:var(--amber-soft)"><svg class="ic" style="color:var(--amber)"><use href="#i-rupee"/></svg></div><span class="word" style="color:var(--amber)">PAYMENT</span></div>
+      <p>पैसे मिले, या पैसे बाकी हैं।<br><span class="en">Money collected or still due.</span></p></div>
+    <div class="hl" style="border-color:#fdba74"><div class="row" style="align-items:center"><div class="icon" style="background:#fff7ed"><svg class="ic" style="color:#c2410c"><use href="#i-swords"/></svg></div><span class="word" style="color:#c2410c">COMPETITOR</span></div>
+      <p>दूसरा ब्रांड सस्ता दे रहा है या ग्राहक दूसरा ब्रांड ले रहे हैं।<br><span class="en">A rival brand is cheaper or being used.</span></p></div>
+    <div class="hl" style="border-color:#fca5a5"><div class="row" style="align-items:center"><div class="icon" style="background:var(--red-soft)"><svg class="ic" style="color:var(--red)"><use href="#i-alert"/></svg></div><span class="word" style="color:var(--red)">COMPLAINT</span></div>
+      <p>माल देर से, ख़राब माल, या ग्राहक नाख़ुश।<br><span class="en">Late delivery, bad material, unhappy.</span></p></div>
+    <div class="hl" style="border-color:#7dd3fc"><div class="row" style="align-items:center"><div class="icon" style="background:var(--sky-soft)"><svg class="ic" style="color:var(--sky)"><use href="#i-crane"/></svg></div><span class="word" style="color:var(--sky)">SITE</span></div>
+      <p>घर या बिल्डिंग का काम चल रहा है या शुरू होगा — सरिया लगेगा।<br><span class="en">Building work running or starting soon.</span></p></div>
+    <div class="hl" style="border-color:#86efac"><div class="row" style="align-items:center"><div class="icon" style="background:var(--green-soft)"><svg class="ic" style="color:var(--green)"><use href="#i-sprout"/></svg></div><span class="word" style="color:var(--green)">NEW CUSTOMER</span></div>
+      <p>नई दुकान, नया मिस्त्री, नया ग्राहक।<br><span class="en">A new shop, mason or customer.</span></p></div>
+    <div class="hl" style="border-color:#c4b5fd"><div class="row" style="align-items:center"><div class="icon" style="background:var(--violet-soft)"><svg class="ic" style="color:var(--violet)"><use href="#i-wrench"/></svg></div><span class="word" style="color:var(--violet)">ENGINEER</span></div>
+      <p>इंजीनियर या टेक्निकल मदद चाहिए।<br><span class="en">Needs an engineer or technical help.</span></p></div>
+    <div class="hl" style="border-color:#fde68a"><div class="row" style="align-items:center"><div class="icon" style="background:#fefce8"><svg class="ic" style="color:#a16207"><use href="#i-star"/></svg></div><span class="word" style="color:#a16207">HAPPY</span></div>
+      <p>ग्राहक खुश हैं, हमारी तारीफ़ कर रहे हैं।<br><span class="en">Customer is happy with us.</span></p></div>
+    <div class="hl" style="border-color:#cbd5e1"><div class="row" style="align-items:center"><div class="icon" style="background:#f1f5f9"><svg class="ic" style="color:#475569"><use href="#i-moon"/></svg></div><span class="word" style="color:#475569">NO RESULT</span></div>
+      <p>मुलाक़ात हुई, पर कुछ नहीं हुआ।<br><span class="en">Met them, nothing came of it.</span></p></div>
+  </div>
+
+  <div class="grid2" style="margin-top:14px">
+    <div class="card" style="background:var(--teal-soft); border-color:#99f6e4">
+      <h3>दो बातें हुईं तो?</h3>
+      <p>सबसे ज़रूरी बात पहले बोलिए। शिकायत + नया ऑर्डर हो तो: <b class="say">“हेडलाइन: COMPLAINT”</b>, फिर नोट में ऑर्डर की बात बताइए।<br>
+      <span class="en">Two things happened? Say the most urgent one as the headline; mention the other in the note.</span></p>
+    </div>
+    <div class="card" style="background:var(--amber-soft); border-color:#fcd34d">
+      <h3>अंग्रेज़ी शब्द क्यों?</h3>
+      <p>कंप्यूटर इन 9 शब्दों को ठीक से पहचानता है। बाकी नोट बांग्ला, हिंदी या अंग्रेज़ी में — जैसे आसान लगे।<br>
+      <span class="en">The computer knows these 9 words exactly. The rest of the note can be in any language.</span></p>
+    </div>
+  </div>
+  <span class="footer-brand">राजू का वॉइस नोट</span><span class="pageno">4</span>
+</section>
+
+<!-- 5. Five finger rule -->
+<section class="page">
+  <span class="kicker">चरण 2 · Step 2</span>
+  <h2 style="margin-top:8px">पाँच उँगलियों का नियम</h2>
+  <p style="margin-top:4px">हेडलाइन के बाद, हाथ की 5 उँगलियाँ गिनकर 5 सवालों के जवाब दीजिए। हर उँगली = 2 अंक। 5 उँगलियाँ = <b>10/10</b>।<br>
+  <span class="en">After the headline, count your 5 fingers and answer 5 questions. Each finger = 2 points. All 5 = 10/10.</span></p>
+
+  <div style="display:grid; grid-template-columns: 62mm 1fr; gap:12px; margin-top:12px; align-items:center">
+    <svg viewBox="0 0 250 290" style="width:62mm">
+      <g fill="#f2c094" stroke="#0b1220" stroke-width="3" stroke-linejoin="round">
+        <rect x="58" y="44" width="34" height="130" rx="17"/>
+        <rect x="96" y="20" width="34" height="150" rx="17"/>
+        <rect x="134" y="32" width="34" height="140" rx="17"/>
+        <rect x="172" y="66" width="32" height="110" rx="16"/>
+        <rect x="16" y="120" width="34" height="96" rx="17" transform="rotate(-38 33 200)"/>
+        <path d="M56 140h150v58c0 44-30 80-75 80s-75-36-75-80Z"/>
+      </g>
+      <path d="M100 210c18 10 44 10 62-4" stroke="#e0a87a" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+      <g font-family="Baloo 2" font-weight="800" font-size="20" fill="#fff" text-anchor="middle">
+        <circle cx="34" cy="126" r="17" fill="#2563eb" stroke="#fff" stroke-width="3"/><text x="34" y="133">1</text>
+        <circle cx="75" cy="50" r="17" fill="#d97706" stroke="#fff" stroke-width="3"/><text x="75" y="57">2</text>
+        <circle cx="113" cy="26" r="17" fill="#16a34a" stroke="#fff" stroke-width="3"/><text x="113" y="33">3</text>
+        <circle cx="151" cy="38" r="17" fill="#db2777" stroke="#fff" stroke-width="3"/><text x="151" y="45">4</text>
+        <circle cx="188" cy="72" r="17" fill="#7c3aed" stroke="#fff" stroke-width="3"/><text x="188" y="79">5</text>
+      </g>
+    </svg>
+    <div style="display:grid; gap:8px">
+      <div class="finger"><span class="n" style="background:#2563eb">1</span><div><h3>कौन? <span class="en">WHO</span></h3><p>ग्राहक का नाम + वे कौन हैं: डीलर, रिटेलर, मिस्त्री, इंजीनियर, मकान मालिक।<br><span class="en">Customer's name and who they are.</span></p></div></div>
+      <div class="finger"><span class="n" style="background:#d97706">2</span><div><h3>क्या हुआ? <span class="en">WHAT HAPPENED</span></h3><p>असली बात एक लाइन में: ऑर्डर दिया, पैसे दिए, शिकायत की…<br><span class="en">The real result, in one line.</span></p></div></div>
+      <div class="finger"><span class="n" style="background:#16a34a">3</span><div><h3>कितना? <span class="en">HOW MUCH</span></h3><p>संख्या बोलिए! कितने टन, कितने रुपये, कितने प्रतिशत। कुछ नहीं हुआ तो बोलिए “ऑर्डर नहीं हुआ”।<br><span class="en">Say numbers: tonnes, rupees. Or “no order”.</span></p></div></div>
+      <div class="finger"><span class="n" style="background:#db2777">4</span><div><h3>कौन-सा ब्रांड? <span class="en">WHICH BRAND</span></h3><p>हमारा सरिया, या किसी और का? और का हो तो नाम बोलिए — SRMB, Tata Tiscon, जो भी हो।<br><span class="en">Ours or a rival? Name the rival brand.</span></p></div></div>
+      <div class="finger"><span class="n" style="background:#7c3aed">5</span><div><h3>कब? <span class="en">WHEN, NEXT</span></h3><p>अगला काम क्या और कब: “कल 11 बजे फ़ोन”, “सोमवार को माल जाएगा”, “10 तारीख़ को पैसे”।<br><span class="en">Next step with a day or date.</span></p></div></div>
+    </div>
+  </div>
+
+  <div class="card" style="margin-top:12px; background:var(--navy); color:#fff; border:0">
+    <p style="font-size:13pt"><b>याद रखने की तुकबंदी:</b> <span style="color:#fbbf24; font-weight:700">“कौन, क्या, कितना, कौन-सा, कब — पाँच उँगलियों से नोट बने बढ़िया अब!”</span><br>
+    <span class="en" style="color:#cbd5e1; font-size:10.5pt">Rhyme to remember: Who, what, how much, which brand, when — five fingers make a good note.</span></p>
+  </div>
+  <span class="footer-brand">राजू का वॉइस नोट</span><span class="pageno">5</span>
+</section>
+
+<!-- 6. Bad vs good -->
+<section class="page">
+  <span class="kicker">चरण 3 · Step 3</span>
+  <h2 style="margin-top:8px">बुरा नोट बनाम अच्छा नोट</h2>
+  <p class="en">Bad note vs good note — see the difference in points</p>
+
+  <div class="fill" style="display:grid; gap:12px; margin-top:12px">
+    <div class="grid2">
+      <div class="note bad"><div class="row" style="justify-content:space-between;align-items:center"><b>✗ बुरा</b><span class="score" style="background:var(--red)">2/10</span></div>
+        <p style="margin-top:4px">“Payment follow-up किया।”</p>
+        <div class="meter"><span style="background:var(--red)"></span><span></span><span></span><span></span><span></span></div>
+        <p class="en" style="margin-top:4px">Whose payment? How much? When?</p></div>
+      <div class="note good"><div class="row" style="justify-content:space-between;align-items:center"><b>✓ अच्छा</b><span class="score" style="background:var(--green)">10/10</span></div>
+        <p style="margin-top:4px">“<b>हेडलाइन: PAYMENT.</b> समीर दास, डीलर, माँ तारा ट्रेडर्स। 2 लाख रुपये बाकी थे, आज 50 हज़ार दिए। बाकी 10 तारीख़ को देंगे। हमारे सरिये से खुश हैं।”</p>
+        <div class="meter"><span style="background:var(--green)"></span><span style="background:var(--green)"></span><span style="background:var(--green)"></span><span style="background:var(--green)"></span><span style="background:var(--green)"></span></div></div>
+    </div>
+    <div class="grid2">
+      <div class="note bad"><div class="row" style="justify-content:space-between;align-items:center"><b>✗ बुरा</b><span class="score" style="background:var(--red)">1/10</span></div>
+        <p style="margin-top:4px">“Site visit. Discussion हुआ।”</p>
+        <div class="meter"><span style="background:var(--red)"></span><span></span><span></span><span></span><span></span></div>
+        <p class="en" style="margin-top:4px">Which site? What was discussed? Nothing to act on.</p></div>
+      <div class="note good"><div class="row" style="justify-content:space-between;align-items:center"><b>✓ अच्छा</b><span class="score" style="background:var(--green)">10/10</span></div>
+        <p style="margin-top:4px">“<b>हेडलाइन: SITE.</b> मिस्त्री बापी मंडल, बैरकपुर। G+2 मकान की ढलाई 15 तारीख़ से शुरू होगी, क़रीब 8 टन सरिया लगेगा। अभी Tata देख रहे हैं। सोमवार को रेट लेकर फिर जाऊँगा।”</p>
+        <div class="meter"><span style="background:var(--green)"></span><span style="background:var(--green)"></span><span style="background:var(--green)"></span><span style="background:var(--green)"></span><span style="background:var(--green)"></span></div></div>
+    </div>
+    <div class="grid2">
+      <div class="note bad"><div class="row" style="justify-content:space-between;align-items:center"><b>✗ बुरा</b><span class="score" style="background:var(--red)">3/10</span></div>
+        <p style="margin-top:4px">“The client said price is high.”</p>
+        <div class="meter"><span style="background:var(--red)"></span><span style="background:var(--red)"></span><span></span><span></span><span></span></div>
+        <p class="en" style="margin-top:4px">Which client? Higher than which brand? By how much?</p></div>
+      <div class="note good"><div class="row" style="justify-content:space-between;align-items:center"><b>✓ अच्छा</b><span class="score" style="background:var(--green)">10/10</span></div>
+        <p style="margin-top:4px">“<b>हेडलाइन: COMPETITOR.</b> रिटेलर अमल घोष, बनगाँव। कह रहे हैं SRMB प्रति टन 800 रुपये कम दे रहा है। इस महीने 3 टन चाहिए। गुरुवार तक रेट बताना है।”</p>
+        <div class="meter"><span style="background:var(--green)"></span><span style="background:var(--green)"></span><span style="background:var(--green)"></span><span style="background:var(--green)"></span><span style="background:var(--green)"></span></div></div>
+    </div>
+  </div>
+  <p class="tagline" style="margin-top:12px">अच्छा नोट लंबा नहीं — अच्छा नोट साफ़ होता है। 30 सेकंड काफ़ी हैं।<br><span class="en">A good note isn't long — it's clear. 30 seconds is enough.</span></p>
+  <span class="footer-brand">राजू का वॉइस नोट</span><span class="pageno">6</span>
+</section>
+
+<!-- 7. Sample notes for every headline -->
+<section class="page">
+  <span class="kicker">नमूने · Examples</span>
+  <h2 style="margin-top:8px">हर हेडलाइन का एक नमूना</h2>
+  <p class="en">One sample note for each headline word — copy the pattern</p>
+  <div style="display:grid; gap:7px; margin-top:10px">
+    <div class="card"><span class="chip" style="background:var(--green-soft);color:var(--green)">ORDER</span> <p style="display:inline">“हेडलाइन: ORDER. डीलर सुभाष पाल, हाबरा। 10 मिमी 4 टन ऑर्डर कन्फ़र्म। बुधवार को डिलीवरी चाहिए।”</p></div>
+    <div class="card"><span class="chip" style="background:var(--amber-soft);color:var(--amber)">PAYMENT</span> <p style="display:inline">“हेडलाइन: PAYMENT. रिटेलर श्यामल दे। 80 हज़ार बाकी, आज 30 हज़ार दिए, बाकी शनिवार को।”</p></div>
+    <div class="card"><span class="chip" style="background:#fff7ed;color:#c2410c">COMPETITOR</span> <p style="display:inline">“हेडलाइन: COMPETITOR. मिस्त्री रवि साव। साइट पर Tata Tiscon इस्तेमाल कर रहे हैं, कहते हैं उनका सरिया ज़्यादा सीधा है। शुक्रवार को हमारा सैंपल दिखाऊँगा।”</p></div>
+    <div class="card"><span class="chip" style="background:var(--red-soft);color:var(--red)">COMPLAINT</span> <p style="display:inline">“हेडलाइन: COMPLAINT. डीलर मनोज साहा। पिछले चालान में 2 बंडल सरिये में जंग। फ़ोटो भेज रहा हूँ। कल तक बदलना है।”</p></div>
+    <div class="card"><span class="chip" style="background:var(--sky-soft);color:var(--sky)">SITE</span> <p style="display:inline">“हेडलाइन: SITE. मकान मालिक अनीता बिस्वास, नैहाटी। अगले महीने छत की ढलाई, क़रीब 6 टन लगेगा। 1 तारीख़ को फिर जाऊँगा।”</p></div>
+    <div class="card"><span class="chip" style="background:var(--green-soft);color:var(--green)">NEW CUSTOMER</span> <p style="display:inline">“हेडलाइन: NEW CUSTOMER. नई हार्डवेयर दुकान, माँ दुर्गा स्टोर्स, मालिक तपन कर। पहले 2 टन लेना चाहते हैं। सोमवार को रेट दूँगा।”</p></div>
+    <div class="card"><span class="chip" style="background:var(--violet-soft);color:var(--violet)">ENGINEER</span> <p style="display:inline">“हेडलाइन: ENGINEER. इंजीनियर सुमन राय, सरकारी स्कूल प्रोजेक्ट। सरिये का टेस्ट सर्टिफ़िकेट माँग रहे हैं। इस हफ़्ते हमारा इंजीनियर भेजना है।”</p></div>
+    <div class="card"><span class="chip" style="background:#fefce8;color:#a16207">HAPPY</span> <p style="display:inline">“हेडलाइन: HAPPY. मिस्त्री कालू शेख। हमारे सरिये से बहुत खुश, 3 और मिस्त्रियों को बताएँगे। अगले महीने मिस्त्री मीटिंग में आएँगे।”</p></div>
+    <div class="card"><span class="chip" style="background:#f1f5f9;color:#475569">NO RESULT</span> <p style="display:inline">“हेडलाइन: NO RESULT. रिटेलर बिप्लब दास। दुकान बंद थी, फ़ोन पर बात हुई, अभी कुछ नहीं चाहिए। 15 दिन बाद फिर जाऊँगा।”</p></div>
+  </div>
+  <p class="en keep" style="margin-top:8px">All names and places on these pages are made up, for practice only.</p>
+  <span class="footer-brand">राजू का वॉइस नोट</span><span class="pageno">7</span>
+</section>
+
+<!-- 8. Do and don't -->
+<section class="page">
+  <span class="kicker">याद रखिए · Remember</span>
+  <h2 style="margin-top:8px">ये कीजिए, ये मत कीजिए</h2>
+  <p class="en">Do this, not that</p>
+  <div class="grid2" style="margin-top:14px; align-items:start">
+    <div class="card" style="border:2px solid #86efac">
+      <h3 style="color:var(--green)">✓ कीजिए <span class="en">DO</span></h3>
+      <ul class="clean" style="margin-top:10px">
+        <li><span class="tick">✓</span><span>दुकान से निकलते ही रिकॉर्ड कीजिए, जब तक बात याद है।<br><span class="en">Record right after the visit.</span></span></li>
+        <li><span class="tick">✓</span><span>शांत जगह खड़े होकर, फ़ोन मुँह के पास रखकर बोलिए।<br><span class="en">Quiet spot, phone close to your mouth.</span></span></li>
+        <li><span class="tick">✓</span><span>संख्या साफ़ बोलिए: “चार टन”, “पचास हज़ार”।<br><span class="en">Say numbers clearly.</span></span></li>
+        <li><span class="tick">✓</span><span>हर दुकान के लिए अलग नोट।<br><span class="en">One note per customer.</span></span></li>
+        <li><span class="tick">✓</span><span>कुछ न हुआ हो तो भी सच बोलिए: “हेडलाइन: NO RESULT”।<br><span class="en">Nothing happened? Say so honestly — that is useful too.</span></span></li>
+      </ul>
+    </div>
+    <div class="card" style="border:2px solid #fca5a5">
+      <h3 style="color:var(--red)">✗ मत कीजिए <span class="en">DON'T</span></h3>
+      <ul class="clean" style="margin-top:10px">
+        <li><span class="x">✗</span><span>8 शब्दों से छोटा नोट — “Visit done” किसी काम का नहीं।<br><span class="en">Notes under 8 words.</span></span></li>
+        <li><span class="x">✗</span><span>“The client”, “customer” — नाम न बोलना।<br><span class="en">No name.</span></span></li>
+        <li><span class="x">✗</span><span>सड़क की गाड़ियों के शोर में रिकॉर्ड करना।<br><span class="en">Recording in traffic noise.</span></span></li>
+        <li><span class="x">✗</span><span>दो दुकानों की बात एक नोट में।<br><span class="en">Two customers in one note.</span></span></li>
+        <li><span class="x">✗</span><span>मनगढ़ंत बातें। ग़लत जानकारी से हेड ऑफ़िस ग़लत फ़ैसला लेता है।<br><span class="en">Made-up details lead to wrong decisions.</span></span></li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="moral" style="background:var(--teal-soft); margin-top:16px">
+    <svg viewBox="0 0 120 150" style="width:62px; flex:none"><use href="#raju"/></svg>
+    <div>
+      <h3 style="color:var(--teal)">राजू कहता है: “आपका नोट कंप्यूटर पढ़ता है, फिर सही आदमी तक पहुँचाता है।”</h3>
+      <p>शिकायत डिपो तक, पैसों की बात अकाउंट्स तक, नई साइट सेल्स मैनेजर तक। हेडलाइन जितनी साफ़, मदद उतनी जल्दी।<br>
+      <span class="en">The computer reads your note and sends it to the right person: complaints to the depot, money to accounts, new sites to the sales manager. The clearer the headline, the faster the help.</span></p>
+    </div>
+  </div>
+  <span class="footer-brand">राजू का वॉइस नोट</span><span class="pageno">8</span>
+</section>
+
+<!-- 9. Pocket cards -->
+<section class="page">
+  <span class="kicker">काटकर जेब में रखिए · Cut out and keep</span>
+  <h2 style="margin-top:8px">पॉकेट कार्ड</h2>
+  <p class="en keep">Cut along the dotted line. Keep one in your wallet, stick one on your bike.</p>
+  <div style="display:grid; gap:10mm; margin-top:8mm">
+    <div class="pocket">
+      <div class="row" style="justify-content:space-between; align-items:center">
+        <h3 style="font-size:18pt">30 सेकंड का नोट</h3><span class="chip" style="background:var(--navy);color:#fff">Elegant Steel</span>
+      </div>
+      <div class="flow" style="margin-top:8px">
+        <span class="step" style="background:var(--teal)">हेडलाइन</span><span class="arrow">→</span>
+        <span class="step" style="background:#2563eb">कौन</span><span class="arrow">→</span>
+        <span class="step" style="background:#d97706">क्या हुआ</span><span class="arrow">→</span>
+        <span class="step" style="background:#16a34a">कितना</span><span class="arrow">→</span>
+        <span class="step" style="background:#db2777">कौन-सा ब्रांड</span><span class="arrow">→</span>
+        <span class="step" style="background:#7c3aed">कब</span>
+      </div>
+      <p style="margin-top:8px"><b>हेडलाइन शब्द:</b>
+        <span class="chip" style="background:var(--green-soft);color:var(--green)">ORDER</span>
+        <span class="chip" style="background:var(--amber-soft);color:var(--amber)">PAYMENT</span>
+        <span class="chip" style="background:#fff7ed;color:#c2410c">COMPETITOR</span>
+        <span class="chip" style="background:var(--red-soft);color:var(--red)">COMPLAINT</span>
+        <span class="chip" style="background:var(--sky-soft);color:var(--sky)">SITE</span>
+        <span class="chip" style="background:var(--green-soft);color:var(--green)">NEW CUSTOMER</span>
+        <span class="chip" style="background:var(--violet-soft);color:var(--violet)">ENGINEER</span>
+        <span class="chip" style="background:#fefce8;color:#a16207">HAPPY</span>
+        <span class="chip" style="background:#f1f5f9;color:#475569">NO RESULT</span></p>
+      <p style="margin-top:6px; color:var(--teal); font-weight:700">“कौन, क्या, कितना, कौन-सा, कब — पाँच उँगलियों से नोट बने बढ़िया अब!”</p>
+    </div>
+    <div class="pocket">
+      <div class="row" style="justify-content:space-between; align-items:center">
+        <h3 style="font-size:18pt">30-second note</h3><span class="chip" style="background:var(--navy);color:#fff">Elegant Steel</span>
+      </div>
+      <div class="flow" style="margin-top:8px">
+        <span class="step" style="background:var(--teal)">Headline</span><span class="arrow">→</span>
+        <span class="step" style="background:#2563eb">Who</span><span class="arrow">→</span>
+        <span class="step" style="background:#d97706">What happened</span><span class="arrow">→</span>
+        <span class="step" style="background:#16a34a">How much</span><span class="arrow">→</span>
+        <span class="step" style="background:#db2777">Which brand</span><span class="arrow">→</span>
+        <span class="step" style="background:#7c3aed">When next</span>
+      </div>
+      <p style="margin-top:8px">“Headline: ORDER. Subhash Pal, dealer, Habra. 4 tonnes of 10 mm confirmed. Our brand. Delivery on Wednesday.”</p>
+      <p class="en keep" style="margin-top:4px">Say the headline word in English. The rest can be in Bengali, Hindi or English.</p>
+    </div>
+    <div class="pocket" style="background:var(--navy); color:#fff; border-color:#475569">
+      <h3 style="font-size:18pt; color:#fbbf24">ख़ुद से 3 सवाल · Ask yourself 3 things</h3>
+      <p style="margin-top:6px; font-size:13pt">1. हेडलाइन बोली?&nbsp;&nbsp; 2. कोई संख्या बोली?&nbsp;&nbsp; 3. अगली तारीख़ बोली?</p>
+      <p class="en" style="color:#cbd5e1; font-size:10.5pt; margin-top:2px">Did I say the headline? A number? The next date? Three yes = a great note.</p>
+    </div>
+  </div>
+  <span class="footer-brand">राजू का वॉइस नोट</span><span class="pageno">9</span>
+</section>
+
+<!-- 10. Closing -->
+<section class="page cover" style="display:flex; flex-direction:column; justify-content:center">
+  <span class="kicker" style="background:rgba(255,255,255,.12);color:#99f6e4; align-self:flex-start">आख़िरी बात · Last word</span>
+  <h1 style="font-size:40pt; margin-top:10px">आपका नोट,<br>आपकी जीत</h1>
+  <p class="sub en">Your note, your win</p>
+  <div class="grid2" style="margin-top:14mm">
+    <div style="background:rgba(255,255,255,.08); border-radius:16px; padding:14px">
+      <h3 style="color:#fbbf24; display:flex; gap:8px; align-items:center"><svg class="ic" style="color:#fbbf24"><use href="#i-bolt"/></svg> जल्दी मदद</h3><p style="color:#e2e8f0">साफ़ नोट का मतलब डिपो, अकाउंट्स और मैनेजर उसी दिन काम में लग जाते हैं।<br><span class="en" style="color:#94a3b8;font-size:10.5pt">Clear notes get the depot, accounts and managers moving the same day.</span></p>
+    </div>
+    <div style="background:rgba(255,255,255,.08); border-radius:16px; padding:14px">
+      <h3 style="color:#fbbf24; display:flex; gap:8px; align-items:center"><svg class="ic" style="color:#fbbf24"><use href="#i-hands"/></svg> ग्राहक बना रहता है</h3><p style="color:#e2e8f0">समस्या जल्दी सुलझे तो ग्राहक दूसरे ब्रांड पर नहीं जाते।<br><span class="en" style="color:#94a3b8;font-size:10.5pt">Problems fixed fast keep customers with us.</span></p>
+    </div>
+    <div style="background:rgba(255,255,255,.08); border-radius:16px; padding:14px">
+      <h3 style="color:#fbbf24; display:flex; gap:8px; align-items:center"><svg class="ic" style="color:#fbbf24"><use href="#i-phone"/></svg> कम फ़ोन कॉल</h3><p style="color:#e2e8f0">नोट में सब हो तो हेड ऑफ़िस को फ़ोन करके पूछना नहीं पड़ता।<br><span class="en" style="color:#94a3b8;font-size:10.5pt">A full note means fewer calls asking what happened.</span></p>
+    </div>
+    <div style="background:rgba(255,255,255,.08); border-radius:16px; padding:14px">
+      <h3 style="color:#fbbf24; display:flex; gap:8px; align-items:center"><svg class="ic" style="color:#fbbf24"><use href="#i-sparkle"/></svg> आपका काम सबको दिखता है</h3><p style="color:#e2e8f0">हर ऑर्डर, हर नई साइट — आपके नाम पर दर्ज होती है।<br><span class="en" style="color:#94a3b8;font-size:10.5pt">Every order and new site you find is recorded in your name.</span></p>
+    </div>
+  </div>
+  <div style="margin-top:14mm; display:flex; align-items:center; gap:14px">
+    <svg viewBox="0 0 120 150" style="width:80px"><use href="#raju"/></svg>
+    <div class="bubble" style="color:var(--ink); font-size:14pt">“आज से हर नोट: <b>हेडलाइन</b> + <b>पाँच उँगलियाँ</b>। 30 सेकंड। बस!”<br>
+      <span class="en">“From today, every note: headline + five fingers. 30 seconds. That's it!”</span></div>
+  </div>
+</section>
+
+</body>
+</html>
