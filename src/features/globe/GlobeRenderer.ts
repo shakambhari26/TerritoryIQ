@@ -13,7 +13,6 @@
  */
 
 import {
-  AdditiveBlending,
   BackSide,
   BufferAttribute,
   BufferGeometry,
@@ -28,6 +27,7 @@ import {
   Mesh,
   MeshBasicMaterial,
   NoColorSpace,
+  NormalBlending,
   PerspectiveCamera,
   Points,
   PointsMaterial,
@@ -288,7 +288,8 @@ export class GlobeRenderer {
       vertexShader: GLOW_VERTEX,
       fragmentShader: GLOW_FRAGMENT,
       side: BackSide,
-      blending: AdditiveBlending,
+      // Normal, not additive: added light vanishes against the light background, a tint shows.
+      blending: NormalBlending,
       transparent: true,
       depthWrite: false,
       uniforms: { uSunDir: { value: SUN.clone() }, uThickness: { value: 0.16 }, uFade: { value: 1 } },
@@ -319,6 +320,8 @@ export class GlobeRenderer {
     const starMaterial = new PointsMaterial({ size: 1.3, sizeAttenuation: false, vertexColors: true, transparent: true, opacity: 0.85, depthWrite: false });
     this.stars = new Points(starGeometry, starMaterial);
     this.stars.renderOrder = -1;
+    // The globe sits on a light background, where stars would only read as grey specks.
+    this.stars.visible = false;
     this.scene.add(this.stars);
     this.disposables.push(starGeometry, starMaterial);
 
@@ -385,7 +388,7 @@ export class GlobeRenderer {
     } catch {
       throw new Error("WebGL is not available in this browser.");
     }
-    renderer.setClearColor(0x02060f, 1);
+    renderer.setClearColor(0xf8fafc, 1);
     renderer.outputColorSpace = SRGBColorSpace;
 
     const nav = navigator as Navigator & { deviceMemory?: number };

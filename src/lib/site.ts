@@ -15,6 +15,7 @@ export const NAV_ITEMS: readonly NavItem[] = [
   { label: "Globe", href: "/globe", status: "available" },
   { label: "Overview", href: "/", status: "available" },
   { label: "Workspace", href: "/workspace", status: "available" },
+  { label: "Visit Insights", href: "/visit-insights", status: "available" },
   { label: "Allocation", status: "planned" },
   { label: "Analytics", status: "planned" },
   { label: "Data Import", status: "planned" },

@@ -377,7 +377,7 @@ export function Workspace({ dataset }: { dataset: TerritoryDataset }) {
               <p
                 role="status"
                 data-testid="map-provisional"
-                className="pointer-events-none absolute left-3 top-3 z-10 rounded-md bg-navy-950/85 px-2 py-1 text-[0.6875rem] font-medium leading-4 text-amber-200 ring-1 ring-amber-400/40 backdrop-blur"
+                className="pointer-events-none absolute left-3 top-3 z-10 rounded-md bg-amber-50/95 px-2 py-1 text-[0.6875rem] font-medium leading-4 text-amber-800 ring-1 ring-amber-500/50 backdrop-blur"
               >
                 Provisional boundaries
               </p>

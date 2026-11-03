@@ -57,7 +57,7 @@ export function MapToolbar({
             type="button"
             onClick={onBack}
             data-testid="map-back"
-            className="inline-flex h-8 items-center gap-1 rounded-lg bg-surface-muted px-2.5 text-sm font-medium text-ink hover:bg-navy-700"
+            className="inline-flex h-8 items-center gap-1 rounded-lg bg-surface-muted px-2.5 text-sm font-medium text-ink hover:bg-line"
           >
             <svg aria-hidden="true" focusable="false" viewBox="0 0 20 20" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
               <path d="M12 4 6 10l6 6" />
@@ -105,7 +105,7 @@ export function MapToolbar({
             onClick={() => onLayerMode(layer.value)}
             className={cn(
               "h-8 flex-auto whitespace-nowrap rounded-md px-2 @3xl:px-2.5 sm:flex-none",
-              layerMode === layer.value ? "bg-navy-700 text-on-navy shadow-[inset_0_-2px_0_var(--color-ember)]" : "text-ink-muted hover:text-ink",
+              layerMode === layer.value ? "bg-surface text-ink shadow-[inset_0_-2px_0_var(--color-ember)]" : "text-ink-muted hover:text-ink",
             )}
           >
             {layer.label}

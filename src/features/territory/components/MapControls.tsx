@@ -7,7 +7,7 @@ import { cn } from "@/lib/cn";
 export const KEY_PAN = 60;
 
 const button =
-  "inline-flex h-9 w-9 items-center justify-center rounded-lg text-ink transition-colors hover:bg-surface-muted active:bg-navy-700 disabled:cursor-not-allowed disabled:text-ink-subtle/50 disabled:hover:bg-transparent max-sm:h-8 max-sm:w-8";
+  "inline-flex h-9 w-9 items-center justify-center rounded-lg text-ink transition-colors hover:bg-surface-muted active:bg-line disabled:cursor-not-allowed disabled:text-ink-subtle/50 disabled:hover:bg-transparent max-sm:h-8 max-sm:w-8";
 
 /** A press on a control must not reach the map underneath: it would start a drag or clear the selection. */
 const keepOffMap = {
@@ -90,7 +90,7 @@ export function MapControls({ onZoomIn, onZoomOut, onFitState, onFitView, onRese
       {divider}
       <button
         type="button"
-        className={cn(button, gridOn && "bg-navy-700 shadow-[inset_0_0_0_1.5px_var(--color-ember)]")}
+        className={cn(button, gridOn && "bg-accent-soft shadow-[inset_0_0_0_1.5px_var(--color-ember)]")}
         onClick={onToggleGrid}
         aria-label="Coordinate grid"
         aria-pressed={gridOn}

@@ -748,7 +748,7 @@ export function GeoMap({
                     <path d={pathById.get(id)} fillRule="evenodd" fill="none" stroke={MAP_COLOR.selected} strokeWidth={id === focusId ? 13 : 8} strokeOpacity={id === focusId ? 0.17 : 0.11} strokeLinejoin="round" vectorEffect="non-scaling-stroke" data-glow="inner" />
                   </g>
                 ))}
-                {/* Selection: a soft orange wash, a navy casing, then the Molten Orange line, so it reads against every fill and pattern. */}
+                {/* Selection: a soft orange wash, a white casing, then the Molten Orange line, so it reads against every fill and pattern. */}
                 {highlightList.map((id) => (
                   <g key={id}>
                     <path d={pathById.get(id)} fillRule="evenodd" fill={MAP_COLOR.selectedGlow} stroke={MAP_COLOR.selectedCasing} strokeWidth={id === focusId ? 6 : 4} strokeOpacity={0.9} vectorEffect="non-scaling-stroke" />

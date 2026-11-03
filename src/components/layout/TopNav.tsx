@@ -2,6 +2,7 @@ import Link from "next/link";
 import { NavLink } from "@/components/layout/NavLink";
 import { Badge } from "@/components/ui/Badge";
 import { LogoMark } from "@/components/ui/LogoMark";
+import { authMode } from "@/lib/auth";
 import { NAV_ITEMS, SITE } from "@/lib/site";
 
 export function TopNav() {
@@ -20,9 +21,21 @@ export function TopNav() {
           </span>
         </Link>
 
-        <Badge tone="navy" className="ml-auto xl:order-last">
-          Local prototype · not for deployment
-        </Badge>
+        {authMode().kind === "hosted" ? (
+          // A plain form post: works before any script loads, and a cross-site link cannot sign anyone out.
+          <form method="post" action="/logout" className="ml-auto xl:order-last">
+            <button
+              type="submit"
+              className="inline-flex h-9 items-center rounded-md border border-white/15 px-3 text-sm font-medium text-on-navy-muted hover:border-white/30 hover:text-on-navy"
+            >
+              Sign out
+            </button>
+          </form>
+        ) : (
+          <Badge tone="navy" className="ml-auto xl:order-last">
+            Local prototype · not for deployment
+          </Badge>
+        )}
 
         {/*
           `relative` is required: the sr-only text below is absolutely

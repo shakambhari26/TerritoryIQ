@@ -12,6 +12,7 @@ import { buildTargets, pickableRefs, type Target } from "../targets";
 import type { GlobeManifest, Level, Phase } from "../types";
 import { GlobeFallback } from "./GlobeFallback";
 import { GlobeDetails, PlaceSearch } from "./GlobePanel";
+import type { CustomerSummary } from "../customers";
 
 interface Selection {
   level: Level;
@@ -70,11 +71,11 @@ function Legend({ open }: { open: boolean }) {
 function OutlineDataStrip({ layer, onRetry, drawn }: { layer: LayerState; onRetry: () => void; drawn: { districts: number; blocks: number } }) {
   return (
     <div
-      className="flex flex-wrap items-center gap-x-3 gap-y-1 border-t border-line bg-navy-950 px-4 py-2 text-xs text-on-navy-muted lg:order-last lg:col-span-2"
+      className="flex flex-wrap items-center gap-x-3 gap-y-1 border-t border-line bg-surface-muted px-4 py-2 text-xs text-ink-muted lg:order-last lg:col-span-2"
       data-testid="globe-outlines-status"
       data-state={layer.status}
     >
-      <span className="font-semibold uppercase tracking-wide text-[0.6875rem] text-on-navy-subtle">Outline data</span>
+      <span className="font-semibold uppercase tracking-wide text-[0.6875rem] text-ink-subtle">Outline data</span>
       {layer.status === "loading" ? (
         <p role="status" className="min-w-0 flex-1">
           Loading and validating. The globe works meanwhile; outlines appear once you have arrived somewhere and the data has passed validation.
@@ -93,7 +94,7 @@ function OutlineDataStrip({ layer, onRetry, drawn }: { layer: LayerState; onRetr
           <button
             type="button"
             onClick={onRetry}
-            className="rounded-md border border-accent/60 bg-accent/15 px-3 py-1 text-xs font-semibold text-on-navy hover:bg-accent/25"
+            className="rounded-md border border-accent/60 bg-accent/15 px-3 py-1 text-xs font-semibold text-accent-ink hover:bg-accent/25"
             data-testid="globe-outlines-retry"
           >
             Try again
@@ -106,11 +107,12 @@ function OutlineDataStrip({ layer, onRetry, drawn }: { layer: LayerState; onRetr
 
 interface StageProps {
   manifest: GlobeManifest;
+  customers: CustomerSummary | null;
   layer: LayerState;
   onRetryLayer: () => void;
 }
 
-function GlobeStage({ manifest, layer, onRetryLayer }: StageProps) {
+function GlobeStage({ manifest, customers, layer, onRetryLayer }: StageProps) {
   const reducedMotion = usePrefersReducedMotion();
   const hostRef = useRef<HTMLDivElement>(null);
   const stageRef = useRef<HTMLDivElement>(null);
@@ -438,7 +440,7 @@ function GlobeStage({ manifest, layer, onRetryLayer }: StageProps) {
 
   return (
     <div
-      className="map-theme grid overflow-hidden rounded-xl border border-line bg-navy-950 lg:grid-cols-[minmax(0,1fr)_23rem]"
+      className="grid overflow-hidden rounded-xl border border-line bg-surface lg:grid-cols-[minmax(0,1fr)_23rem]"
       data-testid="globe-prototype"
       data-status={status}
       data-outlines={layer.status}
@@ -448,7 +450,7 @@ function GlobeStage({ manifest, layer, onRetryLayer }: StageProps) {
       data-revealed-blocks={revealed.blocksFor ?? ""}
       data-selected={selection.blockId ?? selection.districtId ?? ""}
     >
-      <div className="relative h-[min(74vh,780px)] min-h-[440px] bg-[#02060f]">
+      <div className="relative h-[min(74vh,780px)] min-h-[440px] bg-[#f8fafc]">
         <div
           ref={stageRef}
           tabIndex={0}
@@ -461,7 +463,7 @@ function GlobeStage({ manifest, layer, onRetryLayer }: StageProps) {
         >
           <div ref={hostRef} className="absolute inset-0" data-testid="globe-canvas-host" />
         </div>
-        <div aria-hidden="true" className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_center,transparent_55%,rgba(2,6,15,0.55)_100%)]" />
+        <div aria-hidden="true" className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_center,transparent_60%,rgba(148,163,184,0.18)_100%)]" />
         <p id="globe-help" className="sr-only">
           Use the search and place list on the right, or press Enter to fly to West Bengal. When outlines are shown, the arrow keys move between them, Enter selects one, and Escape goes back one step.
         </p>
@@ -513,7 +515,7 @@ function GlobeStage({ manifest, layer, onRetryLayer }: StageProps) {
                 {focusName ?? hoverName}
               </p>
             ) : null}
-            <p className="pointer-events-none absolute bottom-3 right-3 hidden max-w-[16rem] text-right text-[0.6875rem] leading-4 text-on-navy-subtle md:block">
+            <p className="pointer-events-none absolute bottom-3 right-3 hidden max-w-[16rem] rounded-md bg-white/80 px-2 py-1 text-right text-[0.6875rem] leading-4 text-ink-muted backdrop-blur md:block">
               {ATTRIBUTION_EARTH} Outlines: {view.meta.attribution}, ODbL, provisional and not official boundaries.
             </p>
           </>
@@ -522,7 +524,7 @@ function GlobeStage({ manifest, layer, onRetryLayer }: StageProps) {
         {status === "loading" ? (
           <div className="absolute inset-0 flex flex-col items-center justify-center gap-4" role="status" data-testid="globe-loading">
             <div aria-hidden="true" className="size-40 animate-pulse rounded-full bg-[radial-gradient(circle_at_35%_30%,#2a5ca8,#0b1f4a_55%,#030a1c_100%)] shadow-[0_0_60px_rgba(60,120,255,0.25)]" />
-            <p className="text-sm text-on-navy-muted">Loading the globe… {Math.round(progress * 100)}%</p>
+            <p className="text-sm text-ink-muted">Loading the globe… {Math.round(progress * 100)}%</p>
           </div>
         ) : null}
 
@@ -546,13 +548,14 @@ function GlobeStage({ manifest, layer, onRetryLayer }: StageProps) {
       </div>
 
       <OutlineDataStrip layer={layer} onRetry={onRetryLayer} drawn={{ districts: view.meta.counts.districtsDrawn, blocks: view.meta.counts.blocksDrawn }} />
-      <p className="border-t border-line bg-navy-950 px-4 py-2 text-[0.6875rem] leading-4 text-on-navy-subtle md:hidden lg:col-span-2">
+      <p className="border-t border-line bg-surface-muted px-4 py-2 text-[0.6875rem] leading-4 text-ink-subtle md:hidden lg:col-span-2">
         {ATTRIBUTION_EARTH} Outlines: {view.meta.attribution}, ODbL, provisional and not official boundaries.
       </p>
       <aside className="space-y-4 border-t border-line bg-surface p-4 lg:max-h-[min(74vh,780px)] lg:overflow-y-auto lg:border-l lg:border-t-0">
         <PlaceSearch targets={targets} districts={districtTargets} onSelect={selectTarget} disabled={status !== "ready" || flying} />
         <GlobeDetails
           overlay={view}
+          customers={customers}
           level={level}
           district={district}
           block={block}
@@ -582,7 +585,7 @@ const CODE_REASON: Record<string, string> = {
  * if the textures fail, the globe shows its own error and retry, and the outline status is unaffected. Without
  * WebGL there is nothing to draw on, so the list-only view is shown and the outline file is not requested.
  */
-export default function GlobeExperience({ manifest }: { manifest: GlobeManifest }) {
+export default function GlobeExperience({ manifest, customers }: { manifest: GlobeManifest; customers: CustomerSummary | null }) {
   const [webgl] = useState(() => webglAvailable());
   const [attempt, setAttempt] = useState(0);
   const [layer, setLayer] = useState<LayerState>({ status: "loading" });
@@ -610,6 +613,6 @@ export default function GlobeExperience({ manifest }: { manifest: GlobeManifest 
     setAttempt((n) => n + 1);
   }, []);
 
-  if (!webgl) return <GlobeFallback overlay={manifest} reason="WebGL is not available in this browser, so the 3D globe cannot run." />;
-  return <GlobeStage manifest={manifest} layer={layer} onRetryLayer={retry} />;
+  if (!webgl) return <GlobeFallback overlay={manifest} customers={customers} reason="WebGL is not available in this browser, so the 3D globe cannot run." />;
+  return <GlobeStage manifest={manifest} customers={customers} layer={layer} onRetryLayer={retry} />;
 }

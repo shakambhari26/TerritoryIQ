@@ -7,17 +7,19 @@ import { searchTargets, type Target } from "../targets";
 import type { GlobeManifest, Level, ManifestBlock, ManifestDistrict, UnitState } from "../types";
 import { BLOCK_STYLE, DISTRICT_STYLE } from "../styles";
 import { targetForSelection, workspaceHref } from "../workspace-link";
+import type { CustomerSummary } from "../customers";
 import { BlockRowsSection } from "./BlockRowsSection";
+import { BlockCustomersSection, CustomersOverview, DistrictCustomers } from "./CustomersSection";
 import { WorkspaceLink } from "./WorkspaceLink";
 
 const stateChip: Record<UnitState, { label: string; className: string }> = {
   represented: { label: "Provisional representative link", className: "border-orange-300/50 bg-orange-400/15 text-orange-200" },
-  "no-representative": { label: "Confirmed: no representative", className: "border-white/50 bg-white/15 text-white" },
+  "no-representative": { label: "Confirmed: no representative", className: "border-line-strong bg-surface-muted text-ink" },
   unresolved: { label: "Unresolved or unverified", className: "border-slate-400/40 bg-slate-400/10 text-slate-200" },
 };
 
 function Dot({ colour, ring }: { colour: string; ring?: boolean }) {
-  return <span aria-hidden="true" className={cn("inline-block size-2.5 shrink-0 rounded-full", ring && "ring-1 ring-white/50")} style={{ backgroundColor: colour }} />;
+  return <span aria-hidden="true" className={cn("inline-block size-2.5 shrink-0 rounded-full", ring && "ring-1 ring-line-strong")} style={{ backgroundColor: colour }} />;
 }
 
 export function StateChip({ state, kind }: { state: UnitState; kind: "district" | "block" }) {
@@ -125,6 +127,8 @@ export function PlaceSearch({ targets, districts, onSelect, disabled }: SearchPr
 
 interface DetailsProps {
   overlay: GlobeManifest;
+  /** Counts only; null when the customer file has not been built. */
+  customers: CustomerSummary | null;
   level: Level;
   district: ManifestDistrict | null;
   block: ManifestBlock | null;
@@ -136,7 +140,7 @@ interface DetailsProps {
 }
 
 /** What the visitor is looking at, in words: the same information the colours and outlines carry. */
-export function GlobeDetails({ overlay, level, district, block, onSelectBlock, onSelectDistrict, disabled, outlines }: DetailsProps) {
+export function GlobeDetails({ overlay, customers, level, district, block, onSelectBlock, onSelectDistrict, disabled, outlines }: DetailsProps) {
   const counts = overlay.meta.counts;
   const parent = block?.districtId ? (overlay.districts.find((d) => d.id === block.districtId) ?? null) : null;
   const blocks = useMemo(
@@ -172,6 +176,7 @@ export function GlobeDetails({ overlay, level, district, block, onSelectBlock, o
             </p>
           ) : null}
           {href ? <WorkspaceLink href={href} /> : null}
+          {customers ? <CustomersOverview customers={customers} blocks={overlay.blocks} onSelectBlock={onSelectBlock} disabled={disabled} /> : null}
         </div>
       ) : null}
 
@@ -181,6 +186,7 @@ export function GlobeDetails({ overlay, level, district, block, onSelectBlock, o
           <StateChip state={district.state} kind="district" />
           {href ? <WorkspaceLink href={href} /> : null}
           <p className="text-ink-muted">{district.reason}</p>
+          {customers ? <DistrictCustomers customers={customers} district={district} blocks={overlay.blocks} /> : null}
           <p className="text-xs text-ink-subtle">
             {district.drawnBlockCount} of {district.blockCount} blocks in the current reference list have a validated outline here.
             {outlines === "ready" ? "" : outlines === "loading" ? " None is drawn yet: the outline data is still loading." : " None is drawn: the outline data is unavailable."}
@@ -230,6 +236,7 @@ export function GlobeDetails({ overlay, level, district, block, onSelectBlock, o
             </p>
           ) : null}
           <BlockRowsSection key={block.id} overlay={overlay} blockId={block.id} rowIds={block.rowIds} />
+          {customers ? <BlockCustomersSection key={`customers-${block.id}`} customers={customers} blockId={block.id} /> : null}
         </div>
       ) : null}
 
