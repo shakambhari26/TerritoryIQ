@@ -3,6 +3,7 @@ is known, mapped to that group, and retired again when later visits stop agreein
 
 Which visits teach it:
   * every visit a person labelled (the supervisor's "Correct group"), and
+  * visits where the rep's own headline ("Headline: ORDER", headline.py) agrees with the system's decision, and
   * "silver" visits: decided automatically by at least two layers agreeing (e.g. rules+keywords+ml), confidence >= 0.8,
     not sent to review. Silver visits count half, so the system cannot talk itself into a word on its own say-so.
 A phrase becomes a keyword for group G when
@@ -132,8 +133,13 @@ def examples_from_db(session: Session) -> list[Example]:
         labels[lab.visit_key] = lab.segment  # the latest label wins
     out = []
     for v, a in session.execute(select(Visit, Analysis).join(Analysis, Analysis.visit_key == Visit.visit_key)):
+        said = (a.result or {}).get("rep_headline")
         if v.visit_key in labels:
             out.append(Example(v.transcript, labels[v.visit_key], 1.0))
+        elif said and said["segment"] == a.segment:
+            out.append(Example(v.transcript, a.segment, 1.0))  # the rep and the system agree: as good as a label
+        elif said:
+            continue  # they disagree: wait for the supervisor's decision
         elif "+" in a.decided_by and not a.needs_review and a.confidence >= 0.8 and a.segment in SEGMENTS:
             out.append(Example(v.transcript, a.segment, SILVER))
     return out

@@ -201,6 +201,20 @@ export function ActionCard({ v, ctx }: { v: VisitBrief; ctx: CardContext }) {
               {statusTerm(status, words)}
               {status === "seen" && c?.seen_at ? <span className="font-normal opacity-80"> · {when(c.seen_at)}</span> : null}
             </span>
+            {v.rep_headline ? (
+              <span
+                title={simple ? "The word the rep said at the start of the note" : "Rep's spoken headline (self-label)"}
+                className={cn(
+                  "rounded-full px-2 py-0.5 text-xs font-medium ring-1",
+                  v.rep_headline.segment === v.segment ? "bg-emerald-50 text-emerald-800 ring-emerald-200" : "bg-amber-50 text-amber-900 ring-amber-300",
+                )}
+              >
+                {simple ? "Rep said" : "Rep headline"}: {v.rep_headline.word.toUpperCase()}
+                {v.rep_headline.segment === v.segment
+                  ? simple ? " ✓ AI agrees" : " · agrees"
+                  : simple ? ` · AI thinks “${segmentTerm(v.segment, words, v.segment_name)}”` : " · disagrees · review"}
+              </span>
+            ) : null}
             {v.needs_review ? (
               <span className="rounded-full border border-dashed border-line-strong px-2 py-0.5 text-xs text-ink-muted">
                 {simple ? "AI wasn't sure" : "Low confidence · review"}

@@ -37,6 +37,7 @@ def brief(row: dict) -> dict:
         "why": (r.get("explanation") or {}).get("summary"),
         "case": row.get("case"),
         "highlights": highlight.spans(row["transcript"], r),
+        "rep_headline": r.get("rep_headline"),
     }
 
 

@@ -50,6 +50,8 @@ export interface VisitBrief {
   case?: CaseState | null;
   /** Which words decided it, as non-overlapping spans of `transcript` (highlight.py in the service). */
   highlights?: Highlight[];
+  /** The rep's own label: the note opened with "Headline: ORDER" (headline.py; the reps' guide in docs/rep-guide). */
+  rep_headline?: { word: string; segment: string } | null;
 }
 
 export interface Highlight {
