@@ -53,6 +53,10 @@ anything marked **Proposed** is a direction, not a commitment. The prototype its
   the dashboard (`components/dashboard/GlobeEntryCard`): a server component with no props and no import from
   `features/globe`, so it renders whether or not the data is built and the homepage still downloads no Three.js, texture or
   outline file. It is two plain links (`/globe`, `/workspace`) with the default Next.js prefetching and carries no figures.
+  Its Earth is a still picture (`public/overview/earth-preview.webp`, a CSS background) with `components/dashboard/RotatingEarth`
+  turning over it: a small client component that draws an orthographic sphere on a 2D canvas from one 1024 x 512 world map
+  (`public/overview/earth-map.webp`, 54 KB), with no Three.js, no `/globe/` texture and no place data. It runs only while on
+  screen and never under `prefers-reduced-motion` (it does not even fetch the map then).
 - **Selection is by internal ID only** (`TU-`, `GB-`, `GD-`, `ST-`), never by name or label.
 - **Allocation states are kept apart:** allocated, confirmed unallocated, missing / unverified,
   conflicting. A missing record is never read as unallocated. `Vacant` is a slot-level marker, not a
