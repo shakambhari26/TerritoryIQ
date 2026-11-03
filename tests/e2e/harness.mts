@@ -1,4 +1,5 @@
 import { spawn, type ChildProcess } from "node:child_process";
+import { createServer } from "node:net";
 import { existsSync } from "node:fs";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
@@ -52,8 +53,26 @@ async function waitFor(url: string, child: ChildProcess, ms = 40_000) {
   throw new Error(`Timed out waiting for ${url}`);
 }
 
-export async function startServer(port = 3199): Promise<Server> {
+/**
+ * Rejects if something already listens on the port. Without this, `next start` would exit with "address in use" while the
+ * readiness check, which only asks for a 200, was answered by whoever holds the port (another checkout's server, say), and
+ * the suite would then be testing someone else's build.
+ */
+function assertPortFree(port: number): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const probe = createServer();
+    probe.once("error", (error: NodeJS.ErrnoException) => reject(new Error(`Port ${port} is already in use (${error.code}). The test must start, and so own, its own server: free the port, or set E2E_PORT_OFFSET to shift every test port.`)));
+    probe.listen(port, "127.0.0.1", () => probe.close(() => resolve()));
+  });
+}
+
+/** E2E_PORT_OFFSET shifts every port a test asks for, so two checkouts can run their suites side by side. Default 0. */
+const PORT_OFFSET = Number(process.env.E2E_PORT_OFFSET ?? 0);
+
+export async function startServer(requested = 3199): Promise<Server> {
   if (process.env.E2E_BASE_URL) return { baseUrl: process.env.E2E_BASE_URL, stop: async () => {} };
+  const port = requested + PORT_OFFSET;
+  await assertPortFree(port);
   const next = path.join(ROOT, "node_modules", "next", "dist", "bin", "next");
   const child = spawn(process.execPath, [next, "start", "-H", "127.0.0.1", "-p", String(port)], {
     cwd: ROOT,

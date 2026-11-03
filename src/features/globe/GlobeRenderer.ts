@@ -48,11 +48,14 @@ import { LineSegmentsGeometry } from "three/examples/jsm/lines/LineSegmentsGeome
 import { CameraController, IDLE_POSE_LAT, type FlightKind } from "./camera";
 import {
   angularDistance,
+  clamp,
   distanceForBox,
   boxCentre,
   faceRotation,
   homeDistance,
   lngLatToVector,
+  MAX_DIST,
+  MIN_DIST,
   smootherstep,
   vectorToLngLat,
   type Pose,
@@ -78,6 +81,9 @@ export interface RendererOptions {
 }
 
 export const FOV = 32;
+
+/** How much of the shorter side of the stage the whole Earth fills at rest. The glow reaches a little beyond it. */
+export const HOME_FILL = 0.88;
 
 // Layering. Every overlay sits at one radius, just above the sphere, and render order stacks them. Separate radii
 // would shift the layers against each other (parallax) when the camera is close: at the closest zoom a height
@@ -392,7 +398,7 @@ export class GlobeRenderer {
   // ------------------------------------------------------------------ view --
 
   private homePose(): Pose {
-    return { lng: this.camera.pose.lng, lat: IDLE_POSE_LAT, dist: homeDistance(FOV, this.width / Math.max(this.height, 1)) };
+    return { lng: this.camera.pose.lng, lat: IDLE_POSE_LAT, dist: homeDistance(FOV, this.width / Math.max(this.height, 1), HOME_FILL) };
   }
 
   get aspect(): number {
@@ -413,6 +419,12 @@ export class GlobeRenderer {
   flyHome(): void {
     this.camera.flyTo(this.homePose(), "home");
     this.dirty = true;
+  }
+
+  /** Moves the camera closer (factor below 1) or further (above 1) along the line it is on, within the camera's limits. */
+  zoomBy(factor: number): void {
+    const pose = this.camera.pose;
+    this.flyTo({ lng: pose.lng, lat: pose.lat, dist: clamp(pose.dist * factor, MIN_DIST, MAX_DIST) });
   }
 
   setReducedMotion(value: boolean): void {
