@@ -14,6 +14,7 @@ import type { GlobeManifest, Level, Phase } from "../types";
 import type { CustomerSummary } from "../customers";
 import { GlobeFallback } from "./GlobeFallback";
 import { GlobeDetails, PlaceSearch } from "./GlobePanel";
+import { MarketDashboard } from "@/features/market/components/MarketDashboard";
 
 interface Selection {
   level: Level;
@@ -578,236 +579,247 @@ function GlobeStage({ manifest, layer, onRetryLayer, insights, customers }: Stag
   );
 
   return (
-    <div
-      className="overflow-clip rounded-card bg-surface shadow-card"
-      data-testid="globe-prototype"
-      data-status={status}
-      data-outlines={layer.status}
-      data-level={level}
-      data-phase={phase}
-      data-revealed-districts={revealed.districts ? "true" : "false"}
-      data-revealed-blocks={revealed.blocksFor ?? ""}
-      data-selected={selection.blockId ?? selection.districtId ?? ""}
-      data-places={placesOpen ? "open" : "closed"}
-      data-insights={insightsOpen ? "open" : "closed"}
-    >
-      {/* The stage: the globe fills all of it, and everything else floats over it. */}
-      <div className="relative h-[clamp(26rem,calc(100dvh-17.5rem),44rem)] md:h-[clamp(30rem,calc(100dvh-15rem),44rem)] bg-[radial-gradient(ellipse_at_50%_46%,#f7fbff_0%,#e3eefa_55%,#d0e1f4_100%)] lg:h-[clamp(32rem,calc(100dvh-13.5rem),46rem)]" data-testid="globe-stage">
-        <div
-          ref={stageRef}
-          tabIndex={0}
-          role="group"
-          aria-roledescription="interactive globe"
-          aria-label={stageLabel}
-          aria-describedby="globe-help"
-          onKeyDown={onKeyDown}
-          className="absolute inset-0 outline-offset-[-3px]"
-        >
-          <div ref={hostRef} className="absolute inset-0" data-testid="globe-canvas-host" />
-        </div>
-        <p id="globe-help" className="sr-only">
-          Use the search and place list on the left, or press Enter to fly to West Bengal. When outlines are shown, the arrow keys move between them, Enter selects one, and Escape goes back one step.
-        </p>
-        <div className="sr-only" role="status" aria-live="polite" data-testid="globe-announcement">
-          {announcement}
-        </div>
+    <>
+      <div
+        className="overflow-clip rounded-card bg-surface shadow-card"
+        data-testid="globe-prototype"
+        data-status={status}
+        data-outlines={layer.status}
+        data-level={level}
+        data-phase={phase}
+        data-revealed-districts={revealed.districts ? "true" : "false"}
+        data-revealed-blocks={revealed.blocksFor ?? ""}
+        data-selected={selection.blockId ?? selection.districtId ?? ""}
+        data-places={placesOpen ? "open" : "closed"}
+        data-insights={insightsOpen ? "open" : "closed"}
+      >
+        {/* The stage: the globe fills all of it, and everything else floats over it. */}
+        <div className="relative h-[clamp(26rem,calc(100dvh-17.5rem),44rem)] md:h-[clamp(30rem,calc(100dvh-15rem),44rem)] bg-[radial-gradient(ellipse_at_50%_46%,#f7fbff_0%,#e3eefa_55%,#d0e1f4_100%)] lg:h-[clamp(32rem,calc(100dvh-13.5rem),46rem)]" data-testid="globe-stage">
+          <div
+            ref={stageRef}
+            tabIndex={0}
+            role="group"
+            aria-roledescription="interactive globe"
+            aria-label={stageLabel}
+            aria-describedby="globe-help"
+            onKeyDown={onKeyDown}
+            className="absolute inset-0 outline-offset-[-3px]"
+          >
+            <div ref={hostRef} className="absolute inset-0" data-testid="globe-canvas-host" />
+          </div>
+          <p id="globe-help" className="sr-only">
+            Use the search and place list on the left, or press Enter to fly to West Bengal. When outlines are shown, the arrow keys move between them, Enter selects one, and Escape goes back one step.
+          </p>
+          <div className="sr-only" role="status" aria-live="polite" data-testid="globe-announcement">
+            {announcement}
+          </div>
 
-        {status === "ready" ? (
-          <>
-            {/* Status and navigation, between the two panels. On a phone: the status on the first row, beside the two panel buttons, and the rest on a second. */}
-            <div
-              className={cn(
-                "pointer-events-none absolute left-3 right-3 top-3 z-10 flex flex-wrap items-start justify-center gap-2 md:left-[6.5rem] md:right-[6.5rem]",
-                placesOpen ? "lg:left-[19rem]" : "lg:left-[6.5rem]",
-                insightsOpen ? "lg:right-[21rem]" : "lg:right-[6.5rem]",
-              )}
-            >
-              <div className="flex min-h-10 w-full items-center justify-center px-[6.25rem] md:min-h-0 md:w-auto md:px-0">
-                <span className="max-w-full truncate rounded-full bg-white/95 px-3 py-1.5 text-xs font-medium text-ink shadow-float ring-1 ring-line" data-testid="globe-status" title={statusText}>
-                  <span aria-hidden="true" className={cn("mr-2 inline-block size-2 rounded-full", phase === "idle" ? "bg-accent" : phase === "flying" ? "bg-primary" : "bg-ink")} />
-                  {statusText}
-                </span>
+          {status === "ready" ? (
+            <>
+              {/* Status and navigation, between the two panels. On a phone: the status on the first row, beside the two panel buttons, and the rest on a second. */}
+              <div
+                className={cn(
+                  "pointer-events-none absolute left-3 right-3 top-3 z-10 flex flex-wrap items-start justify-center gap-2 md:left-[6.5rem] md:right-[6.5rem]",
+                  placesOpen ? "lg:left-[19rem]" : "lg:left-[6.5rem]",
+                  insightsOpen ? "lg:right-[21rem]" : "lg:right-[6.5rem]",
+                )}
+              >
+                <div className="flex min-h-10 w-full items-center justify-center px-[6.25rem] md:min-h-0 md:w-auto md:px-0">
+                  <span className="max-w-full truncate rounded-full bg-white/95 px-3 py-1.5 text-xs font-medium text-ink shadow-float ring-1 ring-line" data-testid="globe-status" title={statusText}>
+                    <span aria-hidden="true" className={cn("mr-2 inline-block size-2 rounded-full", phase === "idle" ? "bg-accent" : phase === "flying" ? "bg-primary" : "bg-ink")} />
+                    {statusText}
+                  </span>
+                </div>
+                {showProvisional || level !== "globe" ? (
+                  <div className="flex w-full flex-wrap items-center justify-center gap-2 md:w-auto">
+                    {showProvisional ? (
+                      <span className="rounded-full border border-warn-line bg-warn-soft px-3 py-1 text-[0.6875rem] font-semibold uppercase leading-5 tracking-wider text-warn-ink shadow-sm">
+                        Provisional outlines
+                      </span>
+                    ) : null}
+                    {level !== "globe" ? (
+                      <div className="pointer-events-auto flex gap-2">
+                        <button type="button" onClick={back} className="rounded-lg bg-white px-3 py-1.5 text-xs font-semibold text-ink shadow-float ring-1 ring-line hover:bg-surface-muted">
+                          Back
+                        </button>
+                        <button type="button" onClick={reset} className="rounded-lg bg-primary px-3 py-1.5 text-xs font-semibold text-white shadow-float hover:bg-primary-hover">
+                          Return to globe
+                        </button>
+                      </div>
+                    ) : null}
+                  </div>
+                ) : null}
               </div>
-              {showProvisional || level !== "globe" ? (
-                <div className="flex w-full flex-wrap items-center justify-center gap-2 md:w-auto">
-                  {showProvisional ? (
-                    <span className="rounded-full border border-warn-line bg-warn-soft px-3 py-1 text-[0.6875rem] font-semibold uppercase leading-5 tracking-wider text-warn-ink shadow-sm">
-                      Provisional outlines
-                    </span>
-                  ) : null}
-                  {level !== "globe" ? (
-                    <div className="pointer-events-auto flex gap-2">
-                      <button type="button" onClick={back} className="rounded-lg bg-white px-3 py-1.5 text-xs font-semibold text-ink shadow-float ring-1 ring-line hover:bg-surface-muted">
-                        Back
-                      </button>
-                      <button type="button" onClick={reset} className="rounded-lg bg-primary px-3 py-1.5 text-xs font-semibold text-white shadow-float hover:bg-primary-hover">
-                        Return to globe
-                      </button>
-                    </div>
-                  ) : null}
+
+              {/* Closed panels leave one button each, in the top corners. */}
+              {!placesOpen ? (
+                <div ref={placesToggleRef} className="pointer-events-none absolute left-3 top-3 z-20">
+                  <PanelToggle label="Places" onClick={openPlaces} icon={searchIcon} controls="globe-places" />
                 </div>
               ) : null}
-            </div>
-
-            {/* Closed panels leave one button each, in the top corners. */}
-            {!placesOpen ? (
-              <div ref={placesToggleRef} className="pointer-events-none absolute left-3 top-3 z-20">
-                <PanelToggle label="Places" onClick={openPlaces} icon={searchIcon} controls="globe-places" />
-              </div>
-            ) : null}
-            {!insightsOpen ? (
-              <div ref={insightsToggleRef} className="pointer-events-none absolute right-3 top-3 z-20">
-                <PanelToggle label="Insights" onClick={openInsights} icon={insightsIcon} controls="globe-insights-panel" />
-              </div>
-            ) : null}
-
-            {/* Zoom and recentre. Beside the insights panel when it is open, so neither covers the other. */}
-            <menu
-              aria-label="Globe controls"
-              className={cn(
-                "pointer-events-auto absolute bottom-[4.25rem] right-3 z-10 m-0 flex list-none flex-col divide-y divide-line overflow-hidden rounded-xl bg-white shadow-float ring-1 ring-line md:bottom-3",
-                insightsOpen ? "lg:right-[21rem]" : "lg:right-3",
-              )}
-              data-testid="globe-controls"
-            >
-              <li>
-                <button type="button" className={controlClass} onClick={() => zoom(ZOOM_STEP)} disabled={flying} aria-label="Zoom in" title="Zoom in">
-                  <Icon>
-                    <path d="M10 4.5v11M4.5 10h11" />
-                  </Icon>
-                </button>
-              </li>
-              <li>
-                <button type="button" className={controlClass} onClick={() => zoom(1 / ZOOM_STEP)} disabled={flying} aria-label="Zoom out" title="Zoom out">
-                  <Icon>
-                    <path d="M4.5 10h11" />
-                  </Icon>
-                </button>
-              </li>
-              <li>
-                <button type="button" className={controlClass} onClick={recentre} disabled={flying} aria-label="Recentre" title="Recentre on this place">
-                  <Icon>
-                    <circle cx="10" cy="10" r="3" />
-                    <path d="M10 2.5v3M10 14.5v3M2.5 10h3M14.5 10h3" />
-                  </Icon>
-                </button>
-              </li>
-            </menu>
-
-            <div className={cn("pointer-events-none absolute bottom-[4.25rem] left-3 z-10 md:bottom-3", placesOpen ? "lg:left-[19rem]" : "lg:left-3")}>
-              <Legend open={false} />
-            </div>
-            {hoverName || focusName ? (
-              <p className="pointer-events-none absolute bottom-3 left-1/2 z-10 max-w-[40%] -translate-x-1/2 truncate rounded-full bg-white/95 px-3 py-1.5 text-xs font-medium text-ink shadow-float md:max-w-[min(40%,16rem)]" data-testid="globe-hover">
-                {focusName ?? hoverName}
-              </p>
-            ) : null}
-
-            {/* Mobile: a compact strip that names the place and opens the details sheet. */}
-            {!insightsOpen ? (
-              <div className="pointer-events-none absolute inset-x-3 bottom-3 z-20 md:hidden">
-                <button
-                  type="button"
-                  onClick={openInsights}
-                  aria-controls="globe-insights-panel"
-                  aria-expanded={false}
-                  className="pointer-events-auto flex min-h-12 w-full items-center justify-between gap-3 rounded-2xl bg-white px-4 py-2 text-left shadow-float ring-1 ring-line"
-                  data-testid="globe-details-strip"
-                >
-                  <span className="min-w-0">
-                    <span className="block text-[0.6875rem] font-semibold uppercase tracking-wide text-ink-muted">{level === "globe" ? "Region insights" : "Details"}</span>
-                    <span className="block truncate text-sm font-semibold text-ink">{placeLabel}</span>
-                  </span>
-                  <span aria-hidden="true" className="text-primary-ink">
-                    <Icon>
-                      <path d="m5 12 5-5 5 5" />
-                    </Icon>
-                  </span>
-                </button>
-              </div>
-            ) : null}
-
-            {/* Left: go to a place. */}
-            {placesOpen ? (
-              <div
-                id="globe-places"
-                ref={placesPanelRef}
-                role="region"
-                aria-label="Places"
-                onKeyDown={(event) => panelEscape(event, closePlaces)}
-                className="pointer-events-auto absolute bottom-3 left-3 top-3 z-30 flex w-[min(20rem,calc(100%-1.5rem))] flex-col rounded-2xl bg-white p-4 [&_h2]:pr-8 shadow-[0_8px_30px_-12px_rgb(23_43_77/0.35)] ring-1 ring-line lg:z-20 lg:w-[17.5rem]"
-                data-testid="globe-places"
-              >
-                <CollapseButton label="Hide places" onClick={closePlaces} className="absolute right-2.5 top-2.5 z-10" />
-                <PlaceSearch targets={targets} districts={districtTargets} blocks={blockTargets} onSelect={selectTarget} disabled={status !== "ready" || flying} activeId={selection.blockId ?? selection.districtId} trail={trail} />
-              </div>
-            ) : null}
-
-            {/* Right: insights and details. A bottom sheet on a phone. */}
-            {insightsOpen ? (
-              <aside
-                id="globe-insights-panel"
-                ref={insightsPanelRef}
-                aria-label="Insights"
-                onKeyDown={(event) => panelEscape(event, closeInsights)}
-                className="pointer-events-auto absolute inset-x-3 bottom-3 z-30 flex max-h-[72%] flex-col rounded-2xl bg-white p-4 shadow-[0_8px_30px_-12px_rgb(23_43_77/0.35)] ring-1 ring-line md:inset-x-auto md:right-3 md:top-3 md:max-h-none md:w-[19.5rem] lg:z-20"
-                data-testid="globe-insights-panel"
-              >
-                <div className="-mt-1 mb-2 flex items-center justify-between gap-2">
-                  <p className="text-[0.6875rem] font-semibold uppercase tracking-wider text-ink-muted">Insights</p>
-                  <CollapseButton label="Hide insights" onClick={closeInsights} className="-mr-1" />
+              {!insightsOpen ? (
+                <div ref={insightsToggleRef} className="pointer-events-none absolute right-3 top-3 z-20">
+                  <PanelToggle label="Insights" onClick={openInsights} icon={insightsIcon} controls="globe-insights-panel" />
                 </div>
-                <GlobeDetails
-                  key={`${level}:${selection.blockId ?? selection.districtId ?? ""}`}
-                  overlay={view}
-                  level={level}
-                  district={district}
-                  block={block}
-                  disabled={status !== "ready" || flying}
-                  outlines={outlines}
-                  insights={insights}
-                  customers={customers}
-                  onSelectBlock={(id) => goTo({ level: "block", districtId: blocksById.get(id)?.districtId ?? null, blockId: id })}
-                  onSelectDistrict={(id) => goTo({ level: "district", districtId: id, blockId: null })}
-                />
-              </aside>
-            ) : null}
-          </>
-        ) : null}
+              ) : null}
 
-        {status === "loading" ? (
-          <div className="absolute inset-0 flex flex-col items-center justify-center gap-4" role="status" data-testid="globe-loading">
-            <div aria-hidden="true" className="size-40 animate-pulse rounded-full bg-[radial-gradient(circle_at_35%_30%,#8dbbf3,#3f7ecb_55%,#235aa6_100%)] shadow-[0_0_48px_rgba(63,126,203,0.28)]" />
-            <p className="text-sm text-ink-muted">Loading the globe… {Math.round(progress * 100)}%</p>
-          </div>
-        ) : null}
+              {/* Zoom and recentre. Beside the insights panel when it is open, so neither covers the other. */}
+              <menu
+                aria-label="Globe controls"
+                className={cn(
+                  "pointer-events-auto absolute bottom-[4.25rem] right-3 z-10 m-0 flex list-none flex-col divide-y divide-line overflow-hidden rounded-xl bg-white shadow-float ring-1 ring-line md:bottom-3",
+                  insightsOpen ? "lg:right-[21rem]" : "lg:right-3",
+                )}
+                data-testid="globe-controls"
+              >
+                <li>
+                  <button type="button" className={controlClass} onClick={() => zoom(ZOOM_STEP)} disabled={flying} aria-label="Zoom in" title="Zoom in">
+                    <Icon>
+                      <path d="M10 4.5v11M4.5 10h11" />
+                    </Icon>
+                  </button>
+                </li>
+                <li>
+                  <button type="button" className={controlClass} onClick={() => zoom(1 / ZOOM_STEP)} disabled={flying} aria-label="Zoom out" title="Zoom out">
+                    <Icon>
+                      <path d="M4.5 10h11" />
+                    </Icon>
+                  </button>
+                </li>
+                <li>
+                  <button type="button" className={controlClass} onClick={recentre} disabled={flying} aria-label="Recentre" title="Recentre on this place">
+                    <Icon>
+                      <circle cx="10" cy="10" r="3" />
+                      <path d="M10 2.5v3M10 14.5v3M2.5 10h3M14.5 10h3" />
+                    </Icon>
+                  </button>
+                </li>
+              </menu>
 
-        {status === "error" ? (
-          <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-surface/95 p-6 text-center" role="alert" data-testid="globe-error">
-            <p className="text-base font-semibold text-ink">The globe could not be shown</p>
-            <p className="max-w-md text-sm text-ink-muted">{errorText}</p>
-            <button
-              type="button"
-              onClick={() => {
-                setStatus("loading");
-                setProgress(0);
-                setAttempt((n) => n + 1);
-              }}
-              className="rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-white hover:bg-primary-hover"
-            >
-              Try again
-            </button>
-          </div>
-        ) : null}
+              <div className={cn("pointer-events-none absolute bottom-[4.25rem] left-3 z-10 md:bottom-3", placesOpen ? "lg:left-[19rem]" : "lg:left-3")}>
+                <Legend open={false} />
+              </div>
+              {hoverName || focusName ? (
+                <p className="pointer-events-none absolute bottom-3 left-1/2 z-10 max-w-[40%] -translate-x-1/2 truncate rounded-full bg-white/95 px-3 py-1.5 text-xs font-medium text-ink shadow-float md:max-w-[min(40%,16rem)]" data-testid="globe-hover">
+                  {focusName ?? hoverName}
+                </p>
+              ) : null}
+
+              {/* Mobile: a compact strip that names the place and opens the details sheet. */}
+              {!insightsOpen ? (
+                <div className="pointer-events-none absolute inset-x-3 bottom-3 z-20 md:hidden">
+                  <button
+                    type="button"
+                    onClick={openInsights}
+                    aria-controls="globe-insights-panel"
+                    aria-expanded={false}
+                    className="pointer-events-auto flex min-h-12 w-full items-center justify-between gap-3 rounded-2xl bg-white px-4 py-2 text-left shadow-float ring-1 ring-line"
+                    data-testid="globe-details-strip"
+                  >
+                    <span className="min-w-0">
+                      <span className="block text-[0.6875rem] font-semibold uppercase tracking-wide text-ink-muted">{level === "globe" ? "Region insights" : "Details"}</span>
+                      <span className="block truncate text-sm font-semibold text-ink">{placeLabel}</span>
+                    </span>
+                    <span aria-hidden="true" className="text-primary-ink">
+                      <Icon>
+                        <path d="m5 12 5-5 5 5" />
+                      </Icon>
+                    </span>
+                  </button>
+                </div>
+              ) : null}
+
+              {/* Left: go to a place. */}
+              {placesOpen ? (
+                <div
+                  id="globe-places"
+                  ref={placesPanelRef}
+                  role="region"
+                  aria-label="Places"
+                  onKeyDown={(event) => panelEscape(event, closePlaces)}
+                  className="pointer-events-auto absolute bottom-3 left-3 top-3 z-30 flex w-[min(20rem,calc(100%-1.5rem))] flex-col rounded-2xl bg-white p-4 [&_h2]:pr-8 shadow-[0_8px_30px_-12px_rgb(23_43_77/0.35)] ring-1 ring-line lg:z-20 lg:w-[17.5rem]"
+                  data-testid="globe-places"
+                >
+                  <CollapseButton label="Hide places" onClick={closePlaces} className="absolute right-2.5 top-2.5 z-10" />
+                  <PlaceSearch targets={targets} districts={districtTargets} blocks={blockTargets} onSelect={selectTarget} disabled={status !== "ready" || flying} activeId={selection.blockId ?? selection.districtId} trail={trail} />
+                </div>
+              ) : null}
+
+              {/* Right: insights and details. A bottom sheet on a phone. */}
+              {insightsOpen ? (
+                <aside
+                  id="globe-insights-panel"
+                  ref={insightsPanelRef}
+                  aria-label="Insights"
+                  onKeyDown={(event) => panelEscape(event, closeInsights)}
+                  className="pointer-events-auto absolute inset-x-3 bottom-3 z-30 flex max-h-[72%] flex-col rounded-2xl bg-white p-4 shadow-[0_8px_30px_-12px_rgb(23_43_77/0.35)] ring-1 ring-line md:inset-x-auto md:right-3 md:top-3 md:max-h-none md:w-[19.5rem] lg:z-20"
+                  data-testid="globe-insights-panel"
+                >
+                  <div className="-mt-1 mb-2 flex items-center justify-between gap-2">
+                    <p className="text-[0.6875rem] font-semibold uppercase tracking-wider text-ink-muted">Insights</p>
+                    <CollapseButton label="Hide insights" onClick={closeInsights} className="-mr-1" />
+                  </div>
+                  <GlobeDetails
+                    key={`${level}:${selection.blockId ?? selection.districtId ?? ""}`}
+                    overlay={view}
+                    level={level}
+                    district={district}
+                    block={block}
+                    disabled={status !== "ready" || flying}
+                    outlines={outlines}
+                    insights={insights}
+                    customers={customers}
+                    onSelectBlock={(id) => goTo({ level: "block", districtId: blocksById.get(id)?.districtId ?? null, blockId: id })}
+                    onSelectDistrict={(id) => goTo({ level: "district", districtId: id, blockId: null })}
+                  />
+                </aside>
+              ) : null}
+            </>
+          ) : null}
+
+          {status === "loading" ? (
+            <div className="absolute inset-0 flex flex-col items-center justify-center gap-4" role="status" data-testid="globe-loading">
+              <div aria-hidden="true" className="size-40 animate-pulse rounded-full bg-[radial-gradient(circle_at_35%_30%,#8dbbf3,#3f7ecb_55%,#235aa6_100%)] shadow-[0_0_48px_rgba(63,126,203,0.28)]" />
+              <p className="text-sm text-ink-muted">Loading the globe… {Math.round(progress * 100)}%</p>
+            </div>
+          ) : null}
+
+          {status === "error" ? (
+            <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-surface/95 p-6 text-center" role="alert" data-testid="globe-error">
+              <p className="text-base font-semibold text-ink">The globe could not be shown</p>
+              <p className="max-w-md text-sm text-ink-muted">{errorText}</p>
+              <button
+                type="button"
+                onClick={() => {
+                  setStatus("loading");
+                  setProgress(0);
+                  setAttempt((n) => n + 1);
+                }}
+                className="rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-white hover:bg-primary-hover"
+              >
+                Try again
+              </button>
+            </div>
+          ) : null}
+        </div>
+
+        <OutlineDataStrip
+          layer={layer}
+          onRetry={onRetryLayer}
+          drawn={{ districts: view.meta.counts.districtsDrawn, blocks: view.meta.counts.blocksDrawn }}
+          attribution={`${ATTRIBUTION_EARTH} Outlines: ${view.meta.attribution}, ODbL, provisional and not official boundaries.`}
+        />
       </div>
-
-      <OutlineDataStrip
-        layer={layer}
-        onRetry={onRetryLayer}
-        drawn={{ districts: view.meta.counts.districtsDrawn, blocks: view.meta.counts.blocksDrawn }}
-        attribution={`${ATTRIBUTION_EARTH} Outlines: ${view.meta.attribution}, ODbL, provisional and not official boundaries.`}
+      <MarketDashboard
+        blocks={manifest.blocks}
+        districts={manifest.districts}
+        stateName={manifest.state.name}
+        level={level}
+        districtId={selection.districtId}
+        blockId={selection.blockId}
+        onSelectDistrict={status === "ready" && !flying ? (id) => goTo({ level: "district", districtId: id, blockId: null }) : undefined}
       />
-    </div>
+    </>
   );
 }
 

@@ -1,0 +1,16 @@
+.venv/
+__pycache__/
+# Real visit data contains customer names and phone numbers
+data/
+!data/.gitkeep
+reports/
+models/
+*.db
+.api-key.local
+.env*
+
+# internal documents and local notes
+docs/*.docx
+.DS_Store
+.pytest_cache/
+tests/.test.db

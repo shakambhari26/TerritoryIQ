@@ -1,0 +1,1249 @@
+term,language,target,weight,status,meaning
+order confirmed,en,HOT_ORDER,3,verified,
+order is confirmed,en,HOT_ORDER,3,verified,
+confirmed the order,en,HOT_ORDER,3,verified,
+confirmed an order,en,HOT_ORDER,3,verified,
+confirmed for ordering,en,HOT_ORDER,3,verified,
+placed an order,en,HOT_ORDER,3,verified,
+placed the order,en,HOT_ORDER,3,verified,
+order placed,en,HOT_ORDER,3,verified,
+booked an order,en,HOT_ORDER,3,verified,
+order booked,en,HOT_ORDER,3,verified,
+collected a small order,en,HOT_ORDER,3,verified,
+collected an order,en,HOT_ORDER,3,verified,
+collected order,en,HOT_ORDER,3,verified,
+got an order,en,HOT_ORDER,3,verified,
+received an order,en,HOT_ORDER,3,verified,
+deal closed,en,HOT_ORDER,3,verified,
+deal done,en,HOT_ORDER,3,verified,
+deal finalised,en,HOT_ORDER,3,verified,
+deal finalized,en,HOT_ORDER,3,verified,
+rate finalised,en,HOT_ORDER,2.5,verified,
+rate finalized,en,HOT_ORDER,2.5,verified,
+purchase order,en,HOT_ORDER,2.5,verified,
+ready to order,en,HOT_ORDER,2.5,verified,
+repeat order,en,HOT_ORDER,2.5,verified,
+fresh order,en,HOT_ORDER,2,verified,
+new order,en,HOT_ORDER,2,verified,
+wants to order,en,HOT_ORDER,2,verified,
+will order,en,HOT_ORDER,2,verified,
+advance booking,en,HOT_ORDER,2,verified,
+lift the material,en,HOT_ORDER,2,draft,dealer will take delivery
+lifting,en,HOT_ORDER,1.5,draft,trade word for taking delivery
+next order,en,HOT_ORDER,1.5,verified,
+order of,en,HOT_ORDER,1.5,verified,
+billing,en,HOT_ORDER,1.5,verified,
+indent,en,HOT_ORDER,1.5,draft,
+truck load,en,HOT_ORDER,1.5,verified,
+order*,en,HOT_ORDER,1,verified,
+purchas*,en,HOT_ORDER,1.2,verified,
+transaction,en,HOT_ORDER,1.2,verified,
+steel requirement*,en,HOT_ORDER,1.2,verified,
+dispatch,en,HOT_ORDER,1,verified,
+invoice,en,HOT_ORDER,1,verified,
+quotation,en,HOT_ORDER,1,verified,
+buy*,en,HOT_ORDER,0.8,verified,
+inventory,en,HOT_ORDER,0.7,verified,
+requirement*,en,HOT_ORDER,0.7,verified,
+order dilo,bn,HOT_ORDER,3,draft,placed an order
+order diyeche,bn,HOT_ORDER,3,draft,has placed an order
+order hoye geche,bn,HOT_ORDER,3,draft,order is done
+order pakka,bn,HOT_ORDER,3,draft,order confirmed
+order debe,bn,HOT_ORDER,2,draft,will place an order
+order dibe,bn,HOT_ORDER,2,draft,will place an order
+booking korlo,bn,HOT_ORDER,2.5,draft,booked
+bill korlo,bn,HOT_ORDER,2,draft,billed
+maal nebe,bn,HOT_ORDER,2,draft,will take the goods
+maal nibe,bn,HOT_ORDER,2,draft,will take the goods
+maal lagbe,bn,HOT_ORDER,2,draft,needs goods
+maal pathao,bn,HOT_ORDER,2,draft,send the goods
+gari pathate bolche,bn,HOT_ORDER,2,draft,asking to send the truck
+pathiye dao,bn,HOT_ORDER,1.5,draft,send it
+kinbe,bn,HOT_ORDER,1.5,draft,will buy
+kinbo,bn,HOT_ORDER,1.5,draft,will buy
+lagbe,bn,HOT_ORDER,1,draft,is needed
+অর্ডার দিল,bn-Beng,HOT_ORDER,3,draft,placed an order
+অর্ডার দিয়েছে,bn-Beng,HOT_ORDER,3,draft,has placed an order
+অর্ডার পাকা,bn-Beng,HOT_ORDER,3,draft,order confirmed
+মাল নেবে,bn-Beng,HOT_ORDER,2,draft,will take the goods
+মাল লাগবে,bn-Beng,HOT_ORDER,2,draft,needs goods
+কিনবে,bn-Beng,HOT_ORDER,1.5,draft,will buy
+বুকিং,bn-Beng,HOT_ORDER,1.5,draft,booking
+অর্ডার,bn-Beng,HOT_ORDER,1,draft,order
+লাগবে,bn-Beng,HOT_ORDER,1,draft,is needed
+order de diya,hi,HOT_ORDER,3,draft,placed an order
+order diya,hi,HOT_ORDER,3,draft,placed an order
+order pakka,hi,HOT_ORDER,3,draft,order confirmed
+pakka order,hi,HOT_ORDER,3,draft,confirmed order
+booking kar di,hi,HOT_ORDER,2.5,draft,booked
+order dega,hi,HOT_ORDER,2,draft,will order
+maal chahiye,hi,HOT_ORDER,2,draft,needs goods
+maal lena hai,hi,HOT_ORDER,2,draft,wants to take goods
+maal bhejo,hi,HOT_ORDER,2,draft,send the goods
+gaadi bhejo,hi,HOT_ORDER,2,draft,send the truck
+bill bana do,hi,HOT_ORDER,2,draft,make the bill
+kharidenge,hi,HOT_ORDER,1.5,draft,will buy
+kharidna,hi,HOT_ORDER,1.5,draft,to buy
+ऑर्डर पक्का,hi-Deva,HOT_ORDER,3,draft,order confirmed
+ऑर्डर दिया,hi-Deva,HOT_ORDER,3,draft,placed an order
+माल चाहिए,hi-Deva,HOT_ORDER,2,draft,needs goods
+माल भेजो,hi-Deva,HOT_ORDER,2,draft,send the goods
+खरीदेंगे,hi-Deva,HOT_ORDER,1.5,draft,will buy
+ऑर्डर,hi-Deva,HOT_ORDER,1,draft,order
+pakka,mixed,HOT_ORDER,1.5,draft,confirmed / final
+payment follow-up,en,PAYMENT,2.5,verified,
+pending payment,en,PAYMENT,2.5,verified,
+payment pending,en,PAYMENT,2.5,verified,
+balance due,en,PAYMENT,2.5,verified,
+overdue,en,PAYMENT,2.5,verified,
+outstanding,en,PAYMENT,2,verified,
+balance amount,en,PAYMENT,2,verified,
+remaining balance,en,PAYMENT,2,verified,
+due amount,en,PAYMENT,2,verified,
+dues,en,PAYMENT,2,verified,
+recovery,en,PAYMENT,2,verified,
+credit limit,en,PAYMENT,2,verified,
+credit period,en,PAYMENT,2,verified,
+statement of account,en,PAYMENT,2,verified,
+cheque bounce,en,PAYMENT,2.5,verified,
+collection,en,PAYMENT,1.5,verified,
+cheque,en,PAYMENT,1.5,verified,
+ledger,en,PAYMENT,1.5,verified,
+reconcil*,en,PAYMENT,1.5,verified,
+settle*,en,PAYMENT,1.5,verified,
+rtgs,en,PAYMENT,1.5,verified,
+neft,en,PAYMENT,1.5,verified,
+payment terms,en,PAYMENT,1.5,verified,
+payment*,en,PAYMENT,1.2,verified,
+credit,en,PAYMENT,1.2,verified,
+upi,en,PAYMENT,1,verified,
+cash,en,PAYMENT,1,verified,
+paid,en,PAYMENT,1,verified,
+collect*,en,PAYMENT,0.8,verified,
+amount,en,PAYMENT,0.5,verified,
+baki taka,bn,PAYMENT,2.5,draft,money still due
+taka dey ni,bn,PAYMENT,2.5,draft,has not paid
+payment dey ni,bn,PAYMENT,2.5,draft,has not paid
+baki,bn,PAYMENT,2,draft,amount still due
+baaki,bn,PAYMENT,2,draft,amount still due
+dhar,bn,PAYMENT,2,draft,goods on credit
+dhaar,bn,PAYMENT,2,draft,goods on credit
+taka debe,bn,PAYMENT,2,draft,will pay
+dhare,bn,PAYMENT,1.5,draft,on credit
+pore debe,bn,PAYMENT,1.5,draft,will pay later
+hisab,bn,PAYMENT,1.5,draft,account / settlement
+hishab,bn,PAYMENT,1.5,draft,account / settlement
+khata,mixed,PAYMENT,1.5,draft,credit ledger
+chek,bn,PAYMENT,1.5,draft,cheque
+taka,bn,PAYMENT,1,draft,money
+বাকি টাকা,bn-Beng,PAYMENT,2.5,draft,money still due
+বাকি,bn-Beng,PAYMENT,2,draft,amount still due
+ধার,bn-Beng,PAYMENT,2,draft,goods on credit
+হিসাব,bn-Beng,PAYMENT,1.5,draft,account / settlement
+চেক,bn-Beng,PAYMENT,1.5,draft,cheque
+পেমেন্ট,bn-Beng,PAYMENT,1.2,draft,payment
+টাকা,bn-Beng,PAYMENT,1,draft,money
+bakaya,hi,PAYMENT,2.5,draft,arrears
+baki paisa,hi,PAYMENT,2.5,draft,money still due
+payment nahi aaya,hi,PAYMENT,2.5,draft,payment has not come
+paisa nahi diya,hi,PAYMENT,2.5,draft,has not paid
+udhaar,hi,PAYMENT,2,draft,on credit
+udhar,hi,PAYMENT,2,draft,on credit
+vasooli,hi,PAYMENT,2,draft,recovery
+wasooli,hi,PAYMENT,2,draft,recovery
+tagada,hi,PAYMENT,2,draft,payment chasing
+hisaab,hi,PAYMENT,1.5,draft,account / settlement
+paisa,hi,PAYMENT,1,draft,money
+paise,hi,PAYMENT,1,draft,money
+बकाया,hi-Deva,PAYMENT,2.5,draft,arrears
+उधार,hi-Deva,PAYMENT,2,draft,on credit
+वसूली,hi-Deva,PAYMENT,2,draft,recovery
+भुगतान,hi-Deva,PAYMENT,1.5,draft,payment
+हिसाब,hi-Deva,PAYMENT,1.5,draft,account / settlement
+पैसा,hi-Deva,PAYMENT,1,draft,money
+using competitor,en,COMPETITOR_PRICE,3,verified,
+competitor*,en,COMPETITOR_PRICE,2.5,verified,
+concern regarding price,en,COMPETITOR_PRICE,2.5,verified,
+undercut*,en,COMPETITOR_PRICE,2.5,verified,
+price war,en,COMPETITOR_PRICE,2.5,verified,
+brand switch,en,COMPETITOR_PRICE,2.5,verified,
+lost to,en,COMPETITOR_PRICE,2.5,verified,
+local rod,en,COMPETITOR_PRICE,2.5,verified,cheap unbranded rod
+rival,en,COMPETITOR_PRICE,2,verified,
+other brand,en,COMPETITOR_PRICE,2,verified,
+another brand,en,COMPETITOR_PRICE,2,verified,
+other company,en,COMPETITOR_PRICE,2,verified,
+price per kg,en,COMPETITOR_PRICE,2,verified,
+price difference,en,COMPETITOR_PRICE,2,verified,
+rate difference,en,COMPETITOR_PRICE,2,verified,
+price gap,en,COMPETITOR_PRICE,2,verified,
+price concern,en,COMPETITOR_PRICE,2,verified,
+price issue,en,COMPETITOR_PRICE,2,verified,
+cheaper,en,COMPETITOR_PRICE,2,verified,
+lower price,en,COMPETITOR_PRICE,2,verified,
+too costly,en,COMPETITOR_PRICE,2,verified,
+local brand,en,COMPETITOR_PRICE,2,verified,
+local steel,en,COMPETITOR_PRICE,2,verified,
+unbranded,en,COMPETITOR_PRICE,2,verified,
+secondary steel,en,COMPETITOR_PRICE,2,verified,
+switched to,en,COMPETITOR_PRICE,2,verified,
+shifted to,en,COMPETITOR_PRICE,2,verified,
+competition,en,COMPETITOR_PRICE,1.5,verified,
+low price,en,COMPETITOR_PRICE,1.5,verified,
+high price,en,COMPETITOR_PRICE,1.5,verified,
+costly,en,COMPETITOR_PRICE,1.5,verified,
+expensive,en,COMPETITOR_PRICE,1.5,verified,
+switching,en,COMPETITOR_PRICE,1.5,verified,
+per kg,en,COMPETITOR_PRICE,1.2,verified,
+market rate,en,COMPETITOR_PRICE,1.2,verified,
+cheap,en,COMPETITOR_PRICE,1.2,verified,
+price,en,COMPETITOR_PRICE,1,verified,
+convert*,en,COMPETITOR_PRICE,1,verified,
+rate,en,COMPETITOR_PRICE,0.7,verified,
+srmb,brand,COMPETITOR_PRICE,2.5,verified,competitor brand
+rashmi,brand,COMPETITOR_PRICE,2.5,verified,competitor brand
+kamdhenu,brand,COMPETITOR_PRICE,2.5,verified,competitor brand
+tata tiscon,brand,COMPETITOR_PRICE,2.5,verified,competitor brand
+tiscon,brand,COMPETITOR_PRICE,2.5,verified,competitor brand
+jsw,brand,COMPETITOR_PRICE,2.5,verified,competitor brand
+neosteel,brand,COMPETITOR_PRICE,2.5,verified,competitor brand
+jindal,brand,COMPETITOR_PRICE,2.5,verified,competitor brand
+maithan,brand,COMPETITOR_PRICE,2.5,verified,competitor brand
+vizag,brand,COMPETITOR_PRICE,2.5,verified,competitor brand
+jai balaji,brand,COMPETITOR_PRICE,2.5,verified,competitor brand
+electrosteel,brand,COMPETITOR_PRICE,2.5,verified,competitor brand
+concast,brand,COMPETITOR_PRICE,2.5,verified,competitor brand
+rungta,brand,COMPETITOR_PRICE,2.5,verified,competitor brand
+shyam,brand,COMPETITOR_PRICE,2,ambiguous,brand or a person's name
+captain,brand,COMPETITOR_PRICE,2,ambiguous,brand or a word
+sail,brand,COMPETITOR_PRICE,2,ambiguous,brand or a word
+tata,brand,COMPETITOR_PRICE,1.5,ambiguous,brand group (may be Tiscon or other Tata product)
+panther,brand,COMPETITOR_PRICE,1.5,ambiguous,Jindal Panther or a word
+dam beshi,bn,COMPETITOR_PRICE,2.5,draft,price is too high
+daam beshi,bn,COMPETITOR_PRICE,2.5,draft,price is too high
+dam besi,bn,COMPETITOR_PRICE,2.5,draft,price is too high
+rate beshi,bn,COMPETITOR_PRICE,2.5,draft,rate is too high
+rate besi,bn,COMPETITOR_PRICE,2.5,draft,rate is too high
+onno company,bn,COMPETITOR_PRICE,2.5,draft,other company
+onyo company,bn,COMPETITOR_PRICE,2.5,draft,other company
+onno brand,bn,COMPETITOR_PRICE,2.5,draft,other brand
+onno maal,bn,COMPETITOR_PRICE,2,draft,other company's goods
+sosta,bn,COMPETITOR_PRICE,2,draft,cheaper
+shosta,bn,COMPETITOR_PRICE,2,draft,cheaper
+dam kom,bn,COMPETITOR_PRICE,2,draft,lower price
+rate kom,bn,COMPETITOR_PRICE,2,draft,lower rate
+kom dame,bn,COMPETITOR_PRICE,2,draft,at a lower price
+oder dam,bn,COMPETITOR_PRICE,1.5,draft,their price
+dam,bn,COMPETITOR_PRICE,1,draft,price
+দাম বেশি,bn-Beng,COMPETITOR_PRICE,2.5,draft,price is too high
+অন্য কোম্পানি,bn-Beng,COMPETITOR_PRICE,2.5,draft,other company
+অন্য ব্র্যান্ড,bn-Beng,COMPETITOR_PRICE,2.5,draft,other brand
+সস্তা,bn-Beng,COMPETITOR_PRICE,2,draft,cheaper
+দাম কম,bn-Beng,COMPETITOR_PRICE,2,draft,lower price
+দাম,bn-Beng,COMPETITOR_PRICE,1,draft,price
+রেট,bn-Beng,COMPETITOR_PRICE,0.7,draft,rate
+dusri company,hi,COMPETITOR_PRICE,2.5,draft,other company
+doosri company,hi,COMPETITOR_PRICE,2.5,draft,other company
+dusra brand,hi,COMPETITOR_PRICE,2.5,draft,other brand
+bhav zyada,hi,COMPETITOR_PRICE,2.5,draft,price is high
+rate zyada,hi,COMPETITOR_PRICE,2.5,draft,rate is high
+rate jyada,hi,COMPETITOR_PRICE,2.5,draft,rate is high
+mehenga,hi,COMPETITOR_PRICE,2,draft,expensive
+mehnga,hi,COMPETITOR_PRICE,2,draft,expensive
+mahanga,hi,COMPETITOR_PRICE,2,draft,expensive
+sasta,hi,COMPETITOR_PRICE,2,draft,cheap
+sastaa,hi,COMPETITOR_PRICE,2,draft,cheap
+rate kam,hi,COMPETITOR_PRICE,2,draft,lower rate
+dusre ka maal,hi,COMPETITOR_PRICE,2,draft,someone else's goods
+bhav,hi,COMPETITOR_PRICE,1,draft,price
+दूसरी कंपनी,hi-Deva,COMPETITOR_PRICE,2.5,draft,other company
+रेट ज्यादा,hi-Deva,COMPETITOR_PRICE,2.5,draft,rate is high
+महंगा,hi-Deva,COMPETITOR_PRICE,2,draft,expensive
+सस्ता,hi-Deva,COMPETITOR_PRICE,2,draft,cheap
+भाव,hi-Deva,COMPETITOR_PRICE,1,draft,price
+not satisfied,en,COMPLAINT_ESCALATE,3,verified,
+not happy,en,COMPLAINT_ESCALATE,2.5,verified,
+not good,en,COMPLAINT_ESCALATE,2,verified,
+not working,en,COMPLAINT_ESCALATE,2,verified,
+short weight,en,COMPLAINT_ESCALATE,3,verified,
+underweight,en,COMPLAINT_ESCALATE,3,verified,
+poor quality,en,COMPLAINT_ESCALATE,3,verified,
+bad quality,en,COMPLAINT_ESCALATE,3,verified,
+quality problem,en,COMPLAINT_ESCALATE,3,verified,
+quality issue,en,COMPLAINT_ESCALATE,3,verified,
+quality complaint,en,COMPLAINT_ESCALATE,3,verified,
+bend test fail*,en,COMPLAINT_ESCALATE,3,verified,
+complain*,en,COMPLAINT_ESCALATE,2.5,verified,
+grievance,en,COMPLAINT_ESCALATE,2.5,verified,
+dissatisf*,en,COMPLAINT_ESCALATE,2.5,verified,
+unhappy,en,COMPLAINT_ESCALATE,2.5,verified,
+angry,en,COMPLAINT_ESCALATE,2.5,verified,
+late delivery,en,COMPLAINT_ESCALATE,2.5,verified,
+not delivered,en,COMPLAINT_ESCALATE,2.5,verified,
+less weight,en,COMPLAINT_ESCALATE,2.5,verified,
+wrong size,en,COMPLAINT_ESCALATE,2.5,verified,
+wrong material,en,COMPLAINT_ESCALATE,2.5,verified,
+wrong delivery,en,COMPLAINT_ESCALATE,2.5,verified,
+damaged,en,COMPLAINT_ESCALATE,2.5,verified,
+rust*,en,COMPLAINT_ESCALATE,2.5,verified,
+crack*,en,COMPLAINT_ESCALATE,2.5,verified,
+defect*,en,COMPLAINT_ESCALATE,2.5,verified,
+service issue,en,COMPLAINT_ESCALATE,2.5,verified,
+return the material,en,COMPLAINT_ESCALATE,2.5,verified,
+escalat*,en,COMPLAINT_ESCALATE,2,verified,
+upset,en,COMPLAINT_ESCALATE,2,verified,
+frustrat*,en,COMPLAINT_ESCALATE,2,verified,
+disappoint*,en,COMPLAINT_ESCALATE,2,verified,
+delayed,en,COMPLAINT_ESCALATE,2,verified,
+short supply,en,COMPLAINT_ESCALATE,2,verified,
+damage,en,COMPLAINT_ESCALATE,2,verified,
+broke*,en,COMPLAINT_ESCALATE,2,verified,
+breaking,en,COMPLAINT_ESCALATE,2,verified,
+replacement,en,COMPLAINT_ESCALATE,2,verified,
+refund,en,COMPLAINT_ESCALATE,2,verified,
+dispute,en,COMPLAINT_ESCALATE,2,verified,
+threaten*,en,COMPLAINT_ESCALATE,2,verified,
+no response,en,COMPLAINT_ESCALATE,1.5,verified,
+delay*,en,COMPLAINT_ESCALATE,1.8,verified,
+concern*,en,COMPLAINT_ESCALATE,1.2,verified,
+problem*,en,COMPLAINT_ESCALATE,1.2,verified,
+issue*,en,COMPLAINT_ESCALATE,1,verified,
+obhijog,bn,COMPLAINT_ESCALATE,3,draft,complaint
+abhijog,bn,COMPLAINT_ESCALATE,3,draft,complaint
+kharap maal,bn,COMPLAINT_ESCALATE,3,draft,bad goods
+bhenge jacche,bn,COMPLAINT_ESCALATE,3,draft,breaking / cracking on bending
+bhenge geche,bn,COMPLAINT_ESCALATE,3,draft,has broken
+fete jacche,bn,COMPLAINT_ESCALATE,3,draft,cracking
+ojon kom,bn,COMPLAINT_ESCALATE,3,draft,weight is short
+bhalo na,bn,COMPLAINT_ESCALATE,2.5,draft,not good
+morche,bn,COMPLAINT_ESCALATE,2.5,draft,rust
+morcha,bn,COMPLAINT_ESCALATE,2.5,draft,rust
+jong,bn,COMPLAINT_ESCALATE,2.5,draft,rust
+deri hocche,bn,COMPLAINT_ESCALATE,2.5,draft,it is getting delayed
+maal ashe ni,bn,COMPLAINT_ESCALATE,2.5,draft,goods did not arrive
+raag korche,bn,COMPLAINT_ESCALATE,2.5,draft,is angry
+khushi na,bn,COMPLAINT_ESCALATE,2.5,draft,not happy
+jhamela,bn,COMPLAINT_ESCALATE,2,draft,trouble / hassle
+jhamele,bn,COMPLAINT_ESCALATE,2,draft,trouble / hassle
+kharap,bn,COMPLAINT_ESCALATE,2,draft,bad
+deri,bn,COMPLAINT_ESCALATE,2,draft,delay
+late hoyeche,bn,COMPLAINT_ESCALATE,2,draft,it was late
+gari asheni,bn,COMPLAINT_ESCALATE,2,draft,truck did not arrive
+অভিযোগ,bn-Beng,COMPLAINT_ESCALATE,3,draft,complaint
+ভেঙে যাচ্ছে,bn-Beng,COMPLAINT_ESCALATE,3,draft,breaking
+ওজন কম,bn-Beng,COMPLAINT_ESCALATE,3,draft,weight is short
+খারাপ মাল,bn-Beng,COMPLAINT_ESCALATE,3,draft,bad goods
+মরচে,bn-Beng,COMPLAINT_ESCALATE,2.5,draft,rust
+ঝামেলা,bn-Beng,COMPLAINT_ESCALATE,2,draft,trouble
+খারাপ,bn-Beng,COMPLAINT_ESCALATE,2,draft,bad
+দেরি,bn-Beng,COMPLAINT_ESCALATE,2,draft,delay
+রাগ,bn-Beng,COMPLAINT_ESCALATE,2,draft,anger
+shikayat,hi,COMPLAINT_ESCALATE,3,draft,complaint
+shikaayat,hi,COMPLAINT_ESCALATE,3,draft,complaint
+kharab maal,hi,COMPLAINT_ESCALATE,3,draft,bad goods
+jung laga,hi,COMPLAINT_ESCALATE,3,draft,rusted
+toot raha,hi,COMPLAINT_ESCALATE,3,draft,breaking
+toot gaya,hi,COMPLAINT_ESCALATE,3,draft,broken
+phat raha,hi,COMPLAINT_ESCALATE,3,draft,cracking
+wajan kam,hi,COMPLAINT_ESCALATE,3,draft,weight is short
+vajan kam,hi,COMPLAINT_ESCALATE,3,draft,weight is short
+jang,hi,COMPLAINT_ESCALATE,2.5,draft,rust
+zang,hi,COMPLAINT_ESCALATE,2.5,draft,rust
+naraz,hi,COMPLAINT_ESCALATE,2.5,draft,upset
+naraaz,hi,COMPLAINT_ESCALATE,2.5,draft,upset
+gussa,hi,COMPLAINT_ESCALATE,2.5,draft,anger
+maal nahi aaya,hi,COMPLAINT_ESCALATE,2.5,draft,goods did not come
+kharab,hi,COMPLAINT_ESCALATE,2,draft,bad
+late ho gaya,hi,COMPLAINT_ESCALATE,2,draft,got late
+pareshani,hi,COMPLAINT_ESCALATE,2,draft,trouble
+dikkat,hi,COMPLAINT_ESCALATE,1.5,draft,difficulty
+samasya,hi,COMPLAINT_ESCALATE,1.5,draft,problem
+der,hi,COMPLAINT_ESCALATE,1.5,ambiguous,delay (also a common syllable)
+शिकायत,hi-Deva,COMPLAINT_ESCALATE,3,draft,complaint
+वजन कम,hi-Deva,COMPLAINT_ESCALATE,3,draft,weight is short
+जंग,hi-Deva,COMPLAINT_ESCALATE,2.5,draft,rust
+नाराज,hi-Deva,COMPLAINT_ESCALATE,2.5,draft,upset
+खराब,hi-Deva,COMPLAINT_ESCALATE,2,draft,bad
+देरी,hi-Deva,COMPLAINT_ESCALATE,2,draft,delay
+टूट,hi-Deva,COMPLAINT_ESCALATE,2,draft,broken
+परेशानी,hi-Deva,COMPLAINT_ESCALATE,2,draft,trouble
+दिक्कत,hi-Deva,COMPLAINT_ESCALATE,1.5,draft,difficulty
+समस्या,hi-Deva,COMPLAINT_ESCALATE,1.5,draft,problem
+work is ongoing,en,SITE_PIPELINE,2,verified,
+running site*,en,SITE_PIPELINE,2,verified,
+ongoing site*,en,SITE_PIPELINE,2,verified,
+active site*,en,SITE_PIPELINE,2,verified,
+under construction,en,SITE_PIPELINE,2,verified,
+expected to start,en,SITE_PIPELINE,2,verified,
+starting soon,en,SITE_PIPELINE,2,verified,
+house construction,en,SITE_PIPELINE,2,verified,
+pipeline,en,SITE_PIPELINE,2,verified,
+casting,en,SITE_PIPELINE,2,verified,
+slab,en,SITE_PIPELINE,2,verified,
+lintel,en,SITE_PIPELINE,2,verified,
+foundation,en,SITE_PIPELINE,2,verified,
+plinth,en,SITE_PIPELINE,2,verified,
+footing,en,SITE_PIPELINE,2,verified,
+piling,en,SITE_PIPELINE,2,verified,
+shuttering,en,SITE_PIPELINE,2,verified,
+work started,en,SITE_PIPELINE,1.8,verified,
+construction,en,SITE_PIPELINE,1.5,verified,
+roof,en,SITE_PIPELINE,1.5,verified,
+column*,en,SITE_PIPELINE,1.5,verified,
+centering,en,SITE_PIPELINE,1.5,verified,
+ground floor,en,SITE_PIPELINE,1.5,verified,
+first floor,en,SITE_PIPELINE,1.5,verified,
+second floor,en,SITE_PIPELINE,1.5,verified,
+g+1,en,SITE_PIPELINE,1.5,verified,ground plus one floor
+g+2,en,SITE_PIPELINE,1.5,verified,ground plus two floors
+starting today,en,SITE_PIPELINE,1.5,verified,
+will start,en,SITE_PIPELINE,1.5,verified,
+new house,en,SITE_PIPELINE,1.5,verified,
+beam*,en,SITE_PIPELINE,1.2,verified,
+brickwork,en,SITE_PIPELINE,1.2,verified,
+upcoming,en,SITE_PIPELINE,1.2,verified,
+roofing,en,SITE_PIPELINE,1,verified,
+project*,en,SITE_PIPELINE,1,verified,
+ongoing,en,SITE_PIPELINE,1,verified,
+stage,en,SITE_PIPELINE,1,verified,
+building,en,SITE_PIPELINE,0.8,verified,
+site*,en,SITE_PIPELINE,0.6,verified,
+chhad dhalai,bn,SITE_PIPELINE,3,draft,roof casting
+chad dhalai,bn,SITE_PIPELINE,3,draft,roof casting
+chhader dhalai,bn,SITE_PIPELINE,3,draft,roof casting
+roof dhalai,bn,SITE_PIPELINE,3,draft,roof casting
+site e kaj cholche,bn,SITE_PIPELINE,3,draft,work is going on at site
+dhalai,bn,SITE_PIPELINE,2.5,draft,concrete casting
+dhalay,bn,SITE_PIPELINE,2.5,draft,concrete casting
+bhit,bn,SITE_PIPELINE,2.5,draft,foundation
+bhitt,bn,SITE_PIPELINE,2.5,draft,foundation
+bhit pujo,bn,SITE_PIPELINE,2.5,draft,foundation ceremony
+kaj cholche,bn,SITE_PIPELINE,2.5,draft,work is ongoing
+kaaj cholche,bn,SITE_PIPELINE,2.5,draft,work is ongoing
+kaj chalu,bn,SITE_PIPELINE,2.5,draft,work is running
+bari banacche,bn,SITE_PIPELINE,2.5,draft,building a house
+kaj shuru,bn,SITE_PIPELINE,2,draft,work starting
+bari hocche,bn,SITE_PIPELINE,2,draft,house is being built
+chhad,bn,SITE_PIPELINE,1.5,draft,roof
+notun bari,bn,SITE_PIPELINE,1.5,draft,new house
+ছাদ ঢালাই,bn-Beng,SITE_PIPELINE,3,draft,roof casting
+ঢালাই,bn-Beng,SITE_PIPELINE,2.5,draft,casting
+ভিত,bn-Beng,SITE_PIPELINE,2.5,draft,foundation
+কাজ চলছে,bn-Beng,SITE_PIPELINE,2.5,draft,work is ongoing
+বাড়ি তৈরি,bn-Beng,SITE_PIPELINE,2.5,draft,house construction
+কাজ শুরু,bn-Beng,SITE_PIPELINE,2,draft,work starting
+ছাদ,bn-Beng,SITE_PIPELINE,1.5,draft,roof
+chhat dhalai,hi,SITE_PIPELINE,3,draft,roof casting
+chat dhalai,hi,SITE_PIPELINE,3,draft,roof casting
+lenter,hi,SITE_PIPELINE,2.5,draft,lintel / slab
+linter,hi,SITE_PIPELINE,2.5,draft,lintel / slab
+neev,hi,SITE_PIPELINE,2.5,draft,foundation
+kaam chal raha,hi,SITE_PIPELINE,2.5,draft,work is ongoing
+kaam chalu,hi,SITE_PIPELINE,2.5,draft,work is running
+makaan ban raha,hi,SITE_PIPELINE,2.5,draft,house being built
+ghar ban raha,hi,SITE_PIPELINE,2.5,draft,house being built
+kaam shuru,hi,SITE_PIPELINE,2,draft,work starting
+lintal,hi,SITE_PIPELINE,2,draft,lintel
+chhat,hi,SITE_PIPELINE,1.5,draft,roof
+छत ढलाई,hi-Deva,SITE_PIPELINE,3,draft,roof casting
+ढलाई,hi-Deva,SITE_PIPELINE,2.5,draft,casting
+नींव,hi-Deva,SITE_PIPELINE,2.5,draft,foundation
+लिंटर,hi-Deva,SITE_PIPELINE,2.5,draft,lintel
+काम चल रहा,hi-Deva,SITE_PIPELINE,2.5,draft,work is ongoing
+मकान बन रहा,hi-Deva,SITE_PIPELINE,2.5,draft,house being built
+छत,hi-Deva,SITE_PIPELINE,1.5,draft,roof
+new lead*,en,NEW_LEAD,3,verified,
+prospect*,en,NEW_LEAD,2.5,verified,
+potential customer*,en,NEW_LEAD,2.5,verified,
+potential client*,en,NEW_LEAD,2.5,verified,
+new customer*,en,NEW_LEAD,2.5,verified,
+new client*,en,NEW_LEAD,2.5,verified,
+new party,en,NEW_LEAD,2.5,verified,
+new opportunit*,en,NEW_LEAD,2.5,verified,
+strong interest,en,NEW_LEAD,2,verified,
+new site*,en,NEW_LEAD,2,verified,
+new dealer,en,NEW_LEAD,2,verified,
+enquiry,en,NEW_LEAD,2,verified,
+inquiry,en,NEW_LEAD,2,verified,
+first visit,en,NEW_LEAD,2,verified,
+first meeting,en,NEW_LEAD,2,verified,
+cold call,en,NEW_LEAD,2,verified,
+referred by,en,NEW_LEAD,2,verified,
+introduced our,en,NEW_LEAD,2,verified,
+introduc*,en,NEW_LEAD,1.5,verified,
+untapped,en,NEW_LEAD,1.5,verified,
+lead,en,NEW_LEAD,1.2,verified,
+leads,en,NEW_LEAD,1.2,verified,
+opportunit*,en,NEW_LEAD,1.2,verified,
+interested,en,NEW_LEAD,1.2,verified,
+demo,en,NEW_LEAD,1.2,verified,
+new product*,en,NEW_LEAD,1.2,verified,
+sample,en,NEW_LEAD,1,verified,
+brochure,en,NEW_LEAD,1,verified,
+catalogue,en,NEW_LEAD,1,verified,
+interest,en,NEW_LEAD,0.8,verified,
+potential,en,NEW_LEAD,0.8,verified,
+notun party,bn,NEW_LEAD,3,draft,new customer
+natun party,bn,NEW_LEAD,3,draft,new customer
+notun khoddar,bn,NEW_LEAD,3,draft,new customer
+notun site,bn,NEW_LEAD,2.5,draft,new site
+natun site,bn,NEW_LEAD,2.5,draft,new site
+notun kaj,bn,NEW_LEAD,2,draft,new work
+agrohi,bn,NEW_LEAD,2,draft,interested
+interest dekhalo,bn,NEW_LEAD,2,draft,showed interest
+নতুন পার্টি,bn-Beng,NEW_LEAD,3,draft,new customer
+নতুন খদ্দের,bn-Beng,NEW_LEAD,3,draft,new customer
+নতুন সাইট,bn-Beng,NEW_LEAD,2.5,draft,new site
+আগ্রহী,bn-Beng,NEW_LEAD,2,draft,interested
+nayi party,hi,NEW_LEAD,3,draft,new customer
+naya grahak,hi,NEW_LEAD,3,draft,new customer
+naya party,hi,NEW_LEAD,2.5,draft,new customer
+naye customer,hi,NEW_LEAD,2.5,draft,new customers
+nayi site,hi,NEW_LEAD,2.5,draft,new site
+naya kaam,hi,NEW_LEAD,2,draft,new work
+dilchaspi,hi,NEW_LEAD,2,draft,interest
+interest dikhaya,hi,NEW_LEAD,2,draft,showed interest
+नया ग्राहक,hi-Deva,NEW_LEAD,3,draft,new customer
+नई पार्टी,hi-Deva,NEW_LEAD,3,draft,new customer
+नई साइट,hi-Deva,NEW_LEAD,2.5,draft,new site
+दिलचस्पी,hi-Deva,NEW_LEAD,2,draft,interest
+technical support,en,TECH_SUPPORT,3,verified,
+tech support,en,TECH_SUPPORT,3,verified,
+site evaluation,en,TECH_SUPPORT,3,verified,
+bar bending schedule,en,TECH_SUPPORT,3,verified,
+load calculation,en,TECH_SUPPORT,3,verified,
+technical*,en,TECH_SUPPORT,2.5,verified,
+structural,en,TECH_SUPPORT,2.5,verified,
+bbs,en,TECH_SUPPORT,2.5,verified,bar bending schedule
+lap length,en,TECH_SUPPORT,2.5,verified,
+steel calculation,en,TECH_SUPPORT,2.5,verified,
+inspection,en,TECH_SUPPORT,2,verified,
+how much steel,en,TECH_SUPPORT,2,verified,
+lapping,en,TECH_SUPPORT,2,verified,
+cover block*,en,TECH_SUPPORT,2,verified,
+stirrup*,en,TECH_SUPPORT,2,verified,
+mill test,en,TECH_SUPPORT,2,verified,
+engineer*,en,TECH_SUPPORT,1.5,verified,
+evaluation,en,TECH_SUPPORT,1.5,verified,
+specification*,en,TECH_SUPPORT,1.5,verified,
+specs,en,TECH_SUPPORT,1.5,verified,
+secondary support,en,TECH_SUPPORT,1.5,verified,
+drawing,en,TECH_SUPPORT,1.5,verified,
+estimation,en,TECH_SUPPORT,1.5,verified,
+guidance,en,TECH_SUPPORT,1.5,verified,
+demonstrat*,en,TECH_SUPPORT,1.5,verified,
+bending,en,TECH_SUPPORT,1.5,verified,
+training,en,TECH_SUPPORT,1.5,verified,
+estimate,en,TECH_SUPPORT,1.2,verified,
+design,en,TECH_SUPPORT,1,verified,
+consumption,en,TECH_SUPPORT,1,verified,
+support,en,TECH_SUPPORT,0.8,verified,
+koto rod lagbe,bn,TECH_SUPPORT,2.5,draft,how much rod is needed
+rod er hisab,bn,TECH_SUPPORT,2.5,draft,steel calculation
+hisab kore dao,bn,TECH_SUPPORT,2,draft,please calculate
+engineer babu,bn,TECH_SUPPORT,2,draft,the engineer
+কত রড লাগবে,bn-Beng,TECH_SUPPORT,2.5,draft,how much rod is needed
+ইঞ্জিনিয়ার,bn-Beng,TECH_SUPPORT,1.5,draft,engineer
+kitna sariya lagega,hi,TECH_SUPPORT,2.5,draft,how much steel is needed
+sariya ka hisaab,hi,TECH_SUPPORT,2.5,draft,steel calculation
+takniki,hi,TECH_SUPPORT,2.5,draft,technical
+engineer sahab,hi,TECH_SUPPORT,2,draft,the engineer
+naksha,hi,TECH_SUPPORT,1.5,draft,drawing / plan
+bandhai,hi,TECH_SUPPORT,1.5,draft,bar tying
+कितना सरिया,hi-Deva,TECH_SUPPORT,2.5,draft,how much steel
+तकनीकी,hi-Deva,TECH_SUPPORT,2.5,draft,technical
+इंजीनियर,hi-Deva,TECH_SUPPORT,1.5,draft,engineer
+नक्शा,hi-Deva,TECH_SUPPORT,1.5,draft,drawing / plan
+working on our brand,en,HAPPY_CUSTOMER,3,verified,
+only elegant,en,HAPPY_CUSTOMER,3,verified,
+satisfied,en,HAPPY_CUSTOMER,2.5,verified,
+happy,en,HAPPY_CUSTOMER,2.5,verified,
+happiness,en,HAPPY_CUSTOMER,2.5,verified,
+pleased,en,HAPPY_CUSTOMER,2.5,verified,
+delighted,en,HAPPY_CUSTOMER,2.5,verified,
+loyal,en,HAPPY_CUSTOMER,2.5,verified,
+advocate*,en,HAPPY_CUSTOMER,2.5,verified,
+champion,en,HAPPY_CUSTOMER,2.5,verified,
+positive feedback,en,HAPPY_CUSTOMER,2.5,verified,
+good feedback,en,HAPPY_CUSTOMER,2.5,verified,
+using our brand,en,HAPPY_CUSTOMER,2.5,verified,
+using elegant,en,HAPPY_CUSTOMER,2.5,verified,
+quality is good,en,HAPPY_CUSTOMER,2.5,verified,
+no complaint*,en,HAPPY_CUSTOMER,2.5,verified,
+satisf*,en,HAPPY_CUSTOMER,2,verified,
+loyalty,en,HAPPY_CUSTOMER,2,verified,
+good quality,en,HAPPY_CUSTOMER,2,verified,
+good product,en,HAPPY_CUSTOMER,2,verified,
+good service,en,HAPPY_CUSTOMER,2,verified,
+appreciat*,en,HAPPY_CUSTOMER,2,verified,
+praise*,en,HAPPY_CUSTOMER,2,verified,
+repeat customer,en,HAPPY_CUSTOMER,2,verified,
+no issue*,en,HAPPY_CUSTOMER,2,verified,
+no problem*,en,HAPPY_CUSTOMER,2,verified,
+recommend*,en,HAPPY_CUSTOMER,1.5,verified,
+very good,en,HAPPY_CUSTOMER,1.5,verified,
+excellent,en,HAPPY_CUSTOMER,1.5,verified,
+thank*,en,HAPPY_CUSTOMER,1,verified,
+trust*,en,HAPPY_CUSTOMER,1,verified,
+expanding,en,HAPPY_CUSTOMER,1,verified,
+resolved,en,HAPPY_CUSTOMER,1,verified,
+khub khushi,bn,HAPPY_CUSTOMER,3,draft,very happy
+kono obhijog nei,bn,HAPPY_CUSTOMER,3,draft,no complaint
+amader maal e kaj kore,bn,HAPPY_CUSTOMER,3,draft,works only with our goods
+sudhu elegant,bn,HAPPY_CUSTOMER,3,draft,only Elegant
+khushi,bn,HAPPY_CUSTOMER,2.5,draft,happy
+khusi,bn,HAPPY_CUSTOMER,2.5,draft,happy
+sontushto,bn,HAPPY_CUSTOMER,2.5,draft,satisfied
+santushta,bn,HAPPY_CUSTOMER,2.5,draft,satisfied
+bhalo maal,bn,HAPPY_CUSTOMER,2.5,draft,good goods
+maal bhalo,bn,HAPPY_CUSTOMER,2.5,draft,goods are good
+kono jhamela nei,bn,HAPPY_CUSTOMER,2.5,draft,no trouble
+khub bhalo,bn,HAPPY_CUSTOMER,2,draft,very good
+darun,bn,HAPPY_CUSTOMER,2,draft,excellent
+কোনো অভিযোগ নেই,bn-Beng,HAPPY_CUSTOMER,3,draft,no complaint
+খুশি,bn-Beng,HAPPY_CUSTOMER,2.5,draft,happy
+সন্তুষ্ট,bn-Beng,HAPPY_CUSTOMER,2.5,draft,satisfied
+ভালো মাল,bn-Beng,HAPPY_CUSTOMER,2.5,draft,good goods
+খুব ভালো,bn-Beng,HAPPY_CUSTOMER,2,draft,very good
+দারুণ,bn-Beng,HAPPY_CUSTOMER,2,draft,excellent
+bahut khush,hi,HAPPY_CUSTOMER,3,draft,very happy
+koi shikayat nahi,hi,HAPPY_CUSTOMER,3,draft,no complaint
+khush,hi,HAPPY_CUSTOMER,2.5,draft,happy
+santusht,hi,HAPPY_CUSTOMER,2.5,draft,satisfied
+accha maal,hi,HAPPY_CUSTOMER,2.5,draft,good goods
+achha maal,hi,HAPPY_CUSTOMER,2.5,draft,good goods
+maal accha,hi,HAPPY_CUSTOMER,2.5,draft,goods are good
+koi dikkat nahi,hi,HAPPY_CUSTOMER,2.5,draft,no difficulty
+badhiya,hi,HAPPY_CUSTOMER,2,draft,great
+shandar,hi,HAPPY_CUSTOMER,2,draft,excellent
+कोई शिकायत नहीं,hi-Deva,HAPPY_CUSTOMER,3,draft,no complaint
+खुश,hi-Deva,HAPPY_CUSTOMER,2.5,draft,happy
+संतुष्ट,hi-Deva,HAPPY_CUSTOMER,2.5,draft,satisfied
+अच्छा माल,hi-Deva,HAPPY_CUSTOMER,2.5,draft,good goods
+बढ़िया,hi-Deva,HAPPY_CUSTOMER,2,draft,great
+courtesy visit,en,LOW_VALUE_VISIT,3,verified,
+courtesy call,en,LOW_VALUE_VISIT,3,verified,
+owner not available,en,LOW_VALUE_VISIT,3,verified,
+shop closed,en,LOW_VALUE_VISIT,3,verified,
+no one was there,en,LOW_VALUE_VISIT,3,verified,
+no outcome,en,LOW_VALUE_VISIT,3,verified,
+routine visit,en,LOW_VALUE_VISIT,2.5,verified,
+general visit,en,LOW_VALUE_VISIT,2.5,verified,
+casual visit,en,LOW_VALUE_VISIT,2.5,verified,
+no requirement,en,LOW_VALUE_VISIT,2.5,verified,
+not interested,en,LOW_VALUE_VISIT,2.5,verified,
+no interest,en,LOW_VALUE_VISIT,2.5,verified,
+no order,en,LOW_VALUE_VISIT,2,verified,
+just visited,en,LOW_VALUE_VISIT,2,verified,
+just met,en,LOW_VALUE_VISIT,2,verified,
+not available,en,LOW_VALUE_VISIT,2,verified,
+general discussion,en,LOW_VALUE_VISIT,2,verified,
+general talk,en,LOW_VALUE_VISIT,2,verified,
+maintain relationship,en,LOW_VALUE_VISIT,2,verified,
+did not set,en,LOW_VALUE_VISIT,1.5,verified,
+no decision,en,LOW_VALUE_VISIT,1.5,verified,
+market visit,en,LOW_VALUE_VISIT,1.5,verified,
+only met,en,LOW_VALUE_VISIT,1.5,verified,
+for the purpose of,en,LOW_VALUE_VISIT,1,verified,
+market updates,en,LOW_VALUE_VISIT,1,verified,
+dokan bondho,bn,LOW_VALUE_VISIT,3,draft,shop closed
+malik nei,bn,LOW_VALUE_VISIT,3,draft,owner not there
+kono order nei,bn,LOW_VALUE_VISIT,3,draft,no order
+dorkar nei,bn,LOW_VALUE_VISIT,2.5,draft,not needed
+lagbe na,bn,LOW_VALUE_VISIT,2.5,draft,not needed
+emni dekha,bn,LOW_VALUE_VISIT,2.5,draft,just a casual meeting
+shudhu dekha,bn,LOW_VALUE_VISIT,2,draft,only met
+pore dekhbe,bn,LOW_VALUE_VISIT,1.5,draft,will see later
+দোকান বন্ধ,bn-Beng,LOW_VALUE_VISIT,3,draft,shop closed
+মালিক নেই,bn-Beng,LOW_VALUE_VISIT,3,draft,owner not there
+দরকার নেই,bn-Beng,LOW_VALUE_VISIT,2.5,draft,not needed
+লাগবে না,bn-Beng,LOW_VALUE_VISIT,2.5,draft,not needed
+dukan band,hi,LOW_VALUE_VISIT,3,draft,shop closed
+maalik nahi tha,hi,LOW_VALUE_VISIT,3,draft,owner was not there
+koi order nahi,hi,LOW_VALUE_VISIT,3,draft,no order
+malik nahi,hi,LOW_VALUE_VISIT,2.5,draft,owner not there
+zarurat nahi,hi,LOW_VALUE_VISIT,2.5,draft,not needed
+jarurat nahi,hi,LOW_VALUE_VISIT,2.5,draft,not needed
+nahi chahiye,hi,LOW_VALUE_VISIT,2.5,draft,don't want
+bas mile,hi,LOW_VALUE_VISIT,2,draft,just met
+baad mein dekhenge,hi,LOW_VALUE_VISIT,1.5,draft,will see later
+दुकान बंद,hi-Deva,LOW_VALUE_VISIT,3,draft,shop closed
+कोई ऑर्डर नहीं,hi-Deva,LOW_VALUE_VISIT,3,draft,no order
+ज़रूरत नहीं,hi-Deva,LOW_VALUE_VISIT,2.5,draft,not needed
+जरूरत नहीं,hi-Deva,LOW_VALUE_VISIT,2.5,draft,not needed
+नहीं चाहिए,hi-Deva,LOW_VALUE_VISIT,2.5,draft,don't want
+the audio,en,UNCLEAR_RECORDING,3,verified,
+the recording,en,UNCLEAR_RECORDING,3,verified,
+inaudible,en,UNCLEAR_RECORDING,3,verified,
+can't hear,en,UNCLEAR_RECORDING,3,verified,
+cannot hear,en,UNCLEAR_RECORDING,3,verified,
+background noise,en,UNCLEAR_RECORDING,3,verified,
+instructions for visit,en,UNCLEAR_RECORDING,3,verified,
+instructions for the visit,en,UNCLEAR_RECORDING,3,verified,
+medical check-up,en,UNCLEAR_RECORDING,3,verified,
+medical checkup,en,UNCLEAR_RECORDING,3,verified,
+test test,en,UNCLEAR_RECORDING,3,verified,
+hello hello,en,UNCLEAR_RECORDING,3,verified,
+sample recording,en,UNCLEAR_RECORDING,3,verified,
+lorem,en,UNCLEAR_RECORDING,3,verified,
+unclear,en,UNCLEAR_RECORDING,2.5,verified,
+not clear,en,UNCLEAR_RECORDING,2.5,verified,
+plan for visit,en,UNCLEAR_RECORDING,2.5,verified,
+the speaker,en,UNCLEAR_RECORDING,1,verified,
+transcript,en,UNCLEAR_RECORDING,2,verified,
+store administration,en,UNCLEAR_RECORDING,2,verified,
+medical,en,UNCLEAR_RECORDING,2,verified,
+testing,en,UNCLEAR_RECORDING,2,verified,
+audio,en,UNCLEAR_RECORDING,1.5,verified,
+recording,en,UNCLEAR_RECORDING,1.5,verified,
+voice note,en,UNCLEAR_RECORDING,1.5,verified,
+instructions,en,UNCLEAR_RECORDING,1.5,verified,
+noise,en,UNCLEAR_RECORDING,1.5,verified,
+official work,en,UNCLEAR_RECORDING,1.5,verified,
+the conversation indicates,en,UNCLEAR_RECORDING,1.5,verified,
+mentions,en,UNCLEAR_RECORDING,1,verified,
+bujha jacche na,bn,UNCLEAR_RECORDING,3,draft,cannot understand
+shona jacche na,bn,UNCLEAR_RECORDING,3,draft,cannot hear
+awaj nei,bn,UNCLEAR_RECORDING,3,draft,no sound
+বোঝা যাচ্ছে না,bn-Beng,UNCLEAR_RECORDING,3,draft,cannot understand
+শোনা যাচ্ছে না,bn-Beng,UNCLEAR_RECORDING,3,draft,cannot hear
+samajh nahi aa raha,hi,UNCLEAR_RECORDING,3,draft,cannot understand
+sunai nahi de raha,hi,UNCLEAR_RECORDING,3,draft,cannot hear
+awaaz nahi,hi,UNCLEAR_RECORDING,3,draft,no sound
+समझ नहीं आ रहा,hi-Deva,UNCLEAR_RECORDING,3,draft,cannot understand
+सुनाई नहीं,hi-Deva,UNCLEAR_RECORDING,3,draft,cannot hear
+follow-up,en,FOLLOW_UP,2,verified,
+follow up,en,FOLLOW_UP,2,verified,
+followup,en,FOLLOW_UP,2,verified,
+revisit,en,FOLLOW_UP,2,verified,
+visit again,en,FOLLOW_UP,2,verified,
+call back,en,FOLLOW_UP,2,verified,
+keep in contact,en,FOLLOW_UP,2,verified,
+keep in touch,en,FOLLOW_UP,2,verified,
+next visit,en,FOLLOW_UP,2,verified,
+will call,en,FOLLOW_UP,1.5,verified,
+next week,en,FOLLOW_UP,1,verified,
+tomorrow,en,FOLLOW_UP,1,verified,
+abar ashbo,bn,FOLLOW_UP,2,draft,will come again
+abar asbo,bn,FOLLOW_UP,2,draft,will come again
+abar jabo,bn,FOLLOW_UP,2,draft,will go again
+jogajog rakhbo,bn,FOLLOW_UP,2,draft,will keep in touch
+phone korbe,bn,FOLLOW_UP,1.5,draft,will call
+phone korbo,bn,FOLLOW_UP,1.5,draft,I will call
+porer shoptahe,bn,FOLLOW_UP,1.5,draft,next week
+porshu,bn,FOLLOW_UP,1.5,draft,day after tomorrow
+kal,mixed,FOLLOW_UP,1,ambiguous,tomorrow OR yesterday
+আবার আসব,bn-Beng,FOLLOW_UP,2,draft,will come again
+ফোন করবে,bn-Beng,FOLLOW_UP,1.5,draft,will call
+পরের সপ্তাহে,bn-Beng,FOLLOW_UP,1.5,draft,next week
+dobara aayenge,hi,FOLLOW_UP,2,draft,will come again
+phir aayenge,hi,FOLLOW_UP,2,draft,will come again
+phone karenge,hi,FOLLOW_UP,1.5,draft,will call
+agle hafte,hi,FOLLOW_UP,1.5,draft,next week
+parso,hi,FOLLOW_UP,1.5,draft,day after tomorrow
+फिर आएंगे,hi-Deva,FOLLOW_UP,2,draft,will come again
+अगले हफ्ते,hi-Deva,FOLLOW_UP,1.5,draft,next week
+फोन करेंगे,hi-Deva,FOLLOW_UP,1.5,draft,will call
+out of stock,en,STOCK_OUT,3,verified,
+stock out,en,STOCK_OUT,3,verified,
+stock-out,en,STOCK_OUT,3,verified,
+stockout,en,STOCK_OUT,3,verified,
+no stock,en,STOCK_OUT,3,verified,
+stock not available,en,STOCK_OUT,3,verified,
+stock finished,en,STOCK_OUT,3,verified,
+size not available,en,STOCK_OUT,2.5,verified,
+material shortage,en,STOCK_OUT,2.5,verified,
+empty godown,en,STOCK_OUT,2.5,verified,
+shortage,en,STOCK_OUT,2,verified,
+low stock,en,STOCK_OUT,2,verified,
+stock low,en,STOCK_OUT,2,verified,
+maal nei,bn,STOCK_OUT,3,draft,out of stock
+mal nei,bn,STOCK_OUT,3,draft,out of stock
+stock nei,bn,STOCK_OUT,3,draft,out of stock
+maal sesh,bn,STOCK_OUT,3,draft,stock finished
+stock sesh,bn,STOCK_OUT,3,draft,stock finished
+maal furiye geche,bn,STOCK_OUT,3,draft,goods have run out
+মাল নেই,bn-Beng,STOCK_OUT,3,draft,out of stock
+স্টক নেই,bn-Beng,STOCK_OUT,3,draft,out of stock
+মাল শেষ,bn-Beng,STOCK_OUT,3,draft,stock finished
+maal nahi hai,hi,STOCK_OUT,3,draft,out of stock
+stock khatam,hi,STOCK_OUT,3,draft,stock finished
+maal khatam,hi,STOCK_OUT,3,draft,goods finished
+stock nahi,hi,STOCK_OUT,3,draft,no stock
+माल नहीं है,hi-Deva,STOCK_OUT,3,draft,out of stock
+स्टॉक खत्म,hi-Deva,STOCK_OUT,3,draft,stock finished
+माल खत्म,hi-Deva,STOCK_OUT,3,draft,goods finished
+late delivery,en,DELIVERY_PROBLEM,3,verified,
+delivery delay*,en,DELIVERY_PROBLEM,3,verified,
+delayed delivery,en,DELIVERY_PROBLEM,3,verified,
+not delivered,en,DELIVERY_PROBLEM,3,verified,
+did not arrive,en,DELIVERY_PROBLEM,3,verified,
+not arrived,en,DELIVERY_PROBLEM,3,verified,
+truck did not come,en,DELIVERY_PROBLEM,3,verified,
+dispatch delay,en,DELIVERY_PROBLEM,3,verified,
+wrong delivery,en,DELIVERY_PROBLEM,3,verified,
+short delivery,en,DELIVERY_PROBLEM,3,verified,
+delivery issue,en,DELIVERY_PROBLEM,3,verified,
+delivery problem,en,DELIVERY_PROBLEM,3,verified,
+order delay,en,DELIVERY_PROBLEM,2.5,verified,
+transport problem,en,DELIVERY_PROBLEM,2.5,verified,
+delay*,en,DELIVERY_PROBLEM,1,verified,
+gari asheni,bn,DELIVERY_PROBLEM,3,draft,truck did not arrive
+gaari aseni,bn,DELIVERY_PROBLEM,3,draft,truck did not arrive
+gari ashe ni,bn,DELIVERY_PROBLEM,3,draft,truck did not arrive
+gari pouchayni,bn,DELIVERY_PROBLEM,3,draft,truck did not reach
+maal ashe ni,bn,DELIVERY_PROBLEM,3,draft,goods did not arrive
+maal aseni,bn,DELIVERY_PROBLEM,3,draft,goods did not arrive
+delivery deri,bn,DELIVERY_PROBLEM,3,draft,delivery delay
+গাড়ি আসেনি,bn-Beng,DELIVERY_PROBLEM,3,draft,truck did not arrive
+মাল আসেনি,bn-Beng,DELIVERY_PROBLEM,3,draft,goods did not arrive
+gaadi nahi aayi,hi,DELIVERY_PROBLEM,3,draft,truck did not come
+gadi nahi aayi,hi,DELIVERY_PROBLEM,3,draft,truck did not come
+maal nahi aaya,hi,DELIVERY_PROBLEM,3,draft,goods did not come
+maal nahi pahuncha,hi,DELIVERY_PROBLEM,3,draft,goods did not reach
+delivery late,hi,DELIVERY_PROBLEM,3,draft,delivery late
+गाड़ी नहीं आई,hi-Deva,DELIVERY_PROBLEM,3,draft,truck did not come
+माल नहीं आया,hi-Deva,DELIVERY_PROBLEM,3,draft,goods did not come
+rust*,en,QUALITY_ISSUE,3,verified,
+crack*,en,QUALITY_ISSUE,3,verified,
+short weight,en,QUALITY_ISSUE,3,verified,
+underweight,en,QUALITY_ISSUE,3,verified,
+less weight,en,QUALITY_ISSUE,3,verified,
+weight issue,en,QUALITY_ISSUE,3,verified,
+poor quality,en,QUALITY_ISSUE,3,verified,
+bad quality,en,QUALITY_ISSUE,3,verified,
+quality problem,en,QUALITY_ISSUE,3,verified,
+quality issue,en,QUALITY_ISSUE,3,verified,
+quality complaint,en,QUALITY_ISSUE,3,verified,
+defect*,en,QUALITY_ISSUE,3,verified,
+bent bars,en,QUALITY_ISSUE,2.5,verified,
+breaking,en,QUALITY_ISSUE,2.5,verified,
+broke*,en,QUALITY_ISSUE,2,verified,
+uneven,en,QUALITY_ISSUE,2,verified,
+morche,bn,QUALITY_ISSUE,3,draft,rust
+morcha,bn,QUALITY_ISSUE,3,draft,rust
+jong,bn,QUALITY_ISSUE,3,draft,rust
+bhenge jacche,bn,QUALITY_ISSUE,3,draft,breaking
+fete jacche,bn,QUALITY_ISSUE,3,draft,cracking
+ojon kom,bn,QUALITY_ISSUE,3,draft,weight is short
+kharap maal,bn,QUALITY_ISSUE,3,draft,bad goods
+মরচে,bn-Beng,QUALITY_ISSUE,3,draft,rust
+ওজন কম,bn-Beng,QUALITY_ISSUE,3,draft,weight is short
+ভেঙে,bn-Beng,QUALITY_ISSUE,2.5,draft,broken
+jang,hi,QUALITY_ISSUE,3,draft,rust
+zang,hi,QUALITY_ISSUE,3,draft,rust
+jung laga,hi,QUALITY_ISSUE,3,draft,rusted
+toot raha,hi,QUALITY_ISSUE,3,draft,breaking
+toot gaya,hi,QUALITY_ISSUE,3,draft,broken
+wajan kam,hi,QUALITY_ISSUE,3,draft,weight is short
+vajan kam,hi,QUALITY_ISSUE,3,draft,weight is short
+kharab maal,hi,QUALITY_ISSUE,3,draft,bad goods
+जंग,hi-Deva,QUALITY_ISSUE,3,draft,rust
+वजन कम,hi-Deva,QUALITY_ISSUE,3,draft,weight is short
+टूट,hi-Deva,QUALITY_ISSUE,2.5,draft,broken
+requested credit,en,CREDIT_REQUEST,3,verified,
+requested short-term credit,en,CREDIT_REQUEST,3,verified,
+short-term credit,en,CREDIT_REQUEST,3,verified,
+credit request*,en,CREDIT_REQUEST,3,verified,
+more credit,en,CREDIT_REQUEST,3,verified,
+extend credit,en,CREDIT_REQUEST,3,verified,
+days credit,en,CREDIT_REQUEST,3,verified,
+on credit,en,CREDIT_REQUEST,3,verified,
+credit period,en,CREDIT_REQUEST,2.5,verified,
+credit limit,en,CREDIT_REQUEST,2.5,verified,
+credit,en,CREDIT_REQUEST,1,verified,
+dhar chai,bn,CREDIT_REQUEST,3,draft,wants credit
+dhare chai,bn,CREDIT_REQUEST,3,draft,wants goods on credit
+dhar e,bn,CREDIT_REQUEST,3,draft,on credit
+ধার চাই,bn-Beng,CREDIT_REQUEST,3,draft,wants credit
+ধারে চাই,bn-Beng,CREDIT_REQUEST,3,draft,wants goods on credit
+udhaar chahiye,hi,CREDIT_REQUEST,3,draft,wants credit
+udhar chahiye,hi,CREDIT_REQUEST,3,draft,wants credit
+udhaar pe,hi,CREDIT_REQUEST,3,draft,on credit
+उधार चाहिए,hi-Deva,CREDIT_REQUEST,3,draft,wants credit
+payment received,en,PAYMENT_RECEIVED,3,verified,
+received payment,en,PAYMENT_RECEIVED,3,verified,
+full payment,en,PAYMENT_RECEIVED,3,verified,
+payment done,en,PAYMENT_RECEIVED,3,verified,
+payment cleared,en,PAYMENT_RECEIVED,3,verified,
+payment collected,en,PAYMENT_RECEIVED,3,verified,
+collected payment,en,PAYMENT_RECEIVED,3,verified,
+cheque received,en,PAYMENT_RECEIVED,3,verified,
+advance received,en,PAYMENT_RECEIVED,3,verified,
+payments are confirmed,en,PAYMENT_RECEIVED,3,verified,
+payment confirmed,en,PAYMENT_RECEIVED,3,verified,
+paid,en,PAYMENT_RECEIVED,2,verified,
+cleared,en,PAYMENT_RECEIVED,2,verified,
+settled,en,PAYMENT_RECEIVED,2,verified,
+advance,en,PAYMENT_RECEIVED,1.5,verified,
+taka diyeche,bn,PAYMENT_RECEIVED,3,draft,has paid
+taka dilo,bn,PAYMENT_RECEIVED,3,draft,paid
+payment hoye geche,bn,PAYMENT_RECEIVED,3,draft,payment is done
+payment diyeche,bn,PAYMENT_RECEIVED,3,draft,has paid
+taka peyechi,bn,PAYMENT_RECEIVED,3,draft,received the money
+টাকা দিয়েছে,bn-Beng,PAYMENT_RECEIVED,3,draft,has paid
+টাকা পেয়েছি,bn-Beng,PAYMENT_RECEIVED,3,draft,received the money
+পেমেন্ট হয়ে গেছে,bn-Beng,PAYMENT_RECEIVED,3,draft,payment is done
+paisa aa gaya,hi,PAYMENT_RECEIVED,3,draft,money has come
+paise mil gaye,hi,PAYMENT_RECEIVED,3,draft,money received
+payment ho gaya,hi,PAYMENT_RECEIVED,3,draft,payment done
+bhugtan ho gaya,hi,PAYMENT_RECEIVED,3,draft,payment done
+पैसा आ गया,hi-Deva,PAYMENT_RECEIVED,3,draft,money has come
+भुगतान हो गया,hi-Deva,PAYMENT_RECEIVED,3,draft,payment done
+will pay,en,PAYMENT_PROMISED,3,verified,
+promised to pay,en,PAYMENT_PROMISED,3,verified,
+payment next week,en,PAYMENT_PROMISED,3,verified,
+pay next week,en,PAYMENT_PROMISED,3,verified,
+will clear,en,PAYMENT_PROMISED,3,verified,
+to be cleared,en,PAYMENT_PROMISED,2.5,verified,
+payment by,en,PAYMENT_PROMISED,2,verified,
+pay by,en,PAYMENT_PROMISED,2,verified,
+taka debe,bn,PAYMENT_PROMISED,3,draft,will pay
+taka dibe,bn,PAYMENT_PROMISED,3,draft,will pay
+pore debe,bn,PAYMENT_PROMISED,3,draft,will pay later
+pore dibe,bn,PAYMENT_PROMISED,3,draft,will pay later
+টাকা দেবে,bn-Beng,PAYMENT_PROMISED,3,draft,will pay
+পরে দেবে,bn-Beng,PAYMENT_PROMISED,3,draft,will pay later
+baad mein dega,hi,PAYMENT_PROMISED,3,draft,will pay later
+baad me dega,hi,PAYMENT_PROMISED,3,draft,will pay later
+paisa dega,hi,PAYMENT_PROMISED,3,draft,will pay
+payment karega,hi,PAYMENT_PROMISED,3,draft,will make payment
+बाद में देगा,hi-Deva,PAYMENT_PROMISED,3,draft,will pay later
+पैसा देगा,hi-Deva,PAYMENT_PROMISED,3,draft,will pay
+cheque bounce*,en,CREDIT_RISK,3,verified,
+check bounce*,en,CREDIT_RISK,3,verified,
+bounced cheque,en,CREDIT_RISK,3,verified,
+cheque return*,en,CREDIT_RISK,3,verified,
+cheque dishonour*,en,CREDIT_RISK,3,verified,
+payment default,en,CREDIT_RISK,3,verified,
+defaulter,en,CREDIT_RISK,3,verified,
+long overdue,en,CREDIT_RISK,3,verified,
+not paying,en,CREDIT_RISK,3,verified,
+delaying payment,en,CREDIT_RISK,3,verified,
+avoiding payment,en,CREDIT_RISK,3,verified,
+legal notice,en,CREDIT_RISK,3,verified,
+overdue,en,CREDIT_RISK,2,verified,
+chek bounce,bn,CREDIT_RISK,3,draft,cheque bounce
+taka dicche na,bn,CREDIT_RISK,3,draft,is not paying
+taka dey na,bn,CREDIT_RISK,3,draft,does not pay
+ghorachhe,bn,CREDIT_RISK,2,draft,giving the run-around
+চেক বাউন্স,bn-Beng,CREDIT_RISK,3,draft,cheque bounce
+paisa nahi de raha,hi,CREDIT_RISK,3,draft,is not paying
+taalmatol,hi,CREDIT_RISK,3,draft,evasion / delaying
+tal raha hai,hi,CREDIT_RISK,2.5,draft,is avoiding
+चेक बाउंस,hi-Deva,CREDIT_RISK,3,draft,cheque bounce
+पैसा नहीं दे रहा,hi-Deva,CREDIT_RISK,3,draft,is not paying
+lucky draw,en,SCHEME_ASK,3,verified,
+loyalty points,en,SCHEME_ASK,3,verified,
+cash discount,en,SCHEME_ASK,3,verified,
+scheme*,en,SCHEME_ASK,3,verified,
+gift*,en,SCHEME_ASK,2.5,verified,
+discount*,en,SCHEME_ASK,2.5,verified,
+incentive*,en,SCHEME_ASK,2.5,verified,
+commission,en,SCHEME_ASK,2.5,verified,
+rebate,en,SCHEME_ASK,2.5,verified,
+coupon*,en,SCHEME_ASK,2.5,verified,
+bonus,en,SCHEME_ASK,2,verified,
+prize*,en,SCHEME_ASK,2,verified,
+offer*,en,SCHEME_ASK,1.5,verified,
+upohar,bn,SCHEME_ASK,3,draft,gift
+chhar,bn,SCHEME_ASK,3,draft,discount
+chhar chai,bn,SCHEME_ASK,3,draft,wants a discount
+discount chai,bn,SCHEME_ASK,3,draft,wants a discount
+char diye,bn,SCHEME_ASK,2.5,draft,with discount
+উপহার,bn-Beng,SCHEME_ASK,3,draft,gift
+ছাড়,bn-Beng,SCHEME_ASK,3,draft,discount
+স্কিম,bn-Beng,SCHEME_ASK,3,draft,scheme
+chhoot,hi,SCHEME_ASK,3,draft,discount
+chhut,hi,SCHEME_ASK,3,draft,discount
+inaam,hi,SCHEME_ASK,3,draft,prize
+inam,hi,SCHEME_ASK,3,draft,prize
+tohfa,hi,SCHEME_ASK,3,draft,gift
+gift chahiye,hi,SCHEME_ASK,3,draft,wants a gift
+छूट,hi-Deva,SCHEME_ASK,3,draft,discount
+इनाम,hi-Deva,SCHEME_ASK,3,draft,prize
+तोहफा,hi-Deva,SCHEME_ASK,3,draft,gift
+स्कीम,hi-Deva,SCHEME_ASK,3,draft,scheme
+pop,en,BRANDING_NEEDED,3,verified,point-of-purchase material
+point of purchase,en,BRANDING_NEEDED,3,verified,
+branding,en,BRANDING_NEEDED,3,verified,
+signboard,en,BRANDING_NEEDED,3,verified,
+sign board,en,BRANDING_NEEDED,3,verified,
+glow board,en,BRANDING_NEEDED,3,verified,
+glow sign,en,BRANDING_NEEDED,3,verified,
+wall painting,en,BRANDING_NEEDED,3,verified,
+dealer board,en,BRANDING_NEEDED,3,verified,
+shop board,en,BRANDING_NEEDED,3,verified,
+poster*,en,BRANDING_NEEDED,2.5,verified,
+banner*,en,BRANDING_NEEDED,2.5,verified,
+wall paint,en,BRANDING_NEEDED,2.5,verified,
+flex,en,BRANDING_NEEDED,2.5,verified,
+standee*,en,BRANDING_NEEDED,2.5,verified,
+merchandise,en,BRANDING_NEEDED,2,verified,
+display,en,BRANDING_NEEDED,1.5,verified,
+calendar*,en,BRANDING_NEEDED,1.5,verified,
+board lagate hobe,bn,BRANDING_NEEDED,3,draft,need to put up a board
+banner chai,bn,BRANDING_NEEDED,3,draft,wants a banner
+ব্যানার,bn-Beng,BRANDING_NEEDED,2.5,draft,banner
+board lagwana,hi,BRANDING_NEEDED,3,draft,get a board put up
+banner chahiye,hi,BRANDING_NEEDED,3,draft,wants a banner
+बैनर,hi-Deva,BRANDING_NEEDED,2.5,draft,banner
+housing project,en,BULK_PROJECT,3,verified,
+multi-storey,en,BULK_PROJECT,3,verified,
+multistorey,en,BULK_PROJECT,3,verified,
+bulk order,en,BULK_PROJECT,3,verified,
+apartment*,en,BULK_PROJECT,2.5,verified,
+flat project,en,BULK_PROJECT,2.5,verified,
+commercial building,en,BULK_PROJECT,2.5,verified,
+road project,en,BULK_PROJECT,2.5,verified,
+bulk,en,BULK_PROJECT,2.5,verified,
+large order,en,BULK_PROJECT,2.5,verified,
+big order,en,BULK_PROJECT,2.5,verified,
+project order,en,BULK_PROJECT,2.5,verified,
+builder*,en,BULK_PROJECT,2,verified,
+commercial work,en,BULK_PROJECT,2,verified,
+factory,en,BULK_PROJECT,2,verified,
+warehouse,en,BULK_PROJECT,2,verified,
+bridge,en,BULK_PROJECT,2,verified,
+developer*,en,BULK_PROJECT,1.5,verified,
+contractor*,en,BULK_PROJECT,1.5,verified,
+complex,en,BULK_PROJECT,1.5,verified,
+boro order,bn,BULK_PROJECT,3,draft,big order
+flat bari,bn,BULK_PROJECT,2.5,draft,apartment building
+boro kaj,bn,BULK_PROJECT,2,draft,big job
+thikadar,bn,BULK_PROJECT,1.5,draft,contractor
+thikadaar,bn,BULK_PROJECT,1.5,draft,contractor
+বড় অর্ডার,bn-Beng,BULK_PROJECT,3,draft,big order
+ফ্ল্যাট,bn-Beng,BULK_PROJECT,2,draft,apartment
+ঠিকাদার,bn-Beng,BULK_PROJECT,1.5,draft,contractor
+bada order,hi,BULK_PROJECT,3,draft,big order
+bada kaam,hi,BULK_PROJECT,2,draft,big job
+thekedar,hi,BULK_PROJECT,1.5,draft,contractor
+theka,hi,BULK_PROJECT,1.5,draft,contract
+बड़ा ऑर्डर,hi-Deva,BULK_PROJECT,3,draft,big order
+ठेकेदार,hi-Deva,BULK_PROJECT,1.5,draft,contractor
+tender*,en,GOVT_LEAD,3,verified,
+pwd,en,GOVT_LEAD,3,verified,Public Works Department
+cpwd,en,GOVT_LEAD,3,verified,
+nhai,en,GOVT_LEAD,3,verified,
+municipality,en,GOVT_LEAD,3,verified,
+panchayat,en,GOVT_LEAD,3,verified,
+awas yojana,en,GOVT_LEAD,3,verified,government housing scheme
+pmay,en,GOVT_LEAD,3,verified,government housing scheme
+bangla awas,en,GOVT_LEAD,3,verified,state housing scheme
+government,en,GOVT_LEAD,2.5,verified,
+govt,en,GOVT_LEAD,2.5,verified,
+municipal,en,GOVT_LEAD,2.5,verified,
+school building,en,GOVT_LEAD,2.5,verified,
+hospital building,en,GOVT_LEAD,2.5,verified,
+railway*,en,GOVT_LEAD,2.5,verified,
+institution*,en,GOVT_LEAD,2,verified,
+sorkari,bn,GOVT_LEAD,3,draft,government
+pouroshobha,bn,GOVT_LEAD,3,draft,municipality
+সরকারি,bn-Beng,GOVT_LEAD,3,draft,government
+পৌরসভা,bn-Beng,GOVT_LEAD,3,draft,municipality
+পঞ্চায়েত,bn-Beng,GOVT_LEAD,3,draft,panchayat
+sarkari,hi,GOVT_LEAD,3,draft,government
+सरकारी,hi-Deva,GOVT_LEAD,3,draft,government
+पंचायत,hi-Deva,GOVT_LEAD,3,draft,panchayat
+work stopped,en,CONSTRUCTION_PAUSED,3,verified,
+work has stopped,en,CONSTRUCTION_PAUSED,3,verified,
+on hold,en,CONSTRUCTION_PAUSED,3,verified,
+paused,en,CONSTRUCTION_PAUSED,3,verified,
+halted,en,CONSTRUCTION_PAUSED,3,verified,
+labour shortage,en,CONSTRUCTION_PAUSED,3,verified,
+labor shortage,en,CONSTRUCTION_PAUSED,3,verified,
+no labour,en,CONSTRUCTION_PAUSED,3,verified,
+labour problem,en,CONSTRUCTION_PAUSED,3,verified,
+fund problem,en,CONSTRUCTION_PAUSED,3,verified,
+funds problem,en,CONSTRUCTION_PAUSED,3,verified,
+suspended,en,CONSTRUCTION_PAUSED,2.5,verified,
+offline,en,CONSTRUCTION_PAUSED,2,verified,
+rain,en,CONSTRUCTION_PAUSED,2,verified,
+monsoon,en,CONSTRUCTION_PAUSED,2,verified,
+flood*,en,CONSTRUCTION_PAUSED,2,verified,
+money problem,en,CONSTRUCTION_PAUSED,2,verified,
+stopped,en,CONSTRUCTION_PAUSED,1.5,verified,
+festival,en,CONSTRUCTION_PAUSED,1.5,verified,
+puja,en,CONSTRUCTION_PAUSED,1.5,verified,
+kaj bondho,bn,CONSTRUCTION_PAUSED,3,draft,work stopped
+kaaj bondho,bn,CONSTRUCTION_PAUSED,3,draft,work stopped
+kaj thema ache,bn,CONSTRUCTION_PAUSED,3,draft,work is halted
+kaj bandh,bn,CONSTRUCTION_PAUSED,3,draft,work stopped
+lok nei,bn,CONSTRUCTION_PAUSED,3,draft,no labour
+labour nei,bn,CONSTRUCTION_PAUSED,3,draft,no labour
+mistri nei,bn,CONSTRUCTION_PAUSED,3,draft,no mason
+brishti,bn,CONSTRUCTION_PAUSED,2.5,draft,rain
+bristi,bn,CONSTRUCTION_PAUSED,2.5,draft,rain
+borsha,bn,CONSTRUCTION_PAUSED,2,draft,monsoon
+pujor por,bn,CONSTRUCTION_PAUSED,2,draft,after the festival
+taka nei,bn,CONSTRUCTION_PAUSED,2,draft,no money
+pujo,bn,CONSTRUCTION_PAUSED,1.5,draft,festival
+durga pujo,bn,CONSTRUCTION_PAUSED,1.5,draft,Durga Puja festival
+কাজ বন্ধ,bn-Beng,CONSTRUCTION_PAUSED,3,draft,work stopped
+লোক নেই,bn-Beng,CONSTRUCTION_PAUSED,3,draft,no labour
+বৃষ্টি,bn-Beng,CONSTRUCTION_PAUSED,2.5,draft,rain
+বর্ষা,bn-Beng,CONSTRUCTION_PAUSED,2,draft,monsoon
+পুজো,bn-Beng,CONSTRUCTION_PAUSED,1.5,draft,festival
+kaam band,hi,CONSTRUCTION_PAUSED,3,draft,work stopped
+kaam ruka,hi,CONSTRUCTION_PAUSED,3,draft,work halted
+majdoor nahi,hi,CONSTRUCTION_PAUSED,3,draft,no labour
+mazdoor nahi,hi,CONSTRUCTION_PAUSED,3,draft,no labour
+barsaat,hi,CONSTRUCTION_PAUSED,2.5,draft,rainy season
+baarish,hi,CONSTRUCTION_PAUSED,2.5,draft,rain
+paisa nahi hai,hi,CONSTRUCTION_PAUSED,2,draft,no money
+काम बंद,hi-Deva,CONSTRUCTION_PAUSED,3,draft,work stopped
+मजदूर नहीं,hi-Deva,CONSTRUCTION_PAUSED,3,draft,no labour
+बारिश,hi-Deva,CONSTRUCTION_PAUSED,2.5,draft,rain
+बरसात,hi-Deva,CONSTRUCTION_PAUSED,2.5,draft,rainy season
+new dealer,en,NEW_DEALER_INTEREST,3,verified,
+dealership,en,NEW_DEALER_INTEREST,3,verified,
+become a dealer,en,NEW_DEALER_INTEREST,3,verified,
+become dealer,en,NEW_DEALER_INTEREST,3,verified,
+sub-dealer,en,NEW_DEALER_INTEREST,2.5,verified,
+sub dealer,en,NEW_DEALER_INTEREST,2.5,verified,
+new counter,en,NEW_DEALER_INTEREST,2.5,verified,
+keep our brand,en,NEW_DEALER_INTEREST,2.5,verified,
+stock our,en,NEW_DEALER_INTEREST,2.5,verified,
+open a shop,en,NEW_DEALER_INTEREST,2.5,verified,
+distributor*,en,NEW_DEALER_INTEREST,2,verified,
+new product lines,en,NEW_DEALER_INTEREST,2,verified,
+dealer hote chay,bn,NEW_DEALER_INTEREST,3,draft,wants to become a dealer
+dealership chay,bn,NEW_DEALER_INTEREST,3,draft,wants a dealership
+ডিলারশিপ,bn-Beng,NEW_DEALER_INTEREST,3,draft,dealership
+dealer banna,hi,NEW_DEALER_INTEREST,3,draft,become a dealer
+dealership chahiye,hi,NEW_DEALER_INTEREST,3,draft,wants a dealership
+डीलरशिप,hi-Deva,NEW_DEALER_INTEREST,3,draft,dealership
+test certificate,en,QUALITY_PROOF,3,verified,
+test report,en,QUALITY_PROOF,3,verified,
+mill test certificate,en,QUALITY_PROOF,3,verified,
+isi mark,en,QUALITY_PROOF,3,verified,
+lab test,en,QUALITY_PROOF,3,verified,
+lab report,en,QUALITY_PROOF,3,verified,
+quality proof,en,QUALITY_PROOF,3,verified,
+rebend test,en,QUALITY_PROOF,3,verified,
+bis,en,QUALITY_PROOF,3,verified,Bureau of Indian Standards
+mtc,en,QUALITY_PROOF,2.5,verified,mill test certificate
+certificate*,en,QUALITY_PROOF,2,verified,
+isi,en,QUALITY_PROOF,2,verified,
+bend test,en,QUALITY_PROOF,1.5,verified,
+certificate chai,bn,QUALITY_PROOF,3,draft,wants a certificate
+সার্টিফিকেট,bn-Beng,QUALITY_PROOF,2.5,draft,certificate
+certificate chahiye,hi,QUALITY_PROOF,3,draft,wants a certificate
+jaanch report,hi,QUALITY_PROOF,3,draft,test report
+सर्टिफिकेट,hi-Deva,QUALITY_PROOF,2.5,draft,certificate
+price is high,en,PRICE_OBJECTION,3,verified,
+price too high,en,PRICE_OBJECTION,3,verified,
+rate is high,en,PRICE_OBJECTION,3,verified,
+too expensive,en,PRICE_OBJECTION,3,verified,
+price concern,en,PRICE_OBJECTION,3,verified,
+concern regarding price,en,PRICE_OBJECTION,3,verified,
+reduce price,en,PRICE_OBJECTION,3,verified,
+reduce the price,en,PRICE_OBJECTION,3,verified,
+reduce the rate,en,PRICE_OBJECTION,3,verified,
+price reduction,en,PRICE_OBJECTION,3,verified,
+high price,en,PRICE_OBJECTION,2.5,verified,
+bargain*,en,PRICE_OBJECTION,2,verified,
+costly,en,PRICE_OBJECTION,2,verified,
+expensive,en,PRICE_OBJECTION,2,verified,
+negotiat*,en,PRICE_OBJECTION,1.5,verified,
+dam beshi,bn,PRICE_OBJECTION,3,draft,price is too high
+rate beshi,bn,PRICE_OBJECTION,3,draft,rate is too high
+dam komao,bn,PRICE_OBJECTION,3,draft,lower the price
+rate komao,bn,PRICE_OBJECTION,3,draft,lower the rate
+দাম বেশি,bn-Beng,PRICE_OBJECTION,3,draft,price is too high
+দাম কমাও,bn-Beng,PRICE_OBJECTION,3,draft,lower the price
+mehenga,hi,PRICE_OBJECTION,3,draft,expensive
+mehnga,hi,PRICE_OBJECTION,3,draft,expensive
+bhav zyada,hi,PRICE_OBJECTION,3,draft,price is high
+rate kam karo,hi,PRICE_OBJECTION,3,draft,reduce the rate
+महंगा,hi-Deva,PRICE_OBJECTION,3,draft,expensive
+रेट कम करो,hi-Deva,PRICE_OBJECTION,3,draft,reduce the rate
+may switch,en,SWITCH_RISK,3,verified,
+might switch,en,SWITCH_RISK,3,verified,
+thinking of switching,en,SWITCH_RISK,3,verified,
+considering other brand*,en,SWITCH_RISK,3,verified,
+trying other brand*,en,SWITCH_RISK,3,verified,
+will shift,en,SWITCH_RISK,3,verified,
+planning to shift,en,SWITCH_RISK,3,verified,
+threatened to switch,en,SWITCH_RISK,3,verified,
+moving to,en,SWITCH_RISK,2.5,verified,
+onno company nebe,bn,SWITCH_RISK,3,draft,will take another company
+onno brand nebe,bn,SWITCH_RISK,3,draft,will take another brand
+অন্য কোম্পানি নেবে,bn-Beng,SWITCH_RISK,3,draft,will take another company
+dusri company lega,hi,SWITCH_RISK,3,draft,will take another company
+brand badlega,hi,SWITCH_RISK,3,draft,will change brand
+दूसरी कंपनी लेगा,hi-Deva,SWITCH_RISK,3,draft,will take another company
+switched to,en,LOST_TO_COMPETITOR,3,verified,
+shifted to,en,LOST_TO_COMPETITOR,3,verified,
+lost to,en,LOST_TO_COMPETITOR,3,verified,
+lost the order,en,LOST_TO_COMPETITOR,3,verified,
+order went to,en,LOST_TO_COMPETITOR,3,verified,
+bought from competitor,en,LOST_TO_COMPETITOR,3,verified,
+purchased from other,en,LOST_TO_COMPETITOR,3,verified,
+onno company theke nilo,bn,LOST_TO_COMPETITOR,3,draft,took from another company
+onno company r maal nilo,bn,LOST_TO_COMPETITOR,3,draft,took another company's goods
+অন্য কোম্পানি থেকে নিল,bn-Beng,LOST_TO_COMPETITOR,3,draft,took from another company
+dusri company se liya,hi,LOST_TO_COMPETITOR,3,draft,took from another company
+दूसरी कंपनी से लिया,hi-Deva,LOST_TO_COMPETITOR,3,draft,took from another company
+switched to elegant,en,WON_FROM_COMPETITOR,3,verified,
+shifted to elegant,en,WON_FROM_COMPETITOR,3,verified,
+converted to elegant,en,WON_FROM_COMPETITOR,3,verified,
+moved to our brand,en,WON_FROM_COMPETITOR,3,verified,
+now using elegant,en,WON_FROM_COMPETITOR,3,verified,
+now using our,en,WON_FROM_COMPETITOR,3,verified,
+conversion successful,en,WON_FROM_COMPETITOR,3,verified,
+converted,en,WON_FROM_COMPETITOR,2,verified,
+elegant nebe,bn,WON_FROM_COMPETITOR,2.5,draft,will take Elegant
+ab elegant lega,hi,WON_FROM_COMPETITOR,3,draft,will now take Elegant
+gave a reference,en,REFERRAL_GIVEN,3,verified,
+gave contact,en,REFERRAL_GIVEN,3,verified,
+recommend us,en,REFERRAL_GIVEN,3,verified,
+referral*,en,REFERRAL_GIVEN,3,verified,
+referred,en,REFERRAL_GIVEN,3,verified,
+refer,en,REFERRAL_GIVEN,2.5,verified,
+reference,en,REFERRAL_GIVEN,2,verified,
+introduced to,en,REFERRAL_GIVEN,2,verified,
+new contact,en,REFERRAL_GIVEN,2,verified,
+number dilo,bn,REFERRAL_GIVEN,2.5,draft,gave a number
+number diya,hi,REFERRAL_GIVEN,2.5,draft,gave a number
+pehchan wala,hi,REFERRAL_GIVEN,2,draft,an acquaintance
+mason meet*,en,MASON_TRAINING,3,verified,
+masons meet*,en,MASON_TRAINING,3,verified,
+mason training,en,MASON_TRAINING,3,verified,
+contractor meet*,en,MASON_TRAINING,3,verified,
+training program*,en,MASON_TRAINING,3,verified,
+demo session,en,MASON_TRAINING,3,verified,
+workshop,en,MASON_TRAINING,2.5,verified,
+training,en,MASON_TRAINING,2,verified,
+mistri meet,bn,MASON_TRAINING,3,draft,mason meet
+rajmistri meeting,bn,MASON_TRAINING,3,draft,head-mason meeting
+মিস্ত্রি মিট,bn-Beng,MASON_TRAINING,3,draft,mason meet
+mistri sammelan,hi,MASON_TRAINING,3,draft,mason gathering
+मिस्त्री मीट,hi-Deva,MASON_TRAINING,3,draft,mason meet
+stock running low,en,REORDER_DUE,3,verified,
+replenish*,en,REORDER_DUE,2.5,verified,
+reorder,en,REORDER_DUE,2.5,verified,
+re-order,en,REORDER_DUE,2.5,verified,
+repeat order,en,REORDER_DUE,2.5,verified,
+next order,en,REORDER_DUE,2.5,verified,
+will need more,en,REORDER_DUE,2.5,verified,
+refill,en,REORDER_DUE,2,verified,
+abar order,bn,REORDER_DUE,3,draft,order again
+আবার অর্ডার,bn-Beng,REORDER_DUE,3,draft,order again
+phir se order,hi,REORDER_DUE,3,draft,order again
+dobara order,hi,REORDER_DUE,3,draft,order again
+फिर से ऑर्डर,hi-Deva,REORDER_DUE,3,draft,order again
+not decided,en,UNDECIDED,3,verified,
+undecided,en,UNDECIDED,3,verified,
+will think,en,UNDECIDED,2.5,verified,
+thinking about it,en,UNDECIDED,2.5,verified,
+will decide,en,UNDECIDED,2.5,verified,
+will let us know,en,UNDECIDED,2.5,verified,
+bhebe dekhbe,bn,UNDECIDED,3,draft,will think and decide
+bhebe janabe,bn,UNDECIDED,3,draft,will think and let us know
+bhabchhe,bn,UNDECIDED,2.5,draft,is thinking
+ভেবে দেখবে,bn-Beng,UNDECIDED,3,draft,will think and decide
+soch ke batayega,hi,UNDECIDED,3,draft,will think and tell
+sochenge,hi,UNDECIDED,2.5,draft,will think
+सोच के बताएगा,hi-Deva,UNDECIDED,3,draft,will think and tell

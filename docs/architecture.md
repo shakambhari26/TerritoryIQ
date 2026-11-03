@@ -20,7 +20,7 @@ anything marked **Proposed** is a direction, not a commitment. The prototype its
 | Tests | Node built-in runner (`node:test`); Chrome via `playwright-core` | Implemented |
 | Host protection | Bind `127.0.0.1` plus a loopback Host check in `src/proxy.ts` | Implemented |
 | Map engine for a larger or shared product | MapLibre GL JS (or equivalent) | Proposed |
-| Database | PostgreSQL + PostGIS, possibly Supabase | Proposed, not started |
+| Database | Supabase (Postgres 17, Mumbai `ap-south-1`): `territory` schema from `supabase/migrations`, loaded by `scripts/load-supabase.py`; Visit Intelligence tables in `public` | Implemented as a copy of the built data; the app still reads `data/generated` |
 | Embedded analytics | Power BI | Proposed, not started |
 | Excel import | A managed import in place of the offline script | Proposed, not started |
 | Authentication and access control | Needed before any use beyond one machine | Proposed, not started |
@@ -99,7 +99,7 @@ what and where the backup is. `/territory-map` only redirects to `/workspace`, a
 
 ## Explicitly out of scope so far
 
-No database or migrations, no Supabase or Power BI integration, no authentication or access control,
+No PostGIS, no Power BI integration, no reading of the app's map data from the database (Supabase holds a copy), no authentication or access control,
 no shared allocation store (changes live in one browser), no managed import (the workbook is read
 by an offline script), no ward or urban-body geography, and no deployment. **Salary data is excluded
 from the platform's scope.** Staff names are present in the local dataset (B-25 is open) and must

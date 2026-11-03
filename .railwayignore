@@ -26,3 +26,6 @@ next-env.d.ts
 .DS_Store
 *.pem
 npm-debug.log*
+
+# the Python service deploys separately (services/visit-intel/scripts/deploy_railway.sh)
+/services/
