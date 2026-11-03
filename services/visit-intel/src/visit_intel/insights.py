@@ -34,6 +34,7 @@ def brief(row: dict) -> dict:
         "action": r["action"], "needs_review": r["needs_human_review"],
         "transcript": row["transcript"],
         "why": (r.get("explanation") or {}).get("summary"),
+        "case": row.get("case"),
     }
 
 
@@ -74,6 +75,9 @@ def overview(rows: list[dict]) -> dict:
         "avg_note_score": round(sum(r["result"]["note_quality"]["score"] for r in rows) / len(rows), 1) if rows else None,
         "date_from": min((r["visit_at"] for r in rows if r["visit_at"]), default=None),
         "date_to": max((r["visit_at"] for r in rows if r["visit_at"]), default=None),
+        # Head office's follow-through, when the rows carry case state (cases.py): new | seen | waiting | resolved.
+        "followup": dict(Counter((r.get("case") or {}).get("status", "new") for r in rows)),
+        "groups": dict(Counter(r["result"]["segment"]["group"] for r in rows)),
     }
 
 
@@ -187,7 +191,8 @@ def for_role(role: str, rows: list[dict], days: int | None, model_meta: dict | N
 
 # ---- All visits (admin): filters + counts for every dropdown ----
 
-FILTER_KEYS = ("group", "segment", "urgency", "flag", "rep", "stakeholder", "review", "q")
+FILTER_KEYS = ("group", "segment", "urgency", "flag", "rep", "stakeholder", "review", "status", "category", "q")
+URGENT = ("P0", "P1")
 
 
 def _value(row: dict, key: str) -> list[str]:
@@ -200,7 +205,13 @@ def _value(row: dict, key: str) -> list[str]:
         "rep": [row["rep_name"]],
         "stakeholder": [r["stakeholder"]],
         "review": ["1" if r["needs_human_review"] else "0"],
+        "status": [(row.get("case") or {}).get("status", "new")],
+        "category": [row["visit_category"]],
     }[key]
+
+
+def r_level(row: dict) -> str:
+    return row["result"]["urgency"]["level"]
 
 
 def _matches(row: dict, filters: dict, skip: str | None = None) -> bool:
@@ -211,6 +222,12 @@ def _matches(row: dict, filters: dict, skip: str | None = None) -> bool:
             hay = " ".join([row["transcript"], row["customer_name"], row["rep_name"]]).lower()
             if want.lower() not in hay:
                 return False
+        elif key == "urgency" and want == "urgent":
+            if r_level(row) not in URGENT:
+                return False
+        elif key == "status" and want == "open":
+            if "resolved" in _value(row, key):
+                return False
         elif want not in _value(row, key):
             return False
     return True
@@ -220,7 +237,7 @@ def explore(rows: list[dict], filters: dict, days: int | None, model_meta: dict 
     rows = _filter(rows, days)
     filters = {k: v for k, v in filters.items() if k in FILTER_KEYS and v}
     facets = {}
-    for key in ("group", "segment", "urgency", "flag", "rep", "stakeholder"):
+    for key in ("group", "segment", "urgency", "flag", "rep", "stakeholder", "status", "category"):
         counts = Counter(v for row in rows if _matches(row, filters, skip=key) for v in _value(row, key))
         facets[key] = [{"value": v, "count": n} for v, n in sorted(counts.items(), key=lambda kv: (-kv[1], kv[0]))]
     hits = [r for r in rows if _matches(r, filters)]

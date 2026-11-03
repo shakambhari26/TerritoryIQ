@@ -46,6 +46,36 @@ export interface VisitBrief {
   transcript: string;
   /** One-sentence reason for the group and urgency (explain.py in the service). */
   why: string | null;
+  /** Head office's follow-through (cases.py in the service). Absent only on an older service. */
+  case?: CaseState | null;
+}
+
+export const CASE_STATUSES = ["new", "seen", "waiting", "resolved"] as const;
+export type CaseStatus = (typeof CASE_STATUSES)[number];
+export const CASE_ACTIONS = ["seen", "resolve", "reopen", "note"] as const;
+export type CaseAction = (typeof CASE_ACTIONS)[number];
+
+export type CaseEventKind = "visit" | "seen" | "message" | "rep_read" | "rep_replied" | "note" | "rep_done" | "resolved" | "reopened";
+
+export interface CaseEvent {
+  kind: CaseEventKind;
+  at: string | null;
+  actor: string;
+  text: string;
+  todos?: number;
+  message_id?: number;
+}
+
+/** GET/POST /v1/cases/{key}. "waiting" is derived from the visit's messages; `rep_state` is the latest one's status. */
+export interface CaseState {
+  status: CaseStatus;
+  rep_state: "sent" | "read" | "replied" | "done" | null;
+  seen_at: string | null;
+  seen_by: string | null;
+  resolved_at: string | null;
+  resolution_note: string | null;
+  messages: number;
+  events: CaseEvent[];
 }
 
 export interface Recommendation {
@@ -82,7 +112,7 @@ export interface AskAnswer {
   suggestions: SuggestedQuestion[];
 }
 
-export const FILTER_KEYS = ["group", "segment", "urgency", "flag", "rep", "stakeholder", "review", "q"] as const;
+export const FILTER_KEYS = ["group", "segment", "urgency", "flag", "rep", "stakeholder", "review", "status", "category", "q"] as const;
 export type FilterKey = (typeof FILTER_KEYS)[number];
 export type Filters = Partial<Record<FilterKey, string>>;
 
@@ -110,6 +140,8 @@ export interface Overview {
   avg_note_score: number | null;
   date_from: string | null;
   date_to: string | null;
+  followup?: Partial<Record<CaseStatus, number>>;
+  groups?: Record<string, number>;
 }
 
 export interface SegmentCount {

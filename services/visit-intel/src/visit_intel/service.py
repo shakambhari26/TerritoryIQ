@@ -4,6 +4,7 @@ from __future__ import annotations
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from . import cases
 from .db import Analysis, Visit, latest_label, visit_dict
 from .model import SegmentModel
 from .pipeline import analyze, normalize
@@ -53,6 +54,11 @@ def reanalyze(session: Session, model: SegmentModel | None, keys: list[str] | No
     return n
 
 
-def all_rows(session: Session) -> list[dict]:
+def all_rows(session: Session, with_cases: bool = False) -> list[dict]:
     rows = session.execute(select(Visit, Analysis).join(Analysis, Analysis.visit_key == Visit.visit_key)).all()
-    return [{**visit_dict(v), "result": a.result} for v, a in rows]
+    out = [{**visit_dict(v), "result": a.result} for v, a in rows]
+    if with_cases:
+        state = cases.for_visits(session, out)
+        for r in out:
+            r["case"] = state[r["visit_key"]]
+    return out

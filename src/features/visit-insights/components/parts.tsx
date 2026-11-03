@@ -53,7 +53,7 @@ export function Bars({ rows }: { rows: { label: ReactNode; value: number; key: s
   );
 }
 
-function formatWhen(iso: string | null): string {
+export function formatWhen(iso: string | null): string {
   if (!iso) return "Date unknown";
   const d = new Date(iso);
   return d.toLocaleString("en-IN", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit", hour12: true });

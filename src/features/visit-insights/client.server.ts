@@ -9,9 +9,10 @@
  */
 
 import type { ChatSubmission } from "./chat-form.ts";
-import type { ContactSubmission, KeywordSubmission, MessageSubmission, ReplySubmission } from "./forms.ts";
+import type { CaseSubmission, ContactSubmission, KeywordSubmission, MessageSubmission, ReplySubmission } from "./forms.ts";
 import type {
   AskAnswer,
+  CaseState,
   ChatReply,
   ChatStats,
   Contact,
@@ -165,6 +166,13 @@ export function getMessages(rep: string | null): Promise<Fetched<SentMessage[]>>
 
 export function postNote(id: number, text: string): Promise<Fetched<unknown>> {
   return call(`/v1/messages/${id}/note`, json({ text }));
+}
+
+// ---------- head-office follow-through ----------
+
+/** Mark a visit seen, resolve or reopen it, or add a note. Who did it is "Head Office": the app has one shared login. */
+export function postCase(c: CaseSubmission): Promise<Fetched<CaseState>> {
+  return call<CaseState>(`/v1/cases/${encodeURIComponent(c.visit_key)}`, json({ action: c.action, note: c.note, actor: "Head Office" }));
 }
 
 /** The rep's reply link. The token is only ever passed through; it is checked (as a hash) by the service. */

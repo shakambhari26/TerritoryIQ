@@ -20,7 +20,7 @@ from sqlalchemy import select
 
 from . import ask as asker
 from . import rag
-from . import config, explain, insights, keywords, messaging
+from . import cases, config, explain, insights, keywords, messaging
 from .db import Analysis, ChatLog, Keyword, Label, Message, SessionLocal, Visit, init_db, visit_dict
 from .model import SegmentModel
 from .pipeline import normalize
@@ -119,6 +119,12 @@ class MessageIn(BaseModel):
     ai_drafted: bool = False
 
 
+class CaseIn(BaseModel):
+    action: Literal["seen", "resolve", "reopen", "note"]
+    actor: str = Field("Head Office", max_length=100)
+    note: str = Field("", max_length=2000)
+
+
 class DraftIn(BaseModel):
     visit_key: str | None = Field(None, max_length=64)
     rep_name: str | None = Field(None, max_length=200)
@@ -171,7 +177,7 @@ async def import_csv(file: UploadFile = File(...)) -> dict:
 def list_visits(segment: str | None = None, urgency: str | None = None, needs_review: bool | None = None,
                 limit: int = Query(200, le=2000)) -> list[dict]:
     with SessionLocal() as s:
-        rows = all_rows(s)
+        rows = all_rows(s, with_cases=True)
     out = [insights.brief(r) for r in rows
            if (segment is None or r["result"]["segment"]["code"] == segment)
            and (urgency is None or r["result"]["urgency"]["level"] == urgency)
@@ -230,7 +236,7 @@ def model_health() -> dict:
 def role_insights(role: Literal["md", "vp_sales", "supervisor", "business_analyst", "data_analyst"],
                   days: int | None = Query(None, ge=1, le=3650)) -> dict:
     with SessionLocal() as s:
-        rows = all_rows(s)
+        rows = all_rows(s, with_cases=True)
     data = insights.for_role(role, rows, days, _model_meta())
     data["suggested_questions"] = asker.suggestions(role)
     data["ai_enabled"] = asker.ai_available()
@@ -240,11 +246,12 @@ def role_insights(role: Literal["md", "vp_sales", "supervisor", "business_analys
 @app.get("/v1/explore", dependencies=[Depends(require_key)])
 def explore(group: str | None = None, segment: str | None = None, urgency: str | None = None, flag: str | None = None,
             rep: str | None = None, stakeholder: str | None = None, review: str | None = None,
+            status: str | None = None, category: str | None = None,
             q: str | None = Query(None, max_length=100), days: int | None = Query(None, ge=1, le=3650)) -> dict:
     with SessionLocal() as s:
-        rows = all_rows(s)
+        rows = all_rows(s, with_cases=True)
     filters = {"group": group, "segment": segment, "urgency": urgency, "flag": flag, "rep": rep, "stakeholder": stakeholder,
-               "review": review, "q": q}
+               "review": review, "status": status, "category": category, "q": q}
     data = insights.explore(rows, filters, days, _model_meta())
     data["suggested_questions"] = asker.suggestions("explore")
     data["ai_enabled"] = asker.ai_available()
@@ -272,6 +279,31 @@ def methodology() -> dict:
             "thresholds": {"rules": config.RULES_CONFIDENT, "ml": config.ML_CONFIDENT, "agree": config.AGREE_CONFIDENT,
                            "keywords": config.KEYWORDS_CONFIDENT, "keywords_margin": config.KEYWORDS_MARGIN,
                            "flag": keywords.FLAG_THRESHOLD, "decay": keywords.DECAY}}
+
+
+# ---------- head-office follow-through ----------
+
+@app.post("/v1/cases/{visit_key}", dependencies=[Depends(require_key)])
+def case_action(visit_key: str, body: CaseIn) -> dict:
+    """Mark a visit seen, resolve or reopen it, or add a note. Returns the visit's state and full history."""
+    with SessionLocal() as s:
+        v = s.get(Visit, visit_key)
+        if not v:
+            raise HTTPException(404, "No such visit")
+        try:
+            cases.act(s, visit_key, body.action, body.actor, body.note)
+        except ValueError as e:
+            raise HTTPException(422, str(e)) from None
+        return cases.for_visits(s, [visit_dict(v)])[visit_key]
+
+
+@app.get("/v1/cases/{visit_key}", dependencies=[Depends(require_key)])
+def case_state(visit_key: str) -> dict:
+    with SessionLocal() as s:
+        v = s.get(Visit, visit_key)
+        if not v:
+            raise HTTPException(404, "No such visit")
+        return cases.for_visits(s, [visit_dict(v)])[visit_key]
 
 
 # ---------- keyword database ----------
@@ -376,6 +408,8 @@ def send_message(body: MessageIn) -> dict:
     with SessionLocal() as s:
         if body.visit_key and not s.get(Visit, body.visit_key):
             raise HTTPException(404, "No such visit")
+        if body.visit_key:
+            cases.act(s, body.visit_key, "seen", body.sender)  # writing to the rep about a visit means head office saw it
         return messaging.send(s, rep_name=body.rep_name.strip(), kind=body.kind, title=body.title.strip(), body=body.body.strip(),
                               todos=todos, channels=list(dict.fromkeys(body.channels)), visit_key=body.visit_key,
                               sender=body.sender, ai_drafted=body.ai_drafted)

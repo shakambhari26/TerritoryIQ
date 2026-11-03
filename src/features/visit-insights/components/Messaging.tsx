@@ -9,23 +9,30 @@ const label = "block text-xs font-medium text-ink-muted";
 const primary = "inline-flex h-9 items-center rounded-md bg-navy-950 px-4 text-sm font-semibold text-on-navy hover:bg-navy-800";
 const secondary = "inline-flex h-9 items-center rounded-md border border-line-strong bg-surface px-4 text-sm font-medium text-ink hover:border-ink-subtle";
 
+/**
+ * Navigation on the secondary pages: back to the Insights story, plus the add-on tools (the main page keeps these
+ * under "Advanced" so they stay out of the main path).
+ */
 export function SubNav({ current }: { current: "insights" | "messages" | "keywords" | "how" }) {
   const items = [
-    { id: "insights", href: "/visit-insights", label: "Insights" },
-    { id: "messages", href: "/visit-insights/messages", label: "Messages to reps" },
+    { id: "messages", href: "/visit-insights/messages", label: "Messages log" },
     { id: "keywords", href: "/visit-insights/keywords", label: "Keyword database" },
     { id: "how", href: "/visit-insights/how-it-works", label: "How the AI scores" },
   ];
   return (
-    <nav aria-label="Visit Insights sections" className="flex flex-wrap gap-1 border-b border-line">
+    <nav aria-label="Visit Insights sections" className="flex flex-wrap items-center gap-x-1 gap-y-2 border-b border-line pb-3">
+      <Link href="/visit-insights" className="mr-3 inline-flex h-9 items-center rounded-full bg-navy-950 px-4 text-sm font-semibold text-on-navy hover:bg-navy-800">
+        ← Back to insights
+      </Link>
+      <span className="mr-1 text-xs font-medium uppercase tracking-wide text-ink-subtle">Advanced</span>
       {items.map((i) => (
         <Link
           key={i.id}
           href={i.href}
           aria-current={i.id === current ? "page" : undefined}
           className={cn(
-            "-mb-px border-b-2 px-3 py-2 text-sm font-medium",
-            i.id === current ? "border-navy-950 text-ink" : "border-transparent text-ink-muted hover:text-ink",
+            "rounded-full px-3 py-1.5 text-sm font-medium",
+            i.id === current ? "bg-surface text-ink shadow-card ring-1 ring-line" : "text-ink-muted hover:text-ink",
           )}
         >
           {i.label}
@@ -153,16 +160,20 @@ export function SendForm({
   draft,
   status,
   contact,
+  returnTo,
 }: {
   rep: string;
   visitKey: string | null;
   draft: Draft | null;
   status: MessagingStatus | null;
   contact: Contact | null;
+  /** Send from a visit card: come back to that card instead of the visit page. */
+  returnTo?: string;
 }) {
   return (
     <form method="post" action="/api/visit-insights/messages" className="grid gap-3">
       <input type="hidden" name="rep_name" value={rep} />
+      {returnTo ? <input type="hidden" name="return_to" value={returnTo} /> : null}
       {visitKey ? <input type="hidden" name="visit_key" value={visitKey} /> : null}
       <input type="hidden" name="ai_drafted" value={draft?.source === "ai" ? "1" : "0"} />
       <input type="hidden" name="kind" value={draft?.kind ?? "todo"} />
