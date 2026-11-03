@@ -8,6 +8,13 @@ const TEXT = { "Content-Type": "text/plain; charset=utf-8", "Cache-Control": "no
 const PUBLIC_PATHS = new Set(["/login", "/logout", "/icon.svg"]);
 
 /**
+ * A field rep's reply link from a head-office WhatsApp or email message (src/app/r/[token]/route.ts). Reps have no
+ * account; the unguessable token in the path is the key, and the route shows only that one message. Exactly one path
+ * segment after /r/, so nothing else under it is opened up.
+ */
+const REPLY_LINK = /^\/r\/[A-Za-z0-9_-]{20,64}$/;
+
+/**
  * Runs for every path, including static assets, because the pages embed the workbook data and the boundary layer is
  * served by a route. No matcher, on purpose.
  *
@@ -33,7 +40,7 @@ export function proxy(request: NextRequest) {
   }
 
   const { pathname, search } = request.nextUrl;
-  if (PUBLIC_PATHS.has(pathname)) return NextResponse.next();
+  if (PUBLIC_PATHS.has(pathname) || REPLY_LINK.test(pathname)) return NextResponse.next();
   if (isRequestAuthorized(request.headers, mode)) return NextResponse.next();
 
   if ((request.method === "GET" || request.method === "HEAD") && !pathname.startsWith("/api/")) {
