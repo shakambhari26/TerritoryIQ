@@ -5,10 +5,15 @@
  *   VISIT_INTEL_URL       base URL, e.g. http://127.0.0.1:8100 locally, or the Railway private-network address
  *   VISIT_INTEL_API_KEY   the same key the service was started with
  *
+ * With no VISIT_INTEL_URL / VISIT_INTEL_API_KEY but SUPABASE_URL + SUPABASE_SECRET_KEY set, the read-only views (role
+ * insights, all visits, one visit, how it scores, the keyword database and its add / switch-off) are read from Supabase
+ * instead (supabase.server.ts). Everything that needs the service itself (Ask, chat, messages) stays unavailable.
+ *
  * Errors come back as a fixed kind and sentence; nothing from the upstream response is echoed to the page.
  */
 
 import type { ChatSubmission } from "./chat-form.ts";
+import * as local from "./supabase.server.ts";
 import type { ContactSubmission, KeywordSubmission, MessageSubmission, ReplySubmission } from "./forms.ts";
 import type {
   AskAnswer,
@@ -43,10 +48,13 @@ function config(): { url: string; key: string } | null {
   return url && key ? { url, key } : null;
 }
 
+/** True when the service is not configured but Supabase is: the stored visits and analyses are used. */
+const viaSupabase = () => !config() && local.supabaseConfigured();
+
 async function call<T>(path: string, init: RequestInit = {}, timeoutMs = TIMEOUT_MS): Promise<Fetched<T>> {
   const cfg = config();
   if (!cfg) {
-    return { ok: false, kind: "not-configured", message: "Visit Intelligence is not connected. Set VISIT_INTEL_URL and VISIT_INTEL_API_KEY." };
+    return { ok: false, kind: "not-configured", message: "Visit Intelligence is not connected. Set VISIT_INTEL_URL and VISIT_INTEL_API_KEY (or SUPABASE_URL and SUPABASE_SECRET_KEY to read the stored visits)." };
   }
   let response: Response;
   try {
@@ -66,10 +74,12 @@ async function call<T>(path: string, init: RequestInit = {}, timeoutMs = TIMEOUT
 }
 
 export function getInsights<T>(role: RoleId, days: number | null): Promise<Fetched<T>> {
+  if (viaSupabase()) return local.getInsights<T>(role, days);
   return call<T>(`/v1/insights/${role}${days ? `?days=${days}` : ""}`);
 }
 
 export function getTaxonomy(): Promise<Fetched<Taxonomy>> {
+  if (viaSupabase()) return local.getTaxonomy();
   return call<Taxonomy>("/v1/taxonomy");
 }
 
@@ -82,6 +92,7 @@ export function postLabel(label: { visit_key: string; segment: string; urgency: 
 }
 
 export function getExplore(filters: Filters, days: number | null): Promise<Fetched<ExploreData>> {
+  if (viaSupabase()) return local.getExplore(filters, days);
   const q = new URLSearchParams(Object.entries(filters).filter((e): e is [string, string] => Boolean(e[1])));
   if (days) q.set("days", String(days));
   return call<ExploreData>(`/v1/explore${q.size ? `?${q}` : ""}`);
@@ -110,25 +121,30 @@ const json = (body: unknown, method = "POST"): RequestInit => ({
 });
 
 export function getVisit(key: string): Promise<Fetched<VisitDetail>> {
+  if (viaSupabase()) return local.getVisit(key);
   return call<VisitDetail>(`/v1/visits/${encodeURIComponent(key)}`);
 }
 
-export function getMethodology(): Promise<Fetched<Methodology>> {
+export async function getMethodology(): Promise<Fetched<Methodology>> {
+  if (viaSupabase()) return local.getMethodology();
   return call<Methodology>("/v1/methodology");
 }
 
 // ---------- keyword database ----------
 
 export function getKeywords(filter: { target?: string; language?: string; q?: string }): Promise<Fetched<KeywordList>> {
+  if (viaSupabase()) return local.getKeywords(filter);
   const q = new URLSearchParams(Object.entries(filter).filter((e): e is [string, string] => Boolean(e[1])));
   return call<KeywordList>(`/v1/keywords${q.size ? `?${q}` : ""}`);
 }
 
 export function postKeyword(k: KeywordSubmission): Promise<Fetched<unknown>> {
+  if (viaSupabase()) return local.postKeyword(k, "territoryiq");
   return call("/v1/keywords", json({ ...k, added_by: "territoryiq" }));
 }
 
 export function setKeywordActive(id: number, active: boolean): Promise<Fetched<unknown>> {
+  if (viaSupabase()) return local.setKeywordActive(id, active);
   return call(`/v1/keywords/${id}`, json({ active }, "PATCH"));
 }
 
