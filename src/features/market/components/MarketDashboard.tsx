@@ -129,11 +129,12 @@ export function MarketDashboard({ blocks, districts, stateName, level, districtI
     <section aria-labelledby="market-title" className="mt-5 space-y-4" data-testid="market-dashboard" data-scope={scope.level}>
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
+          {/* The place is not in the heading: the globe panel already has a heading with the place's name. */}
           <h2 id="market-title" className="text-lg font-semibold text-ink">
-            Market overview · {place}
+            Market overview
           </h2>
-          <p className="text-sm text-ink-muted">
-            {counts.blockCount === 1 ? "One block" : `${fmt.format(counts.blockCount)} blocks`}. Follows the place selected on the globe; choose a district or block to narrow it.
+          <p className="text-sm text-ink-muted" data-testid="market-place">
+            <strong className="font-semibold text-ink">{place}</strong> · {counts.blockCount === 1 ? "one block" : `${fmt.format(counts.blockCount)} blocks`}. Follows the place selected on the globe; choose a district or block to narrow it.
           </p>
         </div>
         <span className="rounded-full border border-dashed border-amber-500 bg-amber-50 px-3 py-1 text-xs font-semibold text-amber-800" data-testid="market-sample-badge">
