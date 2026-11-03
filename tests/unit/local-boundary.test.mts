@@ -52,6 +52,14 @@ describe("localhost-only: bind address", () => {
       .map(rel);
     assert.deepEqual(offenders, []);
   });
+
+  it("only the guarded hosted start script names all interfaces (it refuses to run without sign-in)", () => {
+    const naming = [...sources("src"), ...sources("scripts"), ...sources("tests/e2e")]
+      .filter((f) => /0\.0\.0\.0/.test(readFileSync(f, "utf8")))
+      .map(rel);
+    assert.deepEqual(naming, ["scripts/start-hosted.mjs"]);
+    assert.match(read("scripts/start-hosted.mjs"), /Refusing to start on all interfaces without sign-in/);
+  });
 });
 
 describe("localhost-only: Host header check (src/proxy.ts)", () => {
@@ -187,18 +195,28 @@ describe("outbound network", () => {
     assert.match(link, /href=\{`https:\/\/www\.openstreetmap\.org\/relation\/\$\{feature\.boundary\.relationId\}`\}[^>]*rel="noopener noreferrer"/);
   });
 
-  it("the only requests the app makes are same-origin fetches of three literal URLs, one from each of three files", () => {
+  it("the only requests the app makes are same-origin fetches of four literal URLs, one from each of four files", () => {
     const pattern = /\bfetch\s*\(|XMLHttpRequest|\bWebSocket\b|\bEventSource\b|sendBeacon|navigator\.geolocation/;
     const offenders = sources("src").filter((f) => pattern.test(readFileSync(f, "utf8"))).map(rel).sort();
-    // The Territory Workspace (its own layer), the globe's layer client (the globe's own file) and the globe's block-rows client
-    // (a POST of `{ blockId }`). A fourth place, or a file asking for another's URL, fails here (rule and its negative tests: globe-network-guard.test.mts).
-    assert.deepEqual(offenders, ["src/features/globe/block-rows-client.ts", "src/features/globe/layer-client.ts", "src/features/territory/components/Workspace.tsx"]);
+    // The Territory Workspace (its own layer), the globe's layer client (the globe's own file), and the globe's block-rows
+    // and block-customers clients (each a POST of `{ blockId }`). A fifth place, or a file asking for another's URL, fails
+    // here (rule and its negative tests: globe-network-guard.test.mts).
+    assert.deepEqual(offenders, [
+      "src/features/globe/block-customers-client.ts",
+      "src/features/globe/block-rows-client.ts",
+      "src/features/globe/layer-client.ts",
+      "src/features/territory/components/Workspace.tsx",
+    ]);
     const expected: Record<string, string> = {
       "src/features/territory/components/Workspace.tsx": "/geo/boundaries.json",
       "src/features/globe/layer-client.ts": "/geo/globe-boundaries.json",
       "src/features/globe/block-rows-client.ts": "/api/globe/block-rows",
+      "src/features/globe/block-customers-client.ts": "/api/globe/block-customers",
     };
-    const constants: Record<string, string> = { "src/features/globe/block-rows-client.ts": "BLOCK_ROWS_URL" };
+    const constants: Record<string, string> = {
+      "src/features/globe/block-rows-client.ts": "BLOCK_ROWS_URL",
+      "src/features/globe/block-customers-client.ts": "BLOCK_CUSTOMERS_URL",
+    };
     for (const file of offenders) {
       const text = read(file);
       const constant = constants[file] ?? "LAYER_URL";

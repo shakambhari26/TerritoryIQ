@@ -7,8 +7,10 @@ import { searchTargets, type Target } from "../targets";
 import type { GlobeManifest, Level, ManifestBlock, ManifestDistrict, UnitState } from "../types";
 import { BLOCK_STYLE, DISTRICT_STYLE } from "../styles";
 import { targetForSelection, workspaceHref } from "../workspace-link";
+import type { CustomerSummary } from "../customers";
 import type { GlobeInsights } from "../insights";
 import { BlockRowsSection } from "./BlockRowsSection";
+import { BlockCustomersSection, CustomersOverview, DistrictCustomers } from "./CustomersSection";
 import { InsightSections } from "./InsightsPanel";
 import { WorkspaceLink } from "./WorkspaceLink";
 
@@ -237,13 +239,15 @@ interface DetailsProps {
   outlines: OutlinesStatus;
   /** Counts for the region, allocation and quick-insight cards (insights.ts). Null when the workbook data has not been built. */
   insights?: GlobeInsights | null;
+  /** Counts only; null when the customer file has not been built. */
+  customers?: CustomerSummary | null;
 }
 
 /**
  * What the visitor is looking at, in words: the same information the colours and outlines carry, then the insight cards
  * for the place, then the place's own list (a district's blocks, a block's workbook rows).
  */
-export function GlobeDetails({ overlay, level, district, block, onSelectBlock, onSelectDistrict, disabled, outlines, insights = null }: DetailsProps) {
+export function GlobeDetails({ overlay, level, district, block, onSelectBlock, onSelectDistrict, disabled, outlines, insights = null, customers = null }: DetailsProps) {
   const counts = overlay.meta.counts;
   const parent = block?.districtId ? (overlay.districts.find((d) => d.id === block.districtId) ?? null) : null;
   const blocks = useMemo(
@@ -273,6 +277,7 @@ export function GlobeDetails({ overlay, level, district, block, onSelectBlock, o
             {counts.districtsRepresented} of them have at least one block with a provisional link to a named representative.
           </p>
           {href ? <WorkspaceLink href={href} /> : null}
+          {customers ? <CustomersOverview customers={customers} blocks={overlay.blocks} onSelectBlock={onSelectBlock} disabled={disabled} /> : null}
           <details className="group text-xs text-ink-subtle">
             <summary className="cursor-pointer font-medium text-primary-ink">About this target</summary>
             <p className="mt-1.5">{overlay.state.basis}</p>
@@ -291,6 +296,7 @@ export function GlobeDetails({ overlay, level, district, block, onSelectBlock, o
           <StateChip state={district.state} kind="district" />
           {href ? <WorkspaceLink href={href} /> : null}
           <p className="text-ink-muted">{district.reason}</p>
+          {customers ? <DistrictCustomers customers={customers} district={district} blocks={overlay.blocks} /> : null}
           <p className="text-xs text-ink-subtle">
             {district.drawnBlockCount} of {district.blockCount} blocks in the current reference list have a validated outline here.
             {outlines === "ready" ? "" : outlines === "loading" ? " None is drawn yet: the outline data is still loading." : " None is drawn: the outline data is unavailable."}
@@ -350,6 +356,7 @@ export function GlobeDetails({ overlay, level, district, block, onSelectBlock, o
       ) : null}
 
       {level === "block" && block ? <BlockRowsSection key={block.id} overlay={overlay} blockId={block.id} rowIds={block.rowIds} /> : null}
+      {level === "block" && block && customers ? <BlockCustomersSection key={`customers-${block.id}`} customers={customers} blockId={block.id} /> : null}
 
       <p className="mt-auto rounded-xl bg-surface-muted px-3 py-2.5 text-xs leading-5 text-ink-muted">
         {insights

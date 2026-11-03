@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent, 
 import { cn } from "@/lib/cn";
 import { usePrefersReducedMotion } from "@/lib/use-reduced-motion";
 import { GlobeRenderer, webglAvailable, type FeatureRef } from "../GlobeRenderer";
+import type { CustomerSummary } from "../customers";
 import type { GlobeInsights } from "../insights";
 import { fetchBoundaryLayer, LayerRequestError } from "../layer-client";
 import { mergeLayer, type MergeOutcome } from "../layer-merge";
@@ -159,9 +160,10 @@ interface StageProps {
   layer: LayerState;
   onRetryLayer: () => void;
   insights: GlobeInsights | null;
+  customers: CustomerSummary | null;
 }
 
-function GlobeStage({ manifest, layer, onRetryLayer, insights }: StageProps) {
+function GlobeStage({ manifest, layer, onRetryLayer, insights, customers }: StageProps) {
   const reducedMotion = usePrefersReducedMotion();
   const hostRef = useRef<HTMLDivElement>(null);
   const stageRef = useRef<HTMLDivElement>(null);
@@ -763,6 +765,7 @@ function GlobeStage({ manifest, layer, onRetryLayer, insights }: StageProps) {
                   disabled={status !== "ready" || flying}
                   outlines={outlines}
                   insights={insights}
+                  customers={customers}
                   onSelectBlock={(id) => goTo({ level: "block", districtId: blocksById.get(id)?.districtId ?? null, blockId: id })}
                   onSelectDistrict={(id) => goTo({ level: "district", districtId: id, blockId: null })}
                 />
@@ -823,7 +826,7 @@ const CODE_REASON: Record<string, string> = {
  * if the textures fail, the globe shows its own error and retry, and the outline status is unaffected. Without
  * WebGL there is nothing to draw on, so the list-only view is shown and the outline file is not requested.
  */
-export default function GlobeExperience({ manifest, insights = null }: { manifest: GlobeManifest; insights?: GlobeInsights | null }) {
+export default function GlobeExperience({ manifest, insights = null, customers = null }: { manifest: GlobeManifest; insights?: GlobeInsights | null; customers?: CustomerSummary | null }) {
   const [webgl] = useState(() => webglAvailable());
   const [attempt, setAttempt] = useState(0);
   const [layer, setLayer] = useState<LayerState>({ status: "loading" });
@@ -851,6 +854,6 @@ export default function GlobeExperience({ manifest, insights = null }: { manifes
     setAttempt((n) => n + 1);
   }, []);
 
-  if (!webgl) return <GlobeFallback overlay={manifest} insights={insights} reason="WebGL is not available in this browser, so the 3D globe cannot run." />;
-  return <GlobeStage manifest={manifest} layer={layer} onRetryLayer={retry} insights={insights} />;
+  if (!webgl) return <GlobeFallback overlay={manifest} insights={insights} customers={customers} reason="WebGL is not available in this browser, so the 3D globe cannot run." />;
+  return <GlobeStage manifest={manifest} layer={layer} onRetryLayer={retry} insights={insights} customers={customers} />;
 }

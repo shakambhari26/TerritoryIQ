@@ -120,7 +120,7 @@ describe("globe integration (Phase 1) in a real browser", { skip: skipReason, ti
   });
 
   // ------------------------------------------------------------- navigation --
-  it("the navigation lists Overview, Globe, Workspace, then the planned modules, and exactly one link is current on each page", async () => {
+  it("the navigation lists Overview, Globe, Workspace, Visit Insights, then the planned modules, and exactly one link is current on each page", async () => {
     for (const [route, current] of [
       ["/", "Overview"],
       ["/workspace", "Workspace"],
@@ -131,12 +131,12 @@ describe("globe integration (Phase 1) in a real browser", { skip: skipReason, ti
       const items = await page.$$eval('nav[aria-label="Primary"] li', (lis) => lis.map((li) => ({ text: li.textContent ?? "", link: li.querySelector("a") !== null })));
       assert.deepEqual(
         items.map((i) => [i.text.replace(/\(planned, not yet available\)$/, "").replace(/Soon$/, ""), i.link]),
-        [["Overview", true], ["Globe", true], ["Workspace", true], ["Allocation", false], ["Analytics", false], ["Data Import", false]],
-        `${route}: order, and only the three built routes are links`,
+        [["Overview", true], ["Globe", true], ["Workspace", true], ["Visit Insights", true], ["Allocation", false], ["Analytics", false], ["Data Import", false]],
+        `${route}: order, and only the four built routes are links`,
       );
-      assert.ok(items.slice(3).every((i) => i.text.endsWith("Soon(planned, not yet available)")), `${route}: the planned modules say so`);
+      assert.ok(items.slice(4).every((i) => i.text.endsWith("Soon(planned, not yet available)")), `${route}: the planned modules say so`);
       const links = await page.$$eval('nav[aria-label="Primary"] a', (anchors) => anchors.map((a) => ({ text: a.textContent, href: a.getAttribute("href"), current: a.getAttribute("aria-current") })));
-      assert.deepEqual(links.map((l) => [l.text, l.href]), [["Overview", "/"], ["Globe", "/globe"], ["Workspace", "/workspace"]], route);
+      assert.deepEqual(links.map((l) => [l.text, l.href]), [["Overview", "/"], ["Globe", "/globe"], ["Workspace", "/workspace"], ["Visit Insights", "/visit-insights"]], route);
       assert.deepEqual(links.filter((l) => l.current !== null).map((l) => [l.text, l.current]), [[current, "page"]], `${route}: one current link, ${current}`);
       await context.close();
     }

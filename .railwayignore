@@ -1,0 +1,28 @@
+# What `railway up --no-gitignore` leaves out. That flag is needed because the built data in data/generated is
+# git-ignored (it never goes to GitHub) but the hosted app must have it. Everything else that .gitignore keeps
+# out stays out here too, and so do the confidential source workbooks.
+
+# confidential source workbooks and raw downloads: never uploaded, only the built data/generated is
+/data-source/
+/data/raw/
+
+# secrets: set on Railway as variables instead
+.env*
+
+# rebuilt on Railway
+/node_modules/
+/.next/
+/out/
+/build/
+/coverage/
+*.tsbuildinfo
+next-env.d.ts
+
+# local only
+/.git/
+/.vscode/
+/.vercel/
+/public/geo/
+.DS_Store
+*.pem
+npm-debug.log*

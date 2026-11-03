@@ -43,6 +43,12 @@ export const NAV_ICONS: Record<string, (props: { className?: string }) => ReactN
       <path d="M9 5v12M15 7v12" />
     </Icon>
   ),
+  "Visit Insights": (p) => (
+    <Icon {...p}>
+      <path d="M4 5.5h16v10H9.5L5.5 19.5v-4H4z" />
+      <path d="M8.5 12.5l2.5-3 2 2 3-4" />
+    </Icon>
+  ),
   Allocation: (p) => (
     <Icon {...p}>
       <path d="M12 3.5v8.5h8.5" />

@@ -77,7 +77,8 @@ function Brand({ rail }: { rail: boolean }) {
  * the map keeps its room on a laptop); the Collapse button makes the choice, which is remembered and applies on every
  * page, so the labels never come and go with the route.
  */
-export function Sidebar() {
+/** `hosted`: sign-in is configured (src/lib/auth.ts), so the page offers Sign out in place of the local-prototype badge. */
+export function Sidebar({ hosted = false }: { hosted?: boolean }) {
   const pathname = usePathname();
   const searchId = useId();
   const menuRef = useRef<HTMLButtonElement>(null);
@@ -150,9 +151,11 @@ export function Sidebar() {
           <Menu />
         </button>
         <Brand rail={false} />
-        <Badge tone="warning" className="ml-auto hidden sm:inline-flex">
-          Local prototype
-        </Badge>
+        {hosted ? null : (
+          <Badge tone="warning" className="ml-auto hidden sm:inline-flex">
+            Local prototype
+          </Badge>
+        )}
       </header>
 
       {open ? <div aria-hidden="true" onClick={closeDrawer} className="fixed inset-0 z-40 bg-ink/30 lg:hidden" /> : null}
@@ -241,9 +244,22 @@ export function Sidebar() {
         </nav>
 
         <div className="space-y-3 px-4 pb-4 pt-3">
-          <Badge tone="warning" className="w-full justify-center whitespace-normal py-1 text-center rail:hidden">
-            Local prototype · not for deployment
-          </Badge>
+          {hosted ? (
+            // A plain form post: works before any script loads, and a cross-site link cannot sign anyone out.
+            <form method="post" action="/logout">
+              <button
+                type="submit"
+                className="inline-flex h-10 w-full items-center justify-center rounded-xl border border-line px-3 text-sm font-medium text-ink-muted hover:border-line-strong hover:bg-surface-muted hover:text-ink rail:px-0"
+              >
+                <span className="rail:sr-only">Sign out</span>
+                <span aria-hidden="true" className="hidden rail:inline">⎋</span>
+              </button>
+            </form>
+          ) : (
+            <Badge tone="warning" className="w-full justify-center whitespace-normal py-1 text-center rail:hidden">
+              Local prototype · not for deployment
+            </Badge>
+          )}
           <button
             type="button"
             onClick={() => writeRail(!compact)}

@@ -18,6 +18,8 @@ const ALLOWED: AllowedFetch[] = [
   { file: "src/features/territory/components/Workspace.tsx", url: "/geo/boundaries.json" },
   { file: "src/features/globe/layer-client.ts", url: "/geo/globe-boundaries.json" },
   { file: "src/features/globe/block-rows-client.ts", url: "/api/globe/block-rows", constant: "BLOCK_ROWS_URL", method: "POST" },
+  // Customers placed in one selected block (customers.ts): the same POST of `{ blockId }`, to its own route.
+  { file: "src/features/globe/block-customers-client.ts", url: "/api/globe/block-customers", constant: "BLOCK_CUSTOMERS_URL", method: "POST" },
 ];
 
 function* files(directory: string): Generator<string> {
@@ -34,14 +36,14 @@ describe("network guard: the real source tree", () => {
     if ([".ts", ".tsx", ".mts", ".mjs"].includes(extname(file))) sources[relative(ROOT, file).split("\\").join("/")] = readFileSync(file, "utf8");
   }
 
-  it("holds: only the three allowed files request anything, each only its own literal URL", () => {
+  it("holds: only the four allowed files request anything, each only its own literal URL", () => {
     assert.deepEqual(networkViolations(sources, ALLOWED), []);
   });
 
-  it("the globe's two allowed files are the only globe files that can request, and they ask for the globe's URLs, not the workspace's", () => {
+  it("the globe's three allowed files are the only globe files that can request, and they ask for the globe's URLs, not the workspace's", () => {
     const globe = Object.keys(sources).filter((f) => f.startsWith("src/features/globe/") || f.startsWith("src/app/globe/"));
     const requesting = globe.filter((f) => /\bfetch\s*\(|XMLHttpRequest|\bWebSocket\b|\bEventSource\b|sendBeacon/.test(sources[f])).sort();
-    assert.deepEqual(requesting, ["src/features/globe/block-rows-client.ts", "src/features/globe/layer-client.ts"]);
+    assert.deepEqual(requesting, ["src/features/globe/block-customers-client.ts", "src/features/globe/block-rows-client.ts", "src/features/globe/layer-client.ts"]);
     assert.match(sources["src/features/globe/layer-client.ts"], /const LAYER_URL = "\/geo\/globe-boundaries\.json";/);
     assert.doesNotMatch(sources["src/features/globe/layer-client.ts"], /"\/geo\/boundaries\.json"/);
   });

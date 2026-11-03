@@ -7,8 +7,8 @@ import { blockRowsAvailable, getBlockRows } from "@/features/globe/overlay.serve
  * the /globe page itself carries no staff names. Validation, limits and headers are in
  * features/globe/block-rows-route.server.ts. The route is dynamic (`connection()`), reads the request, and is never cached.
  *
- * This reduces what a page load exposes. It is not authentication or access control: a request that passes the loopback
- * Host check (src/proxy.ts and again in the handler) may ask for any block ID.
+ * This reduces what a page load exposes. It is not per-user access control: a request that passes `isRequestAuthorized`
+ * (src/proxy.ts and again in the handler; loopback Host locally, the shared sign-in when hosted) may ask for any block ID.
  */
 async function respond(request: Request) {
   await connection();

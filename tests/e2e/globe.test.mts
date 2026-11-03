@@ -805,11 +805,11 @@ describe("globe prototype in a real browser", { skip: skipReason, timeout: 600_0
     await context.close();
   });
 
-  it("is linked from the navigation, and the navigation still links the Overview and the Workspace", async () => {
+  it("is linked from the navigation, and the navigation still links the Overview, the Workspace and Visit Insights", async () => {
     const { page, context } = await open();
     await ready(page);
     const links = await page.$$eval('nav[aria-label="Primary"] a', (anchors) => anchors.map((a) => a.getAttribute("href")));
-    assert.deepEqual(links, ["/", "/globe", "/workspace"]);
+    assert.deepEqual(links, ["/", "/globe", "/workspace", "/visit-insights"]);
     await context.close();
   });
 });
