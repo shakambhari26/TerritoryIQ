@@ -4,7 +4,7 @@ import { tabHref, viewHref, type View } from "../links";
 import type { ExploreData, Filters, Urgency } from "../types";
 import { groupTerm, segmentTerm, titleCase, urgencyTerm, type Words } from "../vocab";
 import { ActionCard, type CardContext } from "./ActionCard";
-import { Icon } from "./VisitIcons";
+import { Icon, SEGMENT_ICON, toneOf } from "./VisitIcons";
 
 const STAKEHOLDER: Record<string, string> = { DEALER: "Dealer / retailer", INFLUENCER: "Mason / engineer", IHB: "House owner (IHB)", OTHER: "Other" };
 
@@ -121,10 +121,36 @@ export function Inbox({ d, view, lane, ctx }: { d: ExploreData; view: View; lane
         })}
       </div>
 
+      <div className="mt-3 flex flex-wrap items-center gap-1.5">
+        <span className="mr-1 text-xs font-medium uppercase tracking-wide text-ink-subtle">{simple ? "What happened" : "Segment"}</span>
+        {d.segments
+          .filter((s) => count("segment", s.code) > 0 || f.segment === s.code)
+          .map((s) => {
+            const on = f.segment === s.code;
+            return (
+              <Link
+                key={s.code}
+                href={viewHref(view, { segment: on ? "" : s.code }) + "#inbox"}
+                aria-current={on ? "true" : undefined}
+                className={cn(
+                  "inline-flex items-center gap-1.5 rounded-full border py-1 pl-1.5 pr-3 text-xs font-medium",
+                  on ? "border-navy-950 bg-navy-950 text-on-navy" : "border-line-strong text-ink hover:border-ink-subtle",
+                )}
+              >
+                <span className={cn("grid h-5 w-5 place-items-center rounded-full", on ? "bg-white/15" : toneOf(s.group).disc)}>
+                  <Icon name={SEGMENT_ICON[s.code] ?? "note"} className="h-3.5 w-3.5" />
+                </span>
+                {segName[s.code]}
+                <span className="tabular-nums opacity-70">{count("segment", s.code)}</span>
+              </Link>
+            );
+          })}
+      </div>
+
       <form method="get" action="/visit-insights#inbox" className="mt-3 grid gap-2 rounded-xl bg-surface-muted p-3 sm:grid-cols-[2fr_1fr_1fr_auto]">
         <input type="hidden" name="role" value={view.tab} />
         {view.days ? <input type="hidden" name="days" value={view.days} /> : null}
-        {(["status", "urgency", "group"] as const).map((k) => (f[k] ? <input key={k} type="hidden" name={k} value={f[k]} /> : null))}
+        {(["status", "urgency", "group", "segment"] as const).map((k) => (f[k] ? <input key={k} type="hidden" name={k} value={f[k]} /> : null))}
         <label className="relative block">
           <span className="sr-only">Search</span>
           <Icon name="search" className="pointer-events-none absolute left-3 top-2.5 h-5 w-5 text-ink-subtle" />
@@ -153,15 +179,7 @@ export function Inbox({ d, view, lane, ctx }: { d: ExploreData; view: View; lane
           </select>
         </label>
         {!simple ? (
-          <div className="grid gap-2 sm:col-span-3 sm:grid-cols-4 sm:row-start-2">
-            <select name="segment" defaultValue={f.segment ?? ""} className={field} aria-label="Segment">
-              <option value="">All segments</option>
-              {d.segments.map((s) => (
-                <option key={s.code} value={s.code}>
-                  {segName[s.code]} ({count("segment", s.code)})
-                </option>
-              ))}
-            </select>
+          <div className="grid gap-2 sm:col-span-3 sm:grid-cols-3 sm:row-start-2">
             <select name="flag" defaultValue={f.flag ?? ""} className={field} aria-label="Flag">
               <option value="">All flags</option>
               {d.facets.flag.map((x) => (

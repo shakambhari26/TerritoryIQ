@@ -4,6 +4,7 @@ from __future__ import annotations
 from collections import Counter, defaultdict
 from datetime import datetime, timedelta
 
+from . import highlight
 from .recommend import for_role as recommendations_for
 from .taxonomy import FLAGS, SEGMENTS, URGENCY
 
@@ -35,6 +36,7 @@ def brief(row: dict) -> dict:
         "transcript": row["transcript"],
         "why": (r.get("explanation") or {}).get("summary"),
         "case": row.get("case"),
+        "highlights": highlight.spans(row["transcript"], r),
     }
 
 

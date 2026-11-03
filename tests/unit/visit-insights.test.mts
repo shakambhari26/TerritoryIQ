@@ -76,7 +76,7 @@ describe("visit insights: the API key stays server-side", () => {
   it("only server files read VISIT_INTEL_API_KEY, and every other component is a server component", () => {
     const client = read("src/features/visit-insights/client.server.ts");
     assert.match(client, /process\.env\.VISIT_INTEL_API_KEY/);
-    for (const f of ["components/parts.tsx", "components/RoleViews.tsx", "components/AskPanel.tsx", "components/ActionCard.tsx", "components/Inbox.tsx", "components/Story.tsx", "components/Controls.tsx", "components/VisitIcons.tsx", "vocab.ts", "components/Recommendations.tsx", "components/ExplanationView.tsx", "components/Messaging.tsx", "links.ts", "types.ts", "label-form.ts", "chat-form.ts", "forms.ts"]) {
+    for (const f of ["components/parts.tsx", "components/RoleViews.tsx", "components/ActionCard.tsx", "components/Inbox.tsx", "components/AreaTiles.tsx", "components/Transcript.tsx", "components/Controls.tsx", "components/VisitIcons.tsx", "vocab.ts", "components/Recommendations.tsx", "components/ExplanationView.tsx", "components/Messaging.tsx", "links.ts", "types.ts", "label-form.ts", "chat-form.ts", "forms.ts"]) {
       const src = read(`src/features/visit-insights/${f}`);
       assert.doesNotMatch(src, /VISIT_INTEL_API_KEY|^["']use client["']/m, f);
     }

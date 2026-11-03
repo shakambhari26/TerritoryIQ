@@ -16,6 +16,7 @@ import {
   type Words,
 } from "../vocab";
 import { SendForm } from "./Messaging";
+import { Transcript } from "./Transcript";
 import { formatWhen } from "./parts";
 import { Icon, SEGMENT_ICON, toneOf, type IconName } from "./VisitIcons";
 
@@ -228,14 +229,7 @@ export function ActionCard({ v, ctx }: { v: VisitBrief; ctx: CardContext }) {
       </p>
       {simple && kidLine(SEGMENT_TERMS, v.segment) ? <p className="mt-0.5 text-sm text-ink-muted">{kidLine(SEGMENT_TERMS, v.segment)}</p> : null}
 
-      <details className="group mt-2 text-sm">
-        <summary className="cursor-pointer list-none text-ink-muted marker:hidden">
-          <span className="line-clamp-2 italic group-open:hidden">“{v.transcript}”</span>
-          <span className="hidden font-medium text-accent-ink group-open:inline">{simple ? "What the rep said" : `Transcript · note score ${v.note_score}/10`}</span>
-        </summary>
-        <blockquote className="mt-1 rounded-lg bg-surface-muted px-3 py-2 italic text-ink">“{v.transcript}”</blockquote>
-        {!simple && v.note_issues.length ? <p className="mt-1 text-xs text-ink-muted">Missing from the note: {v.note_issues.join(", ")}</p> : null}
-      </details>
+      <Transcript v={v} words={words} />
 
       <section className={cn("mt-3 rounded-xl p-3", tone.soft)} aria-label={simple ? "What to do" : "Recommended action"}>
         <p className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-ink-muted">

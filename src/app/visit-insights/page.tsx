@@ -5,13 +5,12 @@ import { Card } from "@/components/ui/Card";
 import { cn } from "@/lib/cn";
 import { getChatStats, getContacts, getExplore, getInsights, getMessagingStatus, getTaxonomy } from "@/features/visit-insights/client.server";
 import { LANDED_TEXT, type CardContext } from "@/features/visit-insights/components/ActionCard";
-import { AskPanel, MAX_QUESTION_LENGTH } from "@/features/visit-insights/components/AskPanel";
 import { ChatBoard } from "@/features/visit-insights/components/ChatBoard";
 import { AdvancedMenu, PeriodPicker, RolePicker, WordsToggle } from "@/features/visit-insights/components/Controls";
 import { Inbox, laneOf } from "@/features/visit-insights/components/Inbox";
 import { Recommendations } from "@/features/visit-insights/components/Recommendations";
 import { AnalystView, DataView, MdView, SupervisorView, VpView } from "@/features/visit-insights/components/RoleViews";
-import { Story } from "@/features/visit-insights/components/Story";
+import { AreaTiles } from "@/features/visit-insights/components/AreaTiles";
 import { Icon } from "@/features/visit-insights/components/VisitIcons";
 import { viewHref, type View } from "@/features/visit-insights/links";
 import {
@@ -42,8 +41,9 @@ const TABS = [...ROLES, EXPLORE];
 const VISIT_KEY = /^[A-Za-z0-9_-]{1,64}$/;
 
 /**
- * Visit Insights, told as a story: what happened in the period, what needs head office now (every visit as an action
- * card: see it, send the rep a to-do, mark it sorted, with the history on the card), then questions and next steps.
+ * Visit Insights: ask anything at the top (layered retrieval, AI only when needed), then the business areas, then what
+ * needs head office now (every visit as an action card: see it, send the rep a to-do, mark it sorted, with the history
+ * and the full transcript on the card), then the bigger patterns.
  * Simple / Expert switches the words and the depth. Data comes from the Visit Intelligence service through a
  * server-side client (features/visit-insights/client.server.ts); the browser never sees the API key.
  */
@@ -94,7 +94,6 @@ async function InsightsBody({ searchParams }: { searchParams: SearchParams }) {
   const [params, words] = await Promise.all([searchParams, readWords()]);
   const view = readView(params);
   const tabInfo = TABS.find((t) => t.id === view.tab)!;
-  const question = first(params.ask)?.trim().slice(0, MAX_QUESTION_LENGTH) || null;
   const lane = laneOf(view.filters.status, view.tab === "supervisor" ? "new" : "open");
   const serviceFilters: Filters = { ...view.filters, status: lane === "all" ? undefined : lane };
   const storyRole: RoleId = view.tab === "explore" ? "md" : view.tab;
@@ -128,6 +127,8 @@ async function InsightsBody({ searchParams }: { searchParams: SearchParams }) {
         <PeriodPicker view={view} words={words} />
       </div>
 
+      <ChatBoard role={view.tab} days={view.days} starters={insights.data.suggested_questions.map((q) => q.question)} />
+
       {landed ? (
         <p
           role={LANDED_TEXT[landed.done].ok ? "status" : "alert"}
@@ -141,17 +142,9 @@ async function InsightsBody({ searchParams }: { searchParams: SearchParams }) {
         </p>
       ) : null}
 
-      <Story o={insights.data.overview as Overview} view={view} words={words} />
+      <AreaTiles o={insights.data.overview as Overview} view={view} words={words} />
       <Inbox d={explore.data} view={view} lane={lane} ctx={ctx} />
       <Recommendations items={insights.data.recommendations} view={view} words={words} />
-      <AskPanel
-        tab={view.tab}
-        days={view.days}
-        question={question}
-        suggestions={insights.data.suggested_questions}
-        aiEnabled={insights.data.ai_enabled}
-        filters={view.filters}
-      />
       {view.tab !== "explore" ? (
         simple ? (
           <Card className="flex flex-wrap items-center gap-3 p-4 text-sm text-ink-muted">
@@ -167,7 +160,6 @@ async function InsightsBody({ searchParams }: { searchParams: SearchParams }) {
           </section>
         )
       ) : null}
-      <ChatBoard role={view.tab} days={view.days} />
     </div>
   );
 }

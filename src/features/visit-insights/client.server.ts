@@ -11,7 +11,6 @@
 import type { ChatSubmission } from "./chat-form.ts";
 import type { CaseSubmission, ContactSubmission, KeywordSubmission, MessageSubmission, ReplySubmission } from "./forms.ts";
 import type {
-  AskAnswer,
   CaseState,
   ChatReply,
   ChatStats,
@@ -25,7 +24,6 @@ import type {
   Methodology,
   RoleId,
   SentMessage,
-  TabId,
   Taxonomy,
   VisitDetail,
 } from "./types.ts";
@@ -35,7 +33,7 @@ export type Fetched<T> =
   | { ok: false; kind: "not-configured" | "unreachable" | "upstream"; message: string };
 
 const TIMEOUT_MS = 10_000;
-// A free-text question may take several AI tool calls; suggested questions answer in milliseconds.
+// A chat question may take several AI tool calls; most answer locally in milliseconds.
 const ASK_TIMEOUT_MS = 60_000;
 
 function config(): { url: string; key: string } | null {
@@ -86,14 +84,6 @@ export function getExplore(filters: Filters, days: number | null): Promise<Fetch
   const q = new URLSearchParams(Object.entries(filters).filter((e): e is [string, string] => Boolean(e[1])));
   if (days) q.set("days", String(days));
   return call<ExploreData>(`/v1/explore${q.size ? `?${q}` : ""}`);
-}
-
-export function postAsk(question: string, role: TabId, days: number | null): Promise<Fetched<AskAnswer>> {
-  return call<AskAnswer>("/v1/ask", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ question, role, days }),
-  }, ASK_TIMEOUT_MS);
 }
 
 export function postChat(body: ChatSubmission): Promise<Fetched<ChatReply>> {

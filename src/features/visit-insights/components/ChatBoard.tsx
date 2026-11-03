@@ -13,12 +13,17 @@ const STARTERS = [
   "Anything urgent this week?",
 ];
 
+/** The answering layers, cheapest first. Most questions stop at 1-3 and never call the AI. */
+const LAYERS = ["Exact calculation", "Search your visits", "Saved answers", "AI, only if needed"];
+
 const MODE_LABEL: Record<ChatReply["mode"], { text: string; style: string }> = {
   calculated: { text: "Exact · no AI cost", style: "bg-accent-soft text-accent-ink" },
   local: { text: "From your data · no AI cost", style: "bg-accent-soft text-accent-ink" },
   cached: { text: "Saved AI answer · no new cost", style: "bg-surface-muted text-ink-muted" },
   ai: { text: "AI answer · uses API", style: "bg-amber-50 text-amber-900" },
 };
+
+const LAYER_OF: Record<ChatReply["mode"], string> = { calculated: "Layer 1", local: "Layer 2", cached: "Layer 3", ai: "Layer 4" };
 
 type Turn = { who: "you"; text: string } | { who: "bot"; reply: ChatReply } | { who: "error"; text: string };
 
@@ -29,11 +34,11 @@ function exploreLink(filter: Record<string, string>, days: number | null): strin
 }
 
 /**
- * Chat with the visit data. Every answer says whether it cost an AI call. The window keeps the last answer's filters,
- * so a follow-up like "what about only retailers?" narrows the previous question.
+ * Chat with the visit data, at the top of the page. A layered retrieval (rag.py in the service) answers by exact
+ * calculation, then by searching the visits, then from saved answers, and calls the AI only when those cannot. Every
+ * answer says which layer answered. The chat keeps the last answer's filters, so "what about only retailers?" narrows it.
  */
-export function ChatBoard({ role, days }: { role: TabId; days: number | null }) {
-  const [open, setOpen] = useState(false);
+export function ChatBoard({ role, days, starters = STARTERS }: { role: TabId; days: number | null; starters?: string[] }) {
   const [turns, setTurns] = useState<Turn[]>([]);
   const [busy, setBusy] = useState(false);
   const [draft, setDraft] = useState("");
@@ -41,7 +46,7 @@ export function ChatBoard({ role, days }: { role: TabId; days: number | null }) 
   const end = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    end.current?.scrollIntoView({ block: "end" });
+    end.current?.parentElement?.scrollTo({ top: end.current.offsetTop });
   }, [turns, busy]);
 
   async function send(message: string) {
@@ -72,80 +77,72 @@ export function ChatBoard({ role, days }: { role: TabId; days: number | null }) 
     void send(draft);
   }
 
-  if (!open) {
-    return (
-      <button
-        type="button"
-        onClick={() => setOpen(true)}
-        className="fixed bottom-5 right-5 z-40 inline-flex h-12 items-center gap-2 rounded-full bg-navy-950 px-5 text-sm font-semibold text-on-navy shadow-lg hover:bg-navy-800"
-      >
-        <span aria-hidden="true">💬</span> Chat with your visits
-      </button>
-    );
-  }
-
   return (
-    <section
-      aria-label="Chat with your visits"
-      className="fixed inset-x-2 bottom-2 z-40 flex max-h-[85dvh] flex-col overflow-hidden rounded-2xl border border-line bg-surface shadow-2xl sm:inset-x-auto sm:right-5 sm:bottom-5 sm:w-[420px]"
-    >
-      <header className="flex items-center gap-2 bg-navy-950 px-4 py-3 text-on-navy">
-        <span aria-hidden="true">💬</span>
-        <div className="min-w-0 flex-1">
-          <p className="text-sm font-semibold">Chat with your visits</p>
-          <p className="text-xs text-on-navy-subtle">Answers come from your visit data. Most cost nothing.</p>
+    <section aria-labelledby="chat-title" className="overflow-hidden rounded-2xl border border-navy-800 bg-navy-950 text-on-navy shadow-card">
+      <div className="p-4 sm:p-5">
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+          <h2 id="chat-title" className="flex items-center gap-2 text-lg font-semibold">
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <path d="M10 4.5 11.6 9l4.4 1.6-4.4 1.6L10 16.5l-1.6-4.3L4 10.6 8.4 9 10 4.5Z" />
+              <path d="M17.5 14.5l.8 2.2 2.2.8-2.2.8-.8 2.2-.8-2.2-2.2-.8 2.2-.8.8-2.2Z" />
+            </svg>
+            Ask anything about your visits
+          </h2>
+          <ol className="flex flex-wrap items-center gap-1 text-[0.6875rem] text-on-navy-subtle" aria-label="How it answers">
+            {LAYERS.map((l, i) => (
+              <li key={l} className="flex items-center gap-1">
+                <span className="rounded-full border border-white/15 px-2 py-0.5">
+                  {i + 1}. {l}
+                </span>
+                {i < LAYERS.length - 1 ? <span aria-hidden="true">→</span> : null}
+              </li>
+            ))}
+          </ol>
         </div>
-        <button type="button" onClick={() => setOpen(false)} className="rounded-md px-2 py-1 text-sm text-on-navy-muted hover:text-on-navy" aria-label="Close chat">
-          ✕
-        </button>
-      </header>
-
-      <div className="flex-1 space-y-3 overflow-y-auto p-4" aria-live="polite">
-        {turns.length === 0 ? (
-          <div>
-            <p className="text-sm text-ink-muted">Ask anything about the visits, in English or in Bengali/Hindi trade words (e.g. “dam beshi bolche kara?”).</p>
-            <div className="mt-3 flex flex-wrap gap-2">
-              {STARTERS.map((s) => (
-                <button key={s} type="button" onClick={() => void send(s)} className="rounded-full border border-line-strong px-3 py-1 text-xs text-ink hover:border-ink-subtle">
-                  {s}
-                </button>
-              ))}
-            </div>
-          </div>
-        ) : null}
-        {turns.map((t, i) =>
-          t.who === "you" ? (
-            <p key={i} className="ml-8 rounded-2xl rounded-br-sm bg-navy-950 px-3 py-2 text-sm text-on-navy">
-              {t.text}
-            </p>
-          ) : t.who === "error" ? (
-            <p key={i} role="alert" className="mr-8 rounded-2xl bg-red-50 px-3 py-2 text-sm text-red-800">
-              {t.text}
-            </p>
-          ) : (
-            <BotTurn key={i} reply={t.reply} days={days} onAsk={(q) => void send(q)} />
-          ),
-        )}
-        {busy ? <p className="mr-8 text-sm text-ink-muted">Looking through the visits…</p> : null}
-        <div ref={end} />
+        <form onSubmit={submit} className="mt-3 flex gap-2">
+          <label htmlFor="chat-input" className="sr-only">
+            Your question
+          </label>
+          <input
+            id="chat-input"
+            value={draft}
+            onChange={(e) => setDraft(e.target.value)}
+            maxLength={300}
+            placeholder="e.g. Which dealers asked for credit? · dam beshi bolche kara?"
+            className="h-11 min-w-0 flex-1 rounded-lg border border-white/20 bg-white/5 px-3 text-sm text-on-navy placeholder:text-on-navy-subtle focus:border-accent"
+          />
+          <button type="submit" disabled={busy || !draft.trim()} className="h-11 rounded-lg bg-accent px-5 text-sm font-semibold text-navy-950 hover:brightness-105 disabled:opacity-50">
+            Ask
+          </button>
+        </form>
+        <div className="mt-3 flex flex-wrap gap-2">
+          {starters.map((q) => (
+            <button key={q} type="button" onClick={() => void send(q)} className="rounded-full border border-white/15 px-3 py-1 text-xs text-on-navy-muted hover:border-white/40 hover:text-on-navy">
+              {q}
+            </button>
+          ))}
+        </div>
       </div>
 
-      <form onSubmit={submit} className="flex gap-2 border-t border-line p-3">
-        <label htmlFor="chat-input" className="sr-only">
-          Your question
-        </label>
-        <input
-          id="chat-input"
-          value={draft}
-          onChange={(e) => setDraft(e.target.value)}
-          maxLength={300}
-          placeholder="Ask about your visits…"
-          className="h-10 min-w-0 flex-1 rounded-md border border-line-strong bg-surface px-3 text-sm text-ink"
-        />
-        <button type="submit" disabled={busy || !draft.trim()} className="h-10 rounded-md bg-accent px-4 text-sm font-semibold text-navy-950 disabled:opacity-50">
-          Send
-        </button>
-      </form>
+      {turns.length || busy ? (
+        <div className="max-h-[32rem] space-y-3 overflow-y-auto border-t border-white/10 bg-surface p-4 text-ink" aria-live="polite">
+          {turns.map((t, i) =>
+            t.who === "you" ? (
+              <p key={i} className="ml-auto w-fit max-w-[85%] rounded-2xl rounded-br-sm bg-navy-950 px-3 py-2 text-sm text-on-navy">
+                {t.text}
+              </p>
+            ) : t.who === "error" ? (
+              <p key={i} role="alert" className="mr-8 rounded-2xl bg-red-50 px-3 py-2 text-sm text-red-800">
+                {t.text}
+              </p>
+            ) : (
+              <BotTurn key={i} reply={t.reply} days={days} onAsk={(q) => void send(q)} />
+            ),
+          )}
+          {busy ? <p className="mr-8 text-sm text-ink-muted">Looking through the visits…</p> : null}
+          <div ref={end} />
+        </div>
+      ) : null}
     </section>
   );
 }
@@ -153,8 +150,10 @@ export function ChatBoard({ role, days }: { role: TabId; days: number | null }) 
 function BotTurn({ reply, days, onAsk }: { reply: ChatReply; days: number | null; onAsk: (q: string) => void }) {
   const mode = MODE_LABEL[reply.mode];
   return (
-    <div className="mr-4 rounded-2xl rounded-bl-sm border border-line bg-surface-muted px-3 py-2">
-      <span className={`inline-block rounded-full px-2 py-0.5 text-[0.6875rem] font-semibold ${mode.style}`}>{mode.text}</span>
+    <div className="mr-4 max-w-3xl rounded-2xl rounded-bl-sm border border-line bg-surface-muted px-3 py-2">
+      <span className={`inline-block rounded-full px-2 py-0.5 text-[0.6875rem] font-semibold ${mode.style}`}>
+        {LAYER_OF[reply.mode]} · {mode.text}
+      </span>
       <p className="mt-1 whitespace-pre-line text-sm leading-6 text-ink">{reply.answer}</p>
       {reply.note ? <p className="mt-1 text-xs text-ink-muted">{reply.note}</p> : null}
       {reply.visits.length ? (

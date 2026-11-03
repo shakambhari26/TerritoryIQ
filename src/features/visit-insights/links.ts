@@ -15,10 +15,6 @@ export function exploreHref(filters: Filters | Record<string, string>, days: num
   return tabHref("explore", days, clean);
 }
 
-export function askHref(tab: TabId, days: number | null, question: string, filters: Filters = {}): string {
-  return tabHref(tab, days, { ...(tab === "explore" ? (filters as Record<string, string>) : {}), ask: question }) + "#ask";
-}
-
 /** The Insights page as one value: who is looking, over what period, and the inbox filters (status lane included). */
 export interface View {
   tab: TabId;

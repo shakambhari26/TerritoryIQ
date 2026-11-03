@@ -20,7 +20,7 @@ from sqlalchemy import select
 
 from . import ask as asker
 from . import rag
-from . import cases, config, explain, insights, keywords, messaging
+from . import cases, config, explain, insights, keywords, learn, messaging
 from .db import Analysis, ChatLog, Keyword, Label, Message, SessionLocal, Visit, init_db, visit_dict
 from .model import SegmentModel
 from .pipeline import normalize
@@ -143,6 +143,18 @@ def _model_meta() -> dict | None:
     return STATE["model"].meta if STATE["model"] else None
 
 
+def _summary(r: dict) -> dict:
+    return {"added": len(r["added"]), "retired": len(r["retired"]), "reweighed": len(r["reweighed"])}
+
+
+def _learn_and_refresh(s) -> dict:
+    """One learning round (learn.py); when the keyword database changed, re-score every visit with it."""
+    result = learn.learn(s)
+    if result["added"] or result["retired"] or result["reweighed"]:
+        reanalyze(s, STATE["model"])
+    return result
+
+
 @app.get("/health")
 def health() -> dict:
     return {"ok": True, "model": STATE["model"].version if STATE["model"] else "rules-only"}
@@ -162,7 +174,9 @@ def segment_one(visit: dict[str, Any]) -> dict:
 @app.post("/v1/visits/batch", dependencies=[Depends(require_ingest_key)])
 def segment_batch(body: BatchIn) -> dict:
     with SessionLocal() as s:
-        return ingest(s, body.visits, STATE["model"])
+        out = ingest(s, body.visits, STATE["model"])
+        out["learning"] = _summary(_learn_and_refresh(s))
+        return out
 
 
 @app.post("/v1/visits/import-csv", dependencies=[Depends(require_ingest_key)])
@@ -170,7 +184,9 @@ async def import_csv(file: UploadFile = File(...)) -> dict:
     text = (await file.read()).decode("utf-8-sig")
     rows = list(csv.DictReader(io.StringIO(text)))
     with SessionLocal() as s:
-        return ingest(s, rows, STATE["model"])
+        out = ingest(s, rows, STATE["model"])
+        out["learning"] = _summary(_learn_and_refresh(s))
+        return out
 
 
 @app.get("/v1/visits", dependencies=[Depends(require_key)])
@@ -214,6 +230,7 @@ def add_label(body: LabelIn) -> dict:
         s.add(Label(visit_key=body.visit_key, segment=body.segment, urgency=body.urgency, labeller=body.labeller[:100]))
         s.commit()
         reanalyze(s, STATE["model"], [body.visit_key])
+        _learn_and_refresh(s)  # a person's correction is the best teacher for the keyword database
         return {"visit_key": body.visit_key, **s.get(Analysis, body.visit_key).result}
 
 
@@ -362,6 +379,13 @@ def edit_keyword(keyword_id: int, body: KeywordPatch) -> dict:
         s.commit()
         keywords.invalidate()
         return _kw_dict(k)
+
+
+@app.post("/v1/keywords/learn", dependencies=[Depends(require_key)])
+def learn_keywords(dry_run: bool = False) -> dict:
+    """Run one learning round now. Also runs by itself after every correction and every batch / CSV import."""
+    with SessionLocal() as s:
+        return learn.learn(s, dry_run=True) if dry_run else _learn_and_refresh(s)
 
 
 @app.post("/v1/keywords/test", dependencies=[Depends(require_key)])

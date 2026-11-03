@@ -159,6 +159,9 @@ async function Body({ searchParams }: { searchParams: SearchParams }) {
           rows={d.keywords.slice(0, limit).map((k) => [
             <span key="t" className={k.active ? "" : "text-ink-subtle line-through"} title={k.meaning || undefined}>
               {k.term}
+              {k.added_by === "auto-learner" ? (
+                <span className="ml-1.5 rounded-full bg-violet-50 px-1.5 py-0.5 text-[0.6875rem] font-medium text-violet-800 ring-1 ring-violet-200">Auto-learned</span>
+              ) : null}
               {k.meaning ? <span className="block text-xs text-ink-subtle">{k.meaning}</span> : null}
             </span>,
             k.language,

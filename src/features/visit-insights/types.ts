@@ -48,6 +48,18 @@ export interface VisitBrief {
   why: string | null;
   /** Head office's follow-through (cases.py in the service). Absent only on an older service. */
   case?: CaseState | null;
+  /** Which words decided it, as non-overlapping spans of `transcript` (highlight.py in the service). */
+  highlights?: Highlight[];
+}
+
+export interface Highlight {
+  start: number;
+  end: number;
+  kind: "decisive" | "other" | "flag" | "negated" | "ml";
+  target: string;
+  weight: number;
+  by: "keywords" | "ml";
+  negated_by: string | null;
 }
 
 export const CASE_STATUSES = ["new", "seen", "waiting", "resolved"] as const;
@@ -99,17 +111,6 @@ export interface Common {
   recommendations: Recommendation[];
   suggested_questions: SuggestedQuestion[];
   ai_enabled: boolean;
-}
-
-export interface AskAnswer {
-  question: string;
-  source: "calculated" | "ai" | "unavailable";
-  matched_question: string | null;
-  answer: string;
-  visits: VisitBrief[];
-  table: { head: string[]; rows: (string | number)[][] } | null;
-  filter: Record<string, string> | null;
-  suggestions: SuggestedQuestion[];
 }
 
 export const FILTER_KEYS = ["group", "segment", "urgency", "flag", "rep", "stakeholder", "review", "status", "category", "q"] as const;
