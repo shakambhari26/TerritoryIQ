@@ -1,13 +1,15 @@
 "use client";
 
-import { useId, useMemo, useRef, useState, type KeyboardEvent } from "react";
+import { useEffect, useId, useMemo, useRef, useState, type KeyboardEvent } from "react";
 import { cn } from "@/lib/cn";
 import { drawnClause, type OutlinesStatus } from "../outline-gate";
 import { searchTargets, type Target } from "../targets";
 import type { GlobeManifest, Level, ManifestBlock, ManifestDistrict, UnitState } from "../types";
 import { BLOCK_STYLE, DISTRICT_STYLE } from "../styles";
 import { targetForSelection, workspaceHref } from "../workspace-link";
+import type { GlobeInsights } from "../insights";
 import { BlockRowsSection } from "./BlockRowsSection";
+import { InsightSections } from "./InsightsPanel";
 import { WorkspaceLink } from "./WorkspaceLink";
 
 const stateChip: Record<UnitState, { label: string; className: string }> = {
@@ -29,21 +31,51 @@ export function StateChip({ state, kind }: { state: UnitState; kind: "district" 
 interface SearchProps {
   targets: readonly Target[];
   districts: readonly Target[];
+  /** Every block, for the Blocks tab. Without it the panel has the Districts list only. */
+  blocks?: readonly Target[];
   onSelect: (target: Target) => void;
   disabled: boolean;
   /** The district or block the globe is on, marked in the list. */
   activeId?: string | null;
+  /** Where the globe is, outermost first (Earth, state, district, block). Shown so the last move is never in doubt. */
+  trail?: readonly string[];
+  /** Extra classes for the scrolling list, for a host that does not bound the panel's height. */
+  listClassName?: string;
 }
 
-/** Search box and a plain list of places. Every entry is a button, so it works with the keyboard alone. */
-export function PlaceSearch({ targets, districts, onSelect, disabled, activeId = null }: SearchProps) {
+type PlaceTab = "districts" | "blocks";
+
+/** Search box, the fly-to action and a plain list of places (Districts or Blocks). Every entry is a button, so it works with the keyboard alone. */
+export function PlaceSearch({ targets, districts, blocks = [], onSelect, disabled, activeId = null, trail, listClassName }: SearchProps) {
   const [query, setQuery] = useState("");
+  const [tab, setTab] = useState<PlaceTab>("districts");
+  const [seenActive, setSeenActive] = useState(activeId);
   const listRef = useRef<HTMLUListElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const id = useId();
   const results = useMemo(() => searchTargets(targets, query, 12), [targets, query]);
-  const showing = query.trim() === "" ? districts : results;
+  const searching = query.trim() !== "";
+  const hasBlocks = blocks.length > 0;
+  const activeTab: PlaceTab = hasBlocks ? tab : "districts";
+  const showing = searching ? results : activeTab === "blocks" ? blocks : districts;
   const stateTarget = targets.find((t) => t.kind === "state");
+
+  // A pick made on the globe moves the list to where that place is. Adjusting state while rendering is the pattern React documents for this.
+  if (activeId !== seenActive) {
+    setSeenActive(activeId);
+    const kind = activeId ? targets.find((t) => t.kind !== "state" && t.id === activeId)?.kind : undefined;
+    if (kind === "block" || kind === "district") setTab(kind === "block" ? "blocks" : "districts");
+  }
+
+  // Keeps the selected place in view inside the list only; scrollIntoView could also scroll the page.
+  useEffect(() => {
+    const list = listRef.current;
+    const item = list?.querySelector<HTMLElement>('[aria-current="true"]');
+    if (!list || !item) return;
+    const top = item.offsetTop - list.offsetTop;
+    if (top < list.scrollTop) list.scrollTop = top;
+    else if (top + item.offsetHeight > list.scrollTop + list.clientHeight) list.scrollTop = top + item.offsetHeight - list.clientHeight;
+  }, [activeId, activeTab, searching]);
 
   function move(event: KeyboardEvent<HTMLElement>, from: "input" | number) {
     const buttons = Array.from(listRef.current?.querySelectorAll<HTMLButtonElement>("button") ?? []);
@@ -61,11 +93,31 @@ export function PlaceSearch({ targets, districts, onSelect, disabled, activeId =
     }
   }
 
+  function moveTab(event: KeyboardEvent<HTMLButtonElement>) {
+    if (event.key !== "ArrowLeft" && event.key !== "ArrowRight" && event.key !== "Home" && event.key !== "End") return;
+    event.preventDefault();
+    const next: PlaceTab = event.key === "ArrowLeft" || event.key === "Home" ? "districts" : "blocks";
+    setTab(next);
+    document.getElementById(`${id}-tab-${next}`)?.focus();
+  }
+
+  const tabClass = (selected: boolean) =>
+    cn("min-h-9 flex-1 rounded-lg px-2 text-[0.8125rem] font-semibold leading-5 transition-colors", selected ? "bg-white text-primary-ink shadow-float" : "text-ink-muted hover:text-ink");
+  const tabbed = hasBlocks && !searching;
+
   return (
-    <section aria-labelledby={`${id}-title`} className="flex min-h-0 flex-col gap-4 lg:flex-1">
-      <h2 id={`${id}-title`} className="text-base font-semibold tracking-tight text-ink">
-        Go to a place
-      </h2>
+    <section aria-labelledby={`${id}-title`} className="flex min-h-0 flex-1 flex-col gap-3">
+      <div>
+        <h2 id={`${id}-title`} className="text-base font-semibold tracking-tight text-ink">
+          Go to a place
+        </h2>
+        {trail && trail.length > 0 ? (
+          <p className="mt-0.5 truncate text-xs text-ink-muted" data-testid="globe-trail" title={trail.join(" › ")}>
+            <span className="sr-only">You are at </span>
+            {trail.join(" › ")}
+          </p>
+        ) : null}
+      </div>
       <label className="sr-only" htmlFor={`${id}-input`}>
         Search West Bengal, a district or a block
       </label>
@@ -93,52 +145,82 @@ export function PlaceSearch({ targets, districts, onSelect, disabled, activeId =
           className="h-11 w-full rounded-xl bg-surface-muted pl-9 pr-3 text-sm text-ink placeholder:text-ink-subtle focus-visible:bg-white disabled:opacity-50"
         />
       </div>
-      {stateTarget && query.trim() === "" ? (
+      {stateTarget && !searching ? (
         <button
           type="button"
           disabled={disabled}
           onClick={() => onSelect(stateTarget)}
-          className="flex min-h-11 w-full flex-col items-start justify-center rounded-xl bg-primary px-3.5 py-2 text-left text-sm font-semibold leading-tight text-white shadow-float hover:bg-primary-hover disabled:opacity-50"
+          className="flex min-h-11 w-full items-center justify-between gap-2 rounded-xl bg-primary px-3.5 py-2 text-left text-sm font-semibold leading-tight text-white shadow-float hover:bg-primary-hover disabled:opacity-50"
         >
           <span className="whitespace-nowrap">Fly to West Bengal</span>
-          <span className="text-[0.6875rem] font-medium text-white">validated target</span>
+          <svg aria-hidden="true" focusable="false" viewBox="0 0 20 20" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="shrink-0">
+            <path d="M4 10h11M11 5.5 15.5 10 11 14.5" />
+          </svg>
         </button>
       ) : null}
-      <p className="border-t border-line pt-3 text-xs font-medium text-ink-muted" aria-live="polite">
-        {query.trim() === "" ? `${districts.length} districts` : `${results.length === 0 ? "No" : results.length} ${results.length === 1 ? "match" : "matches"}`}
+      {tabbed ? (
+        <div role="tablist" aria-label="Kind of place" className="flex gap-1 rounded-xl bg-surface-muted p-1">
+          <button
+            type="button"
+            role="tab"
+            id={`${id}-tab-districts`}
+            aria-selected={activeTab === "districts"}
+            aria-controls={`${id}-panel`}
+            tabIndex={activeTab === "districts" ? 0 : -1}
+            onClick={() => setTab("districts")}
+            onKeyDown={moveTab}
+            className={tabClass(activeTab === "districts")}
+          >
+            Districts <span className="font-normal tabular-nums">{districts.length}</span>
+          </button>
+          <button
+            type="button"
+            role="tab"
+            id={`${id}-tab-blocks`}
+            aria-selected={activeTab === "blocks"}
+            aria-controls={`${id}-panel`}
+            tabIndex={activeTab === "blocks" ? 0 : -1}
+            onClick={() => setTab("blocks")}
+            onKeyDown={moveTab}
+            className={tabClass(activeTab === "blocks")}
+          >
+            Blocks <span className="font-normal tabular-nums">{blocks.length}</span>
+          </button>
+        </div>
+      ) : null}
+      <p className="border-t border-line pt-2.5 text-xs font-medium text-ink-muted" aria-live="polite">
+        {!searching ? `${showing.length} ${activeTab}` : `${results.length === 0 ? "No" : results.length} ${results.length === 1 ? "match" : "matches"}`}
       </p>
-      <ul ref={listRef} className="-mx-2 -mt-2 max-h-56 min-h-0 space-y-1 overflow-y-auto px-2 pb-1 lg:max-h-none lg:min-h-[7rem] lg:flex-1" aria-label="Places">
-        {showing.map((target, index) => {
-          const active = activeId !== null && target.kind !== "state" && target.id === activeId;
-          return (
-            <li key={`${target.kind}-${target.id}`}>
-              <button
-                type="button"
-                disabled={disabled}
-                onClick={() => onSelect(target)}
-                onKeyDown={(event) => move(event, index)}
-                aria-current={active ? "true" : undefined}
-                className={cn(
-                  "flex min-h-11 w-full items-center gap-3 rounded-xl px-3 py-1.5 text-left text-[0.9375rem] leading-5 disabled:opacity-50",
-                  active ? "bg-primary-soft font-semibold text-primary-ink" : "text-ink hover:bg-surface-muted",
-                )}
-              >
-                <Dot colour={(target.kind === "block" ? BLOCK_STYLE : DISTRICT_STYLE)[target.state].fill} ring={target.state === "no-representative"} />
-                <span className="min-w-0 flex-1 truncate">{target.name}</span>
-                {/* Every row of the plain list is a district, so the kind is repeated only where the list mixes kinds. */}
-                <span className={cn("shrink-0 text-xs font-normal", active ? "text-primary-ink" : "text-ink-muted")}>
-                  {target.kind === "district" && query.trim() === ""
-                    ? ""
-                    : target.kind === "block"
-                      ? `block · ${target.context ?? "no district"}`
-                      : target.kind}
-                  {target.kind !== "state" && !target.drawn ? (target.kind === "district" && query.trim() === "" ? "No outline" : " · no outline") : ""}
-                </span>
-              </button>
-            </li>
-          );
-        })}
-      </ul>
+      <div id={`${id}-panel`} role={tabbed ? "tabpanel" : undefined} aria-labelledby={tabbed ? `${id}-tab-${activeTab}` : undefined} className="flex min-h-0 flex-1 flex-col">
+        <ul ref={listRef} className={cn("relative -mx-2 -mt-1.5 min-h-[7rem] flex-1 space-y-0.5 overflow-y-auto px-2 pb-1", listClassName)} aria-label="Places">
+          {showing.map((target, index) => {
+            const active = activeId !== null && target.kind !== "state" && target.id === activeId;
+            return (
+              <li key={`${target.kind}-${target.id}`}>
+                <button
+                  type="button"
+                  disabled={disabled}
+                  onClick={() => onSelect(target)}
+                  onKeyDown={(event) => move(event, index)}
+                  aria-current={active ? "true" : undefined}
+                  className={cn(
+                    "flex min-h-10 w-full items-center gap-3 rounded-xl px-3 py-1.5 text-left text-[0.9375rem] leading-5 disabled:opacity-50",
+                    active ? "bg-primary-soft font-semibold text-primary-ink ring-1 ring-primary/30" : "text-ink hover:bg-surface-muted",
+                  )}
+                >
+                  <Dot colour={(target.kind === "block" ? BLOCK_STYLE : DISTRICT_STYLE)[target.state].fill} ring={target.state === "no-representative"} />
+                  <span className="min-w-0 flex-1 truncate">{target.name}</span>
+                  {/* Every row of the plain district list is a district, so the kind is repeated only where the list mixes kinds. */}
+                  <span className={cn("max-w-[45%] shrink-0 truncate text-xs font-normal", active ? "text-primary-ink" : "text-ink-muted")}>
+                    {target.kind === "district" && !searching ? "" : target.kind === "block" ? `block · ${target.context ?? "no district"}` : target.kind}
+                    {target.kind !== "state" && !target.drawn ? (target.kind === "district" && !searching ? "No outline" : " · no outline") : ""}
+                  </span>
+                </button>
+              </li>
+            );
+          })}
+        </ul>
+      </div>
     </section>
   );
 }
@@ -153,10 +235,15 @@ interface DetailsProps {
   disabled: boolean;
   /** Where the outline file is. The wording about what is drawn follows it. */
   outlines: OutlinesStatus;
+  /** Counts for the region, allocation and quick-insight cards (insights.ts). Null when the workbook data has not been built. */
+  insights?: GlobeInsights | null;
 }
 
-/** What the visitor is looking at, in words: the same information the colours and outlines carry. */
-export function GlobeDetails({ overlay, level, district, block, onSelectBlock, onSelectDistrict, disabled, outlines }: DetailsProps) {
+/**
+ * What the visitor is looking at, in words: the same information the colours and outlines carry, then the insight cards
+ * for the place, then the place's own list (a district's blocks, a block's workbook rows).
+ */
+export function GlobeDetails({ overlay, level, district, block, onSelectBlock, onSelectDistrict, disabled, outlines, insights = null }: DetailsProps) {
   const counts = overlay.meta.counts;
   const parent = block?.districtId ? (overlay.districts.find((d) => d.id === block.districtId) ?? null) : null;
   const blocks = useMemo(
@@ -167,7 +254,7 @@ export function GlobeDetails({ overlay, level, district, block, onSelectBlock, o
   const href = target ? workspaceHref(overlay, target) : null;
 
   return (
-    <section aria-label="Details" className="flex min-h-0 flex-col gap-5 text-sm leading-6 lg:flex-1 lg:overflow-y-auto">
+    <section aria-label="Details" tabIndex={0} className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto text-sm leading-6">
       {level === "globe" ? (
         <div className="space-y-2">
           <h2 className="text-xl font-semibold tracking-tight text-ink">Earth</h2>
@@ -208,23 +295,6 @@ export function GlobeDetails({ overlay, level, district, block, onSelectBlock, o
             {district.drawnBlockCount} of {district.blockCount} blocks in the current reference list have a validated outline here.
             {outlines === "ready" ? "" : outlines === "loading" ? " None is drawn yet: the outline data is still loading." : " None is drawn: the outline data is unavailable."}
           </p>
-          <h3 className="pt-1 text-[0.6875rem] font-semibold uppercase tracking-wider text-ink-muted">Blocks</h3>
-          <ul className="space-y-0.5" aria-label={`Blocks in ${district.name}`}>
-            {blocks.map((b) => (
-              <li key={b.id}>
-                <button
-                  type="button"
-                  disabled={disabled}
-                  onClick={() => onSelectBlock(b.id)}
-                  className="flex h-9 w-full items-center gap-2 rounded-lg px-2 text-left text-sm text-ink hover:bg-surface-muted disabled:opacity-50"
-                >
-                  <Dot colour={BLOCK_STYLE[b.state].fill} />
-                  <span className="min-w-0 flex-1 truncate">{b.name}</span>
-                  {!b.geometry ? <span className="shrink-0 text-[0.6875rem] text-ink-subtle">no outline</span> : null}
-                </button>
-              </li>
-            ))}
-          </ul>
         </div>
       ) : null}
 
@@ -252,12 +322,39 @@ export function GlobeDetails({ overlay, level, district, block, onSelectBlock, o
               No outline is drawn for this block: {block.noGeometryReason}. The globe shows its district instead.
             </p>
           ) : null}
-          <BlockRowsSection key={block.id} overlay={overlay} blockId={block.id} rowIds={block.rowIds} />
         </div>
       ) : null}
 
+      <InsightSections manifest={overlay} level={level} district={district} block={block} insights={insights} />
+
+      {level === "district" && district ? (
+        <div className="space-y-2">
+          <h3 className="text-[0.6875rem] font-semibold uppercase tracking-wider text-ink-muted">Blocks</h3>
+          <ul className="space-y-0.5" aria-label={`Blocks in ${district.name}`}>
+            {blocks.map((b) => (
+              <li key={b.id}>
+                <button
+                  type="button"
+                  disabled={disabled}
+                  onClick={() => onSelectBlock(b.id)}
+                  className="flex h-9 w-full items-center gap-2 rounded-lg px-2 text-left text-sm text-ink hover:bg-surface-muted disabled:opacity-50"
+                >
+                  <Dot colour={BLOCK_STYLE[b.state].fill} />
+                  <span className="min-w-0 flex-1 truncate">{b.name}</span>
+                  {!b.geometry ? <span className="shrink-0 text-[0.6875rem] text-ink-subtle">no outline</span> : null}
+                </button>
+              </li>
+            ))}
+          </ul>
+        </div>
+      ) : null}
+
+      {level === "block" && block ? <BlockRowsSection key={block.id} overlay={overlay} blockId={block.id} rowIds={block.rowIds} /> : null}
+
       <p className="mt-auto rounded-xl bg-surface-muted px-3 py-2.5 text-xs leading-5 text-ink-muted">
-        Colour shows a provisional, unreviewed link only. It does not change the allocation classifications (Assigned, Vacant, Unallocated, Data Missing / Unknown), which are not shown here.
+        {insights
+          ? "Colour shows a provisional, unreviewed link only. It does not change the allocation states (Allocated, Confirmed unallocated, Missing / unverified, Conflicting), which are counted in the cards above and on the Overview."
+          : "Colour shows a provisional, unreviewed link only. It does not change the allocation classifications (Assigned, Vacant, Unallocated, Data Missing / Unknown), which are not shown here."}
       </p>
     </section>
   );

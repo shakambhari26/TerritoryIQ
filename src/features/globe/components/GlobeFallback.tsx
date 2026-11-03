@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import { cn } from "@/lib/cn";
 import { DISTRICT_STYLE } from "../styles";
+import type { GlobeInsights } from "../insights";
 import type { GlobeManifest } from "../types";
 import { GlobeDetails, PlaceSearch } from "./GlobePanel";
 import { buildTargets, type Target } from "../targets";
@@ -12,9 +13,10 @@ import { buildTargets, type Target } from "../targets";
  * globe, and a static picture of the Earth: the same-origin NASA texture, shown as a CSS disc. Nothing moves, and
  * nothing is drawn that has not passed validation: districts are listed as text with their provisional status.
  */
-export function GlobeFallback({ overlay, reason }: { overlay: GlobeManifest; reason: string }) {
+export function GlobeFallback({ overlay, reason, insights = null }: { overlay: GlobeManifest; reason: string; insights?: GlobeInsights | null }) {
   const targets = useMemo(() => buildTargets(overlay), [overlay]);
   const districts = useMemo(() => targets.filter((t) => t.kind === "district").sort((a, b) => a.name.localeCompare(b.name)), [targets]);
+  const blocks = useMemo(() => targets.filter((t) => t.kind === "block").sort((a, b) => a.name.localeCompare(b.name)), [targets]);
   const [selected, setSelected] = useState<Target | null>(null);
   const district = selected?.kind === "district" ? (overlay.districts.find((d) => d.id === selected.id) ?? null) : selected?.kind === "block" ? (overlay.districts.find((d) => d.id === overlay.blocks.find((b) => b.id === selected.id)?.districtId) ?? null) : null;
   const block = selected?.kind === "block" ? (overlay.blocks.find((b) => b.id === selected.id) ?? null) : null;
@@ -44,7 +46,7 @@ export function GlobeFallback({ overlay, reason }: { overlay: GlobeManifest; rea
         <p className="text-[0.6875rem] text-ink-muted">Earth: NASA Earth Observatory, Blue Marble. District status is provisional and unreviewed.</p>
       </div>
       <aside className="flex flex-col gap-4 border-t border-line bg-surface p-4 lg:h-[min(74vh,780px)] lg:min-h-[440px] lg:border-l lg:border-t-0">
-        <PlaceSearch targets={targets} districts={districts} onSelect={setSelected} disabled={false} />
+        <PlaceSearch targets={targets} districts={districts} blocks={blocks} onSelect={setSelected} disabled={false} activeId={selected && selected.kind !== "state" ? selected.id : null} listClassName="max-h-56 lg:max-h-none" />
         <GlobeDetails
           overlay={overlay}
           level={level}
@@ -52,6 +54,7 @@ export function GlobeFallback({ overlay, reason }: { overlay: GlobeManifest; rea
           block={block}
           disabled={false}
           outlines="unavailable"
+          insights={insights}
           onSelectBlock={(id) => setSelected(targets.find((t) => t.kind === "block" && t.id === id) ?? null)}
           onSelectDistrict={(id) => setSelected(targets.find((t) => t.kind === "district" && t.id === id) ?? null)}
         />

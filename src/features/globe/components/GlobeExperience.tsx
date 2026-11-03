@@ -1,9 +1,10 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent, type ReactNode } from "react";
 import { cn } from "@/lib/cn";
 import { usePrefersReducedMotion } from "@/lib/use-reduced-motion";
 import { GlobeRenderer, webglAvailable, type FeatureRef } from "../GlobeRenderer";
+import type { GlobeInsights } from "../insights";
 import { fetchBoundaryLayer, LayerRequestError } from "../layer-client";
 import { mergeLayer, type MergeOutcome } from "../layer-merge";
 import { arrivalWithoutOutlines, canReveal, type OutlinesStatus } from "../outline-gate";
@@ -28,6 +29,13 @@ type Status = "loading" | "ready" | "error";
 /** The outline file: fetched, integrity-checked by the server, and joined to the validated manifest. Independent of the textures. */
 type LayerState = { status: "loading" } | { status: "ready"; outcome: Extract<MergeOutcome, { ok: true }> } | { status: "unavailable"; reason: string };
 
+/** `lg`: where both panels float beside the globe at once. Below it they are drawers and open one at a time. */
+const WIDE_QUERY = "(min-width: 64rem)";
+const isWide = () => typeof window !== "undefined" && window.matchMedia(WIDE_QUERY).matches;
+
+/** How much one press of a zoom button moves the camera. */
+const ZOOM_STEP = 0.72;
+
 function placeName(view: GlobeManifest, s: Selection): string {
   if (s.level === "state") return view.state.name;
   if (s.level === "block") return view.blocks.find((b) => b.id === s.blockId)?.name ?? "";
@@ -43,7 +51,7 @@ function Legend({ open }: { open: boolean }) {
     { colour: BLOCK_STYLE.unresolved.fill, label: "Unresolved or unverified", note: "not the same as none" },
   ];
   return (
-    <details key={open ? "open" : "closed"} open={open} aria-label="Legend" className="pointer-events-auto w-60 rounded-xl bg-white/95 p-3 shadow-float">
+    <details key={open ? "open" : "closed"} open={open} aria-label="Legend" className="pointer-events-auto w-60 rounded-xl bg-white/95 p-3 shadow-float ring-1 ring-line">
       <summary className="cursor-pointer text-[0.6875rem] font-semibold uppercase tracking-wider text-ink-muted">Legend (provisional)</summary>
       <ul className="mt-2 space-y-1.5">
         {rows.map((row) => (
@@ -66,41 +74,83 @@ function Legend({ open }: { open: boolean }) {
   );
 }
 
-/** Where the outline data is, always on screen, whatever the textures are doing. */
-function OutlineDataStrip({ layer, onRetry, drawn }: { layer: LayerState; onRetry: () => void; drawn: { districts: number; blocks: number } }) {
+/** Where the outline data is, always on screen, whatever the textures are doing; with the credits the data and the Earth owe. */
+function OutlineDataStrip({ layer, onRetry, drawn, attribution }: { layer: LayerState; onRetry: () => void; drawn: { districts: number; blocks: number }; attribution: string }) {
   return (
-    <div
-      className="flex flex-wrap items-center gap-x-3 gap-y-1 border-t border-line bg-surface-muted px-4 py-2 text-xs text-ink-muted lg:order-last lg:col-span-3 lg:row-start-2"
-      data-testid="globe-outlines-status"
-      data-state={layer.status}
-    >
-      <span className="text-[0.6875rem] font-semibold uppercase tracking-wider text-ink">Outline data</span>
-      {layer.status === "loading" ? (
-        <p role="status" className="min-w-0 flex-1">
-          Loading and validating. The globe works meanwhile; outlines appear once you have arrived somewhere and the data has passed validation.
-        </p>
-      ) : null}
-      {layer.status === "ready" ? (
-        <p role="status" className="min-w-0 flex-1">
-          Validated: {drawn.districts} district and {drawn.blocks} block outlines, provisional.
-        </p>
-      ) : null}
-      {layer.status === "unavailable" ? (
-        <>
-          <p role="alert" className="min-w-0 flex-1" data-testid="globe-outlines-error">
-            {layer.reason} No outline is drawn. The globe and the places list still work.
+    <div className="flex flex-wrap items-center gap-x-4 gap-y-1 border-t border-line bg-surface-muted px-4 py-2 text-xs text-ink-muted">
+      <div className="flex min-w-0 flex-[2_1_20rem] flex-wrap items-center gap-x-3 gap-y-1" data-testid="globe-outlines-status" data-state={layer.status}>
+        <span className="text-[0.6875rem] font-semibold uppercase tracking-wider text-ink">Outline data</span>
+        {layer.status === "loading" ? (
+          <p role="status" className="min-w-0 flex-1">
+            Loading and validating. The globe works meanwhile; outlines appear once you have arrived somewhere and the data has passed validation.
           </p>
-          <button
-            type="button"
-            onClick={onRetry}
-            className="rounded-lg border border-primary/40 bg-primary-soft px-3 py-1 text-xs font-semibold text-primary-ink hover:border-primary"
-            data-testid="globe-outlines-retry"
-          >
-            Try again
-          </button>
-        </>
-      ) : null}
+        ) : null}
+        {layer.status === "ready" ? (
+          <p role="status" className="min-w-0 flex-1">
+            Validated: {drawn.districts} district and {drawn.blocks} block outlines, provisional.
+          </p>
+        ) : null}
+        {layer.status === "unavailable" ? (
+          <>
+            <p role="alert" className="min-w-0 flex-1" data-testid="globe-outlines-error">
+              {layer.reason} No outline is drawn. The globe and the places list still work.
+            </p>
+            <button
+              type="button"
+              onClick={onRetry}
+              className="rounded-lg border border-primary/40 bg-primary-soft px-3 py-1 text-xs font-semibold text-primary-ink hover:border-primary"
+              data-testid="globe-outlines-retry"
+            >
+              Try again
+            </button>
+          </>
+        ) : null}
+      </div>
+      <p className="min-w-0 flex-[1_1_18rem] text-[0.6875rem] leading-4 lg:text-right">{attribution}</p>
     </div>
+  );
+}
+
+function Icon({ children }: { children: ReactNode }) {
+  return (
+    <svg aria-hidden="true" focusable="false" viewBox="0 0 20 20" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      {children}
+    </svg>
+  );
+}
+
+const controlClass =
+  "grid size-10 w-10 place-items-center text-ink hover:bg-primary-soft hover:text-primary-ink disabled:opacity-40 disabled:hover:bg-transparent disabled:hover:text-ink";
+
+/** A pill that opens a collapsed panel. `bar` is the mobile form: a full-width strip that names the place. */
+function PanelToggle({ label, onClick, icon, className, controls }: { label: string; onClick: () => void; icon: ReactNode; className?: string; controls: string }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-expanded={false}
+      aria-controls={controls}
+      className={cn("pointer-events-auto inline-flex h-10 items-center gap-2 rounded-full bg-white px-3.5 text-sm font-semibold text-ink shadow-float ring-1 ring-line hover:bg-primary-soft hover:text-primary-ink", className)}
+    >
+      {icon}
+      {label}
+    </button>
+  );
+}
+
+function CollapseButton({ label, onClick, className }: { label: string; onClick: () => void; className?: string }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-label={label}
+      title={label}
+      className={cn("pointer-events-auto grid size-8 shrink-0 place-items-center rounded-lg text-ink-muted hover:bg-surface-muted hover:text-ink", className)}
+    >
+      <Icon>
+        <path d="m5.5 5.5 9 9m0-9-9 9" />
+      </Icon>
+    </button>
   );
 }
 
@@ -108,9 +158,10 @@ interface StageProps {
   manifest: GlobeManifest;
   layer: LayerState;
   onRetryLayer: () => void;
+  insights: GlobeInsights | null;
 }
 
-function GlobeStage({ manifest, layer, onRetryLayer }: StageProps) {
+function GlobeStage({ manifest, layer, onRetryLayer, insights }: StageProps) {
   const reducedMotion = usePrefersReducedMotion();
   const hostRef = useRef<HTMLDivElement>(null);
   const stageRef = useRef<HTMLDivElement>(null);
@@ -127,6 +178,15 @@ function GlobeStage({ manifest, layer, onRetryLayer }: StageProps) {
   const [hover, setHover] = useState<FeatureRef | null>(null);
   const [focus, setFocus] = useState<FeatureRef | null>(null);
   const [announcement, setAnnouncement] = useState("");
+  // Both panels start open where there is room beside the globe, and closed where they would cover it.
+  const [placesOpen, setPlacesOpen] = useState(isWide);
+  const [insightsOpen, setInsightsOpen] = useState(isWide);
+  const placesToggleRef = useRef<HTMLDivElement>(null);
+  const insightsToggleRef = useRef<HTMLDivElement>(null);
+  const returnFocusTo = useRef<"places" | "insights" | null>(null);
+  const focusInto = useRef<"places" | "insights" | null>(null);
+  const placesPanelRef = useRef<HTMLDivElement>(null);
+  const insightsPanelRef = useRef<HTMLElement>(null);
   const selectionRef = useRef<Selection>(NONE);
   // True from the arrival of a flight to a place until the next flight or reset begins.
   const arrivedRef = useRef(false);
@@ -145,6 +205,7 @@ function GlobeStage({ manifest, layer, onRetryLayer }: StageProps) {
 
   const targets = useMemo(() => buildTargets(view), [view]);
   const districtTargets = useMemo(() => targets.filter((t) => t.kind === "district").sort((a, b) => a.name.localeCompare(b.name)), [targets]);
+  const blockTargets = useMemo(() => targets.filter((t) => t.kind === "block").sort((a, b) => a.name.localeCompare(b.name)), [targets]);
   const districtsById = useMemo(() => new Map(view.districts.map((d) => [d.id, d])), [view.districts]);
   const blocksById = useMemo(() => new Map(view.blocks.map((b) => [b.id, b])), [view.blocks]);
   const district = selection.districtId ? (districtsById.get(selection.districtId) ?? null) : null;
@@ -282,6 +343,20 @@ function GlobeStage({ manifest, layer, onRetryLayer }: StageProps) {
     rendererRef.current?.setFocus(focus);
   }, [focus, status]);
 
+  // A collapsed panel takes the keyboard focus back to the button that reopens it, and a panel the visitor opens takes it in.
+  useEffect(() => {
+    const back = returnFocusTo.current;
+    if (back && !(back === "places" ? placesOpen : insightsOpen)) {
+      returnFocusTo.current = null;
+      (back === "places" ? placesToggleRef : insightsToggleRef).current?.querySelector("button")?.focus();
+    }
+    const into = focusInto.current;
+    if (into && (into === "places" ? placesOpen : insightsOpen)) {
+      focusInto.current = null;
+      (into === "places" ? placesPanelRef : insightsPanelRef).current?.querySelector<HTMLElement>("button")?.focus();
+    }
+  }, [placesOpen, insightsOpen]);
+
   // ----------------------------------------------------------- actions --
   const selectedRef: FeatureRef | null = selection.blockId ? { kind: "block", id: selection.blockId } : selection.level === "district" && selection.districtId ? { kind: "district", id: selection.districtId } : null;
   const selectedKey = selectedRef ? `${selectedRef.kind}:${selectedRef.id}` : "";
@@ -329,6 +404,8 @@ function GlobeStage({ manifest, layer, onRetryLayer }: StageProps) {
 
   const selectTarget = useCallback(
     (target: Target) => {
+      // Where the list is a drawer over the globe, it steps aside so the flight can be seen.
+      if (!isWide()) setPlacesOpen(false);
       if (target.kind === "state") goTo({ level: "state", districtId: null, blockId: null });
       else if (target.kind === "district") goTo({ level: "district", districtId: target.id, blockId: null });
       else goTo({ level: "block", districtId: blocksById.get(target.id)?.districtId ?? null, blockId: target.id });
@@ -373,6 +450,39 @@ function GlobeStage({ manifest, layer, onRetryLayer }: StageProps) {
     else reset();
   }, [goTo, reset]);
 
+  const zoom = useCallback((factor: number) => {
+    rendererRef.current?.zoomBy(factor);
+    setAnnouncement(factor < 1 ? "Zooming in." : "Zooming out.");
+  }, []);
+
+  // Back to the framing the current place was flown to; on the whole globe, back to the rotating view.
+  const recentre = useCallback(() => {
+    const current = selectionRef.current;
+    if (current.level === "globe") {
+      rendererRef.current?.flyHome();
+      setAnnouncement("Recentring the globe.");
+    } else goTo(current);
+  }, [goTo]);
+
+  const openPlaces = useCallback(() => {
+    focusInto.current = "places";
+    setPlacesOpen(true);
+    if (!isWide()) setInsightsOpen(false);
+  }, []);
+  const openInsights = useCallback(() => {
+    focusInto.current = "insights";
+    setInsightsOpen(true);
+    if (!isWide()) setPlacesOpen(false);
+  }, []);
+  const closePlaces = useCallback(() => {
+    returnFocusTo.current = "places";
+    setPlacesOpen(false);
+  }, []);
+  const closeInsights = useCallback(() => {
+    returnFocusTo.current = "insights";
+    setInsightsOpen(false);
+  }, []);
+
   // The marker returns with the whole-globe view.
   const flying = phase === "flying";
 
@@ -416,6 +526,14 @@ function GlobeStage({ manifest, layer, onRetryLayer }: StageProps) {
     [back, flying, focus, goTo, pickRef, pickables, status],
   );
 
+  // Escape closes a panel that is a drawer over the globe; where the panels float beside it, Escape keeps its other uses.
+  const panelEscape = useCallback((event: KeyboardEvent<HTMLElement>, close: () => void) => {
+    if (event.key === "Escape" && !isWide() && !(event.target instanceof HTMLInputElement && event.target.value !== "")) {
+      event.preventDefault();
+      close();
+    }
+  }, []);
+
   // ------------------------------------------------------------- views --
   const level = selection.level;
   const stageLabel =
@@ -423,7 +541,15 @@ function GlobeStage({ manifest, layer, onRetryLayer }: StageProps) {
       ? "Rotating globe. Press Enter to fly to West Bengal."
       : `Globe view of ${nameOf(selection)}. Arrow keys move between outlines, Enter selects, Escape goes back.`;
   const statusText =
-    phase === "flying" ? `Travelling to ${nameOf(selection)}` : level === "globe" ? (reducedMotion ? "Still (reduced motion)" : "Rotating") : `Arrived: ${nameOf(selection)}`;
+    phase === "flying"
+      ? `Travelling to ${nameOf(selection)}`
+      : level === "globe"
+        ? phase === "arrived"
+          ? "Held (use Recentre to turn again)"
+          : reducedMotion
+            ? "Still (reduced motion)"
+            : "Rotating"
+        : `Arrived: ${nameOf(selection)}`;
   const hoverName = hover
     ? hover.kind === "district"
       ? districtsById.get(hover.id)?.name
@@ -433,10 +559,24 @@ function GlobeStage({ manifest, layer, onRetryLayer }: StageProps) {
     : null;
   const focusName = focus ? (focus.kind === "district" ? districtsById.get(focus.id)?.name : blocksById.get(focus.id)?.name) : null;
   const showProvisional = revealed.districts || revealed.blocksFor !== null;
+  const trail = ["Earth", ...(level === "globe" ? [] : [view.state.name]), ...(district ? [district.name] : []), ...(block ? [block.name] : [])];
+  const placeLabel = level === "globe" ? "Earth" : nameOf(selection);
+
+  const searchIcon = (
+    <Icon>
+      <circle cx="9" cy="9" r="5.5" />
+      <path d="m13.5 13.5 3.5 3.5" />
+    </Icon>
+  );
+  const insightsIcon = (
+    <Icon>
+      <path d="M4 16V9m6 7V4m6 12v-5" />
+    </Icon>
+  );
 
   return (
     <div
-      className="grid overflow-clip rounded-card bg-surface shadow-card lg:grid-cols-[16rem_minmax(0,1fr)_18.5rem]"
+      className="overflow-clip rounded-card bg-surface shadow-card"
       data-testid="globe-prototype"
       data-status={status}
       data-outlines={layer.status}
@@ -445,8 +585,11 @@ function GlobeStage({ manifest, layer, onRetryLayer }: StageProps) {
       data-revealed-districts={revealed.districts ? "true" : "false"}
       data-revealed-blocks={revealed.blocksFor ?? ""}
       data-selected={selection.blockId ?? selection.districtId ?? ""}
+      data-places={placesOpen ? "open" : "closed"}
+      data-insights={insightsOpen ? "open" : "closed"}
     >
-      <div className="relative h-[min(74vh,780px)] min-h-[440px] lg:h-[clamp(440px,calc(100dvh-17rem),820px)] bg-[radial-gradient(ellipse_at_50%_46%,#f7fbff_0%,#e3eefa_55%,#d0e1f4_100%)] lg:col-start-2 lg:row-start-1">
+      {/* The stage: the globe fills all of it, and everything else floats over it. */}
+      <div className="relative h-[clamp(26rem,calc(100dvh-17.5rem),44rem)] md:h-[clamp(30rem,calc(100dvh-15rem),44rem)] bg-[radial-gradient(ellipse_at_50%_46%,#f7fbff_0%,#e3eefa_55%,#d0e1f4_100%)] lg:h-[clamp(32rem,calc(100dvh-13.5rem),46rem)]" data-testid="globe-stage">
         <div
           ref={stageRef}
           tabIndex={0}
@@ -460,7 +603,7 @@ function GlobeStage({ manifest, layer, onRetryLayer }: StageProps) {
           <div ref={hostRef} className="absolute inset-0" data-testid="globe-canvas-host" />
         </div>
         <p id="globe-help" className="sr-only">
-          Use the search and place list on the right, or press Enter to fly to West Bengal. When outlines are shown, the arrow keys move between them, Enter selects one, and Escape goes back one step.
+          Use the search and place list on the left, or press Enter to fly to West Bengal. When outlines are shown, the arrow keys move between them, Enter selects one, and Escape goes back one step.
         </p>
         <div className="sr-only" role="status" aria-live="polite" data-testid="globe-announcement">
           {announcement}
@@ -468,51 +611,163 @@ function GlobeStage({ manifest, layer, onRetryLayer }: StageProps) {
 
         {status === "ready" ? (
           <>
-            <div className="pointer-events-none absolute inset-x-3 top-3 flex flex-wrap items-start justify-between gap-2">
-              <div className="flex flex-wrap items-center gap-2">
-                <span
-                  className="rounded-full bg-white/95 px-3 py-1.5 text-xs font-medium text-ink shadow-float"
-                  data-testid="globe-status"
-                >
+            {/* Status and navigation, between the two panels. On a phone: the status on the first row, beside the two panel buttons, and the rest on a second. */}
+            <div
+              className={cn(
+                "pointer-events-none absolute left-3 right-3 top-3 z-10 flex flex-wrap items-start justify-center gap-2 md:left-[6.5rem] md:right-[6.5rem]",
+                placesOpen ? "lg:left-[19rem]" : "lg:left-[6.5rem]",
+                insightsOpen ? "lg:right-[21rem]" : "lg:right-[6.5rem]",
+              )}
+            >
+              <div className="flex min-h-10 w-full items-center justify-center px-[6.25rem] md:min-h-0 md:w-auto md:px-0">
+                <span className="max-w-full truncate rounded-full bg-white/95 px-3 py-1.5 text-xs font-medium text-ink shadow-float ring-1 ring-line" data-testid="globe-status" title={statusText}>
                   <span aria-hidden="true" className={cn("mr-2 inline-block size-2 rounded-full", phase === "idle" ? "bg-accent" : phase === "flying" ? "bg-primary" : "bg-ink")} />
                   {statusText}
                 </span>
-                {showProvisional ? (
-                  <span className="rounded-full border border-warn-line bg-warn-soft px-3 py-1 text-[0.6875rem] font-semibold uppercase tracking-wider text-warn-ink shadow-sm">
-                    Provisional outlines
-                  </span>
-                ) : null}
               </div>
-              {level !== "globe" ? (
-                <div className="pointer-events-auto flex gap-2">
-                  <button
-                    type="button"
-                    onClick={back}
-                    className="rounded-lg bg-white px-3 py-1.5 text-xs font-semibold text-ink shadow-float hover:bg-surface-muted"
-                  >
-                    Back
-                  </button>
-                  <button
-                    type="button"
-                    onClick={reset}
-                    className="rounded-lg bg-primary px-3 py-1.5 text-xs font-semibold text-white shadow-float hover:bg-primary-hover"
-                  >
-                    Return to globe
-                  </button>
+              {showProvisional || level !== "globe" ? (
+                <div className="flex w-full flex-wrap items-center justify-center gap-2 md:w-auto">
+                  {showProvisional ? (
+                    <span className="rounded-full border border-warn-line bg-warn-soft px-3 py-1 text-[0.6875rem] font-semibold uppercase leading-5 tracking-wider text-warn-ink shadow-sm">
+                      Provisional outlines
+                    </span>
+                  ) : null}
+                  {level !== "globe" ? (
+                    <div className="pointer-events-auto flex gap-2">
+                      <button type="button" onClick={back} className="rounded-lg bg-white px-3 py-1.5 text-xs font-semibold text-ink shadow-float ring-1 ring-line hover:bg-surface-muted">
+                        Back
+                      </button>
+                      <button type="button" onClick={reset} className="rounded-lg bg-primary px-3 py-1.5 text-xs font-semibold text-white shadow-float hover:bg-primary-hover">
+                        Return to globe
+                      </button>
+                    </div>
+                  ) : null}
                 </div>
               ) : null}
             </div>
-            <div className="pointer-events-none absolute bottom-3 left-3">
+
+            {/* Closed panels leave one button each, in the top corners. */}
+            {!placesOpen ? (
+              <div ref={placesToggleRef} className="pointer-events-none absolute left-3 top-3 z-20">
+                <PanelToggle label="Places" onClick={openPlaces} icon={searchIcon} controls="globe-places" />
+              </div>
+            ) : null}
+            {!insightsOpen ? (
+              <div ref={insightsToggleRef} className="pointer-events-none absolute right-3 top-3 z-20">
+                <PanelToggle label="Insights" onClick={openInsights} icon={insightsIcon} controls="globe-insights-panel" />
+              </div>
+            ) : null}
+
+            {/* Zoom and recentre. Beside the insights panel when it is open, so neither covers the other. */}
+            <menu
+              aria-label="Globe controls"
+              className={cn(
+                "pointer-events-auto absolute bottom-[4.25rem] right-3 z-10 m-0 flex list-none flex-col divide-y divide-line overflow-hidden rounded-xl bg-white shadow-float ring-1 ring-line md:bottom-3",
+                insightsOpen ? "lg:right-[21rem]" : "lg:right-3",
+              )}
+              data-testid="globe-controls"
+            >
+              <li>
+                <button type="button" className={controlClass} onClick={() => zoom(ZOOM_STEP)} disabled={flying} aria-label="Zoom in" title="Zoom in">
+                  <Icon>
+                    <path d="M10 4.5v11M4.5 10h11" />
+                  </Icon>
+                </button>
+              </li>
+              <li>
+                <button type="button" className={controlClass} onClick={() => zoom(1 / ZOOM_STEP)} disabled={flying} aria-label="Zoom out" title="Zoom out">
+                  <Icon>
+                    <path d="M4.5 10h11" />
+                  </Icon>
+                </button>
+              </li>
+              <li>
+                <button type="button" className={controlClass} onClick={recentre} disabled={flying} aria-label="Recentre" title="Recentre on this place">
+                  <Icon>
+                    <circle cx="10" cy="10" r="3" />
+                    <path d="M10 2.5v3M10 14.5v3M2.5 10h3M14.5 10h3" />
+                  </Icon>
+                </button>
+              </li>
+            </menu>
+
+            <div className={cn("pointer-events-none absolute bottom-[4.25rem] left-3 z-10 md:bottom-3", placesOpen ? "lg:left-[19rem]" : "lg:left-3")}>
               <Legend open={false} />
             </div>
             {hoverName || focusName ? (
-              <p className="pointer-events-none absolute bottom-3 left-1/2 max-w-[40%] -translate-x-1/2 truncate rounded-full bg-white/95 px-3 py-1.5 text-xs font-medium text-ink shadow-float" data-testid="globe-hover">
+              <p className="pointer-events-none absolute bottom-3 left-1/2 z-10 max-w-[40%] -translate-x-1/2 truncate rounded-full bg-white/95 px-3 py-1.5 text-xs font-medium text-ink shadow-float md:max-w-[min(40%,16rem)]" data-testid="globe-hover">
                 {focusName ?? hoverName}
               </p>
             ) : null}
-            <p className="pointer-events-none absolute bottom-3 right-3 hidden max-w-[16rem] rounded-lg bg-white/85 px-2 py-1 text-right text-[0.625rem] leading-4 text-ink-muted md:block">
-              {ATTRIBUTION_EARTH} Outlines: {view.meta.attribution}, ODbL, provisional and not official boundaries.
-            </p>
+
+            {/* Mobile: a compact strip that names the place and opens the details sheet. */}
+            {!insightsOpen ? (
+              <div className="pointer-events-none absolute inset-x-3 bottom-3 z-20 md:hidden">
+                <button
+                  type="button"
+                  onClick={openInsights}
+                  aria-controls="globe-insights-panel"
+                  aria-expanded={false}
+                  className="pointer-events-auto flex min-h-12 w-full items-center justify-between gap-3 rounded-2xl bg-white px-4 py-2 text-left shadow-float ring-1 ring-line"
+                  data-testid="globe-details-strip"
+                >
+                  <span className="min-w-0">
+                    <span className="block text-[0.6875rem] font-semibold uppercase tracking-wide text-ink-muted">{level === "globe" ? "Region insights" : "Details"}</span>
+                    <span className="block truncate text-sm font-semibold text-ink">{placeLabel}</span>
+                  </span>
+                  <span aria-hidden="true" className="text-primary-ink">
+                    <Icon>
+                      <path d="m5 12 5-5 5 5" />
+                    </Icon>
+                  </span>
+                </button>
+              </div>
+            ) : null}
+
+            {/* Left: go to a place. */}
+            {placesOpen ? (
+              <div
+                id="globe-places"
+                ref={placesPanelRef}
+                role="region"
+                aria-label="Places"
+                onKeyDown={(event) => panelEscape(event, closePlaces)}
+                className="pointer-events-auto absolute bottom-3 left-3 top-3 z-30 flex w-[min(20rem,calc(100%-1.5rem))] flex-col rounded-2xl bg-white p-4 [&_h2]:pr-8 shadow-[0_8px_30px_-12px_rgb(23_43_77/0.35)] ring-1 ring-line lg:z-20 lg:w-[17.5rem]"
+                data-testid="globe-places"
+              >
+                <CollapseButton label="Hide places" onClick={closePlaces} className="absolute right-2.5 top-2.5 z-10" />
+                <PlaceSearch targets={targets} districts={districtTargets} blocks={blockTargets} onSelect={selectTarget} disabled={status !== "ready" || flying} activeId={selection.blockId ?? selection.districtId} trail={trail} />
+              </div>
+            ) : null}
+
+            {/* Right: insights and details. A bottom sheet on a phone. */}
+            {insightsOpen ? (
+              <aside
+                id="globe-insights-panel"
+                ref={insightsPanelRef}
+                aria-label="Insights"
+                onKeyDown={(event) => panelEscape(event, closeInsights)}
+                className="pointer-events-auto absolute inset-x-3 bottom-3 z-30 flex max-h-[72%] flex-col rounded-2xl bg-white p-4 shadow-[0_8px_30px_-12px_rgb(23_43_77/0.35)] ring-1 ring-line md:inset-x-auto md:right-3 md:top-3 md:max-h-none md:w-[19.5rem] lg:z-20"
+                data-testid="globe-insights-panel"
+              >
+                <div className="-mt-1 mb-2 flex items-center justify-between gap-2">
+                  <p className="text-[0.6875rem] font-semibold uppercase tracking-wider text-ink-muted">Insights</p>
+                  <CollapseButton label="Hide insights" onClick={closeInsights} className="-mr-1" />
+                </div>
+                <GlobeDetails
+                  key={`${level}:${selection.blockId ?? selection.districtId ?? ""}`}
+                  overlay={view}
+                  level={level}
+                  district={district}
+                  block={block}
+                  disabled={status !== "ready" || flying}
+                  outlines={outlines}
+                  insights={insights}
+                  onSelectBlock={(id) => goTo({ level: "block", districtId: blocksById.get(id)?.districtId ?? null, blockId: id })}
+                  onSelectDistrict={(id) => goTo({ level: "district", districtId: id, blockId: null })}
+                />
+              </aside>
+            ) : null}
           </>
         ) : null}
 
@@ -542,31 +797,12 @@ function GlobeStage({ manifest, layer, onRetryLayer }: StageProps) {
         ) : null}
       </div>
 
-      <OutlineDataStrip layer={layer} onRetry={onRetryLayer} drawn={{ districts: view.meta.counts.districtsDrawn, blocks: view.meta.counts.blocksDrawn }} />
-      <p className="border-t border-line bg-surface-muted px-4 py-2 text-[0.6875rem] leading-4 text-ink-muted md:hidden lg:col-span-3">
-        {ATTRIBUTION_EARTH} Outlines: {view.meta.attribution}, ODbL, provisional and not official boundaries.
-      </p>
-      <div className="flex min-h-0 flex-col border-t border-line bg-surface p-5 lg:col-start-1 lg:row-start-1 lg:h-[clamp(440px,calc(100dvh-17rem),820px)] lg:min-h-[440px] lg:border-r lg:border-t-0">
-        <PlaceSearch
-          targets={targets}
-          districts={districtTargets}
-          onSelect={selectTarget}
-          disabled={status !== "ready" || flying}
-          activeId={selection.blockId ?? selection.districtId}
-        />
-      </div>
-      <aside className="flex min-h-0 flex-col border-t border-line bg-surface p-5 lg:col-start-3 lg:row-start-1 lg:h-[clamp(440px,calc(100dvh-17rem),820px)] lg:min-h-[440px] lg:border-l lg:border-t-0">
-        <GlobeDetails
-          overlay={view}
-          level={level}
-          district={district}
-          block={block}
-          disabled={status !== "ready" || flying}
-          outlines={outlines}
-          onSelectBlock={(id) => goTo({ level: "block", districtId: blocksById.get(id)?.districtId ?? null, blockId: id })}
-          onSelectDistrict={(id) => goTo({ level: "district", districtId: id, blockId: null })}
-        />
-      </aside>
+      <OutlineDataStrip
+        layer={layer}
+        onRetry={onRetryLayer}
+        drawn={{ districts: view.meta.counts.districtsDrawn, blocks: view.meta.counts.blocksDrawn }}
+        attribution={`${ATTRIBUTION_EARTH} Outlines: ${view.meta.attribution}, ODbL, provisional and not official boundaries.`}
+      />
     </div>
   );
 }
@@ -587,7 +823,7 @@ const CODE_REASON: Record<string, string> = {
  * if the textures fail, the globe shows its own error and retry, and the outline status is unaffected. Without
  * WebGL there is nothing to draw on, so the list-only view is shown and the outline file is not requested.
  */
-export default function GlobeExperience({ manifest }: { manifest: GlobeManifest }) {
+export default function GlobeExperience({ manifest, insights = null }: { manifest: GlobeManifest; insights?: GlobeInsights | null }) {
   const [webgl] = useState(() => webglAvailable());
   const [attempt, setAttempt] = useState(0);
   const [layer, setLayer] = useState<LayerState>({ status: "loading" });
@@ -615,6 +851,6 @@ export default function GlobeExperience({ manifest }: { manifest: GlobeManifest 
     setAttempt((n) => n + 1);
   }, []);
 
-  if (!webgl) return <GlobeFallback overlay={manifest} reason="WebGL is not available in this browser, so the 3D globe cannot run." />;
-  return <GlobeStage manifest={manifest} layer={layer} onRetryLayer={retry} />;
+  if (!webgl) return <GlobeFallback overlay={manifest} insights={insights} reason="WebGL is not available in this browser, so the 3D globe cannot run." />;
+  return <GlobeStage manifest={manifest} layer={layer} onRetryLayer={retry} insights={insights} />;
 }

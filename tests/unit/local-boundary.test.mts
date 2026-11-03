@@ -137,7 +137,8 @@ describe("generated data stays out of public assets", () => {
       .filter((f) => /from\s+["'][^"']*dataset\.server["']/.test(readFileSync(f, "utf8")))
       .map(rel)
       .sort();
-    assert.deepEqual(importers, ["src/app/geo/boundaries.json/route.ts", "src/app/page.tsx", "src/app/workspace/page.tsx"]);
+    // The Globe page reads the Overview's name-free data (getOverviewData) for its insight counts; it never reads the dataset itself.
+    assert.deepEqual(importers, ["src/app/geo/boundaries.json/route.ts", "src/app/globe/page.tsx", "src/app/page.tsx", "src/app/workspace/page.tsx"]);
   });
 });
 

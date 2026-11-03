@@ -132,10 +132,15 @@ describe("globe prototype in a real browser", { skip: skipReason, timeout: 600_0
     await ready(page);
     assert.equal(await page.locator(`${HOST_SEL} canvas`).count(), 1);
     assert.equal(await attr(page, "data-phase"), "idle");
-    // The outline-data strip spans the bottom and must not push the panel out from beside the globe.
+    // The globe fills the stage and the panels float over it: the insights panel sits inside the stage's right side instead of narrowing the globe.
     const stageBox = (await page.locator(HOST_SEL).boundingBox())!;
+    const rootBox = (await page.locator(ROOT_SEL).boundingBox())!;
     const panelBox = (await page.locator(`${ROOT_SEL} aside`).boundingBox())!;
-    assert.ok(panelBox.x >= stageBox.x + stageBox.width - 2 && Math.abs(panelBox.y - stageBox.y) < 4, `the panel sits beside the globe (stage ${JSON.stringify(stageBox)}, panel ${JSON.stringify(panelBox)})`);
+    assert.ok(stageBox.width >= rootBox.width - 2, `the globe stage is the full width of the card (stage ${JSON.stringify(stageBox)}, card ${JSON.stringify(rootBox)})`);
+    assert.ok(
+      panelBox.x >= stageBox.x + stageBox.width / 2 && panelBox.x + panelBox.width <= stageBox.x + stageBox.width + 1 && panelBox.y >= stageBox.y && panelBox.y + panelBox.height <= stageBox.y + stageBox.height + 1,
+      `the panel floats inside the right of the stage (stage ${JSON.stringify(stageBox)}, panel ${JSON.stringify(panelBox)})`,
+    );
     const stripBox = (await page.locator('[data-testid="globe-outlines-status"]').boundingBox())!;
     assert.ok(stripBox.y >= stageBox.y + stageBox.height - 2, "the outline-data strip is under the globe");
     assert.match((await page.locator('[data-testid="globe-status"]').textContent()) ?? "", /Rotating/);
@@ -759,11 +764,15 @@ describe("globe prototype in a real browser", { skip: skipReason, timeout: 600_0
     await context.close();
   });
 
-  it("fits a phone: no sideways scroll, and the search and details stack under the globe", async () => {
+  it("fits a phone: no sideways scroll, the places open as a drawer and the details as a sheet over the globe", async () => {
     const { page, context } = await open({ width: 390, height: 844 });
     await ready(page);
     const overflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
     assert.ok(overflow <= 0, `no horizontal overflow (${overflow}px)`);
+    // On a phone both panels start closed, so the globe has the whole stage; the places open from their button.
+    assert.equal(await attr(page, "data-places"), "closed");
+    assert.equal(await attr(page, "data-insights"), "closed");
+    await page.getByRole("button", { name: "Places" }).click();
     await page.getByRole("button", { name: /Fly to West Bengal/ }).click();
     await waitPhase(page, "flying");
     await waitPhase(page, "arrived");

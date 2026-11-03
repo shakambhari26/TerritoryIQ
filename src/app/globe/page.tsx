@@ -1,8 +1,9 @@
 import type { Metadata } from "next";
-import { PageHeader } from "@/components/layout/PageHeader";
 import { Badge } from "@/components/ui/Badge";
 import { GlobeLoader } from "@/features/globe/components/GlobeLoader";
+import { buildGlobeInsights } from "@/features/globe/insights";
 import { getGlobeManifest } from "@/features/globe/overlay.server";
+import { getOverviewData } from "@/features/territory/dataset.server";
 
 export const metadata: Metadata = {
   title: "Globe",
@@ -16,27 +17,34 @@ export const metadata: Metadata = {
  * record, and the browser fetches the outlines themselves, in parallel with the textures, from the same-origin
  * /geo/globe-boundaries.json (the globe's own file, not the workspace's /geo/boundaries.json). /globe-prototype, the
  * route this page started on, redirects here (next.config.ts).
+ *
+ * The page is the globe first: a slim header with the standing provisional notice, then a stage that the globe fills
+ * and the place list and insights float over. The insight figures are counts computed from the Overview's own data
+ * (features/globe/insights.ts); like the Overview's, they carry no staff name.
  */
 export default function GlobePage() {
   const manifest = getGlobeManifest();
+  const overview = getOverviewData();
+  const insights = overview ? buildGlobeInsights(overview) : null;
   return (
     <>
-      <PageHeader
-        title="Globe"
-        description="A rotating 3D Earth that flies to a place you choose, stops, and then reveals provisional outlines. A selected place can be opened in the 2D workspace."
-        aside={<Badge tone="warning">Local prototype · not for deployment</Badge>}
-      />
-      <p
-        className="mt-4 rounded-xl bg-warn-soft px-4 py-2.5 text-xs leading-5 text-warn-ink"
-        data-testid="globe-provisional-notice"
-      >
-        <strong className="font-semibold">Provisional outlines.</strong> They are unofficial OpenStreetMap geometry, not official boundaries, and no
-        authority has reviewed or approved them. Colours show a provisional, unreviewed link to a named representative only. This prototype runs on this
-        machine and is not approved for deployment.
-      </p>
-      <div className="mt-5">
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+        <div className="flex items-center gap-3">
+          <h1 className="text-xl font-semibold tracking-tight text-ink">Globe</h1>
+          <Badge tone="warning">Local prototype · not for deployment</Badge>
+        </div>
+        <p
+          className="min-w-[18rem] flex-1 rounded-xl bg-warn-soft px-4 py-2 text-xs leading-5 text-warn-ink"
+          data-testid="globe-provisional-notice"
+        >
+          <strong className="font-semibold">Provisional outlines.</strong> They are unofficial OpenStreetMap geometry, not official boundaries, and no
+          authority has reviewed or approved them. Colours show a provisional, unreviewed link to a named representative only. This prototype runs on this
+          machine and is not approved for deployment.
+        </p>
+      </div>
+      <div className="mt-3">
         {manifest ? (
-          <GlobeLoader manifest={manifest} />
+          <GlobeLoader manifest={manifest} insights={insights} />
         ) : (
           <div className="rounded-card bg-surface p-6 shadow-card" role="alert">
             <p className="text-base font-semibold text-ink">The globe data has not been built</p>
