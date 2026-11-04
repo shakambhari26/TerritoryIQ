@@ -81,11 +81,13 @@ describe("no map-tile provider terms arise: no map library is imported (Phase 0F
     assert.deepEqual(APP_CODE.filter((f) => pattern.test(read(f))).map(rel), []);
   });
 
-  test("the runtime dependencies are exactly the framework's plus three, pinned, for the globe prototype", () => {
+  test("the runtime dependencies are exactly the framework's plus the approved additions, pinned", () => {
     const pkg = JSON.parse(read(join(ROOT, "package.json")));
-    assert.deepEqual(Object.keys(pkg.dependencies).sort(), ["next", "react", "react-dom", "three"]);
-    // Only the one approved addition, held to an exact version. Anything else still fails the line above.
+    assert.deepEqual(Object.keys(pkg.dependencies).sort(), ["@supabase/supabase-js", "next", "react", "react-dom", "three"]);
+    // The approved additions, each held to an exact version: three (the globe) and supabase-js (server-side reads of
+    // Visit Insights, src/features/visit-insights/supabase.server.ts). Anything else still fails the line above.
     assert.match(pkg.dependencies.three, /^\d+\.\d+\.\d+$/);
+    assert.match(pkg.dependencies["@supabase/supabase-js"], /^\d+\.\d+\.\d+$/);
   });
 });
 

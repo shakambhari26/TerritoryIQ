@@ -153,7 +153,9 @@ describe("globe integration (Phase 1) in a real browser", { skip: skipReason, ti
     await link.click();
     await page.waitForURL("**/globe");
     await page.getByRole("link", { name: "Globe", exact: true }).first().waitFor();
-    assert.equal(await page.getByRole("navigation", { name: "Primary" }).locator('[aria-current="page"]').textContent(), "Globe");
+    // The tap closed the drawer, and a closed drawer is out of the accessibility tree, so read the link from the markup.
+    assert.equal(await page.locator('#sidebar nav[aria-label="Primary"] [aria-current="page"]').textContent(), "Globe");
+    assert.equal(await page.getByRole("button", { name: "Open navigation" }).getAttribute("aria-expanded"), "false", "the tap closed the drawer");
     await ready(page);
     await context.close();
   });
@@ -319,7 +321,8 @@ describe("globe integration (Phase 1) in a real browser", { skip: skipReason, ti
     assert.equal(await page.getByRole("heading", { level: 1 }).textContent(), "Territory Overview");
     assert.equal(await page.getByRole("link", { name: "Open the workspace" }).first().getAttribute("href"), "/workspace");
     assert.equal(await page.locator('[data-testid="globe-prototype"]').count(), 0);
-    assert.equal(await page.locator("canvas").count(), 0);
+    // The only canvas is the small 2D one turning the Earth (no WebGL: Three.js is checked below).
+    assert.deepEqual(await page.locator("canvas").evaluateAll((all) => all.map((c) => [c.getAttribute("data-testid"), !!(c as HTMLCanvasElement).getContext("2d")])), [["rotating-earth", true]]);
     await context.close();
 
     const onGlobe = await scriptsLoaded("/globe");
@@ -411,7 +414,9 @@ describe("globe integration (Phase 1) in a real browser", { skip: skipReason, ti
         return [position(document.querySelector("h1")), position(document.querySelector('[data-testid="globe-entry"]')), position(document.querySelector('[data-testid="kpi-territories"]'))];
       });
       assert.ok(order[0] < order[1] && order[1] < order[2], `h1, card, KPIs: ${order}`);
-      assert.equal(await page.locator("main img, main svg, main canvas").count(), 0, "no image or canvas on the page");
+      assert.equal(await page.locator("main img, main svg").count(), 0, "no image or decorative SVG on the page");
+      assert.equal(await page.locator("main canvas").count(), 1, "one canvas: the turning Earth");
+      assert.equal(await card.locator('canvas[data-testid="rotating-earth"][aria-hidden="true"]').count(), 1, "inside the card, hidden from assistive technology");
       await context.close();
     });
 
@@ -515,14 +520,16 @@ describe("globe integration (Phase 1) in a real browser", { skip: skipReason, ti
       assert.ok(home.scripts.size > 0, "/ loads scripts");
       assert.ok(home.rsc.includes("/globe") && home.rsc.includes("/workspace"), `the default prefetching ran and reached /globe and /workspace (${home.rsc})`);
       assert.deepEqual(hasThree(home.scripts), [], "/ does not load Three.js, including through prefetch");
-      assert.ok(home.paths.includes("/overview/earth-preview.webp"), "the Overview shows its one static Earth");
+      assert.ok(home.paths.includes("/overview/earth-preview.webp"), "the Overview shows its still Earth");
+      assert.ok(home.paths.includes("/overview/earth-map.webp"), "and turns it from its one small world map");
       assert.deepEqual(home.paths.filter((p) => p.startsWith("/globe/")), [], "no globe texture or other /globe/ asset");
       assert.equal(home.paths.includes("/geo/globe-boundaries.json"), false);
       assert.equal(home.paths.includes("/geo/boundaries.json"), false);
-      // The one approved exception: the Overview's small static Earth (a CSS background drawn from the texture), nothing else with
-      // an earth- or three name. Its size is capped by tests/unit/earth-preview.test.mts.
-      assert.deepEqual(home.paths.filter((p) => /\/(?:three|earth-)/i.test(p) && p !== "/overview/earth-preview.webp"), []);
-      assert.deepEqual(home.paths.filter((p) => /\.(?:jpe?g|png|webp|avif)$/i.test(p) && p !== "/overview/earth-preview.webp"), [], "no other picture");
+      // The approved exceptions: the Overview's still Earth (a CSS background) and the small world map it turns from, both drawn from
+      // the texture; nothing else with an earth- or three name. Their sizes are capped by tests/unit/earth-preview.test.mts.
+      const EARTH = ["/overview/earth-preview.webp", "/overview/earth-map.webp"];
+      assert.deepEqual(home.paths.filter((p) => /\/(?:three|earth-)/i.test(p) && !EARTH.includes(p)), []);
+      assert.deepEqual(home.paths.filter((p) => /\.(?:jpe?g|png|webp|avif)$/i.test(p) && !EARTH.includes(p)), [], "no other picture");
     });
   });
 });
