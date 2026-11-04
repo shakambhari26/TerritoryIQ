@@ -49,7 +49,8 @@ python3.13 -m venv .venv && .venv/bin/pip install -r requirements-dev.txt
 .venv/bin/python scripts/train.py                  # -> models/segment_model.joblib (+ .json with scores)
 .venv/bin/python scripts/backfill.py data/raw/*.csv
 VISIT_INTEL_API_KEY=<key> .venv/bin/uvicorn visit_intel.api:app --app-dir src --port 8100
-# API docs: http://127.0.0.1:8100/docs
+# Public docs (Prediction API only): http://127.0.0.1:8100/docs
+# Full internal contract: curl -H "X-API-Key: <key>" http://127.0.0.1:8100/v1/internal/openapi.json
 ```
 In TerritoryIQ, set `VISIT_INTEL_URL=http://127.0.0.1:8100` and `VISIT_INTEL_API_KEY=<key>` in `.env.local`.
 
@@ -71,6 +72,23 @@ In TerritoryIQ, set `VISIT_INTEL_URL=http://127.0.0.1:8100` and `VISIT_INTEL_API
 `POST /v1/visits/segment` · `POST /v1/visits/batch` · `POST /v1/visits/import-csv` · `GET /v1/visits` ·
 `GET /v1/visits/{key}` · `GET /v1/review-queue` · `POST /v1/labels` · `POST /v1/reanalyze` ·
 `GET /v1/insights/{md|vp_sales|supervisor|business_analyst|data_analyst}?days=` · `GET /v1/model/health`
+
+## Prediction API for outside callers
+`POST /v1/predict` and `POST /v1/predict/batch` (max 200), served by the same service and the same loaded model
+(`predict_api.py`, included by `api.py`). Stateless: no database writes, no visit reads. Separate keys only: the
+internal and ingest keys are refused there, and prediction keys are refused everywhere else. Public `/docs` and
+`/openapi.json` show only this surface plus `/health` and `/v1/taxonomy`. Hand consumers
+[docs/PREDICTION_API.md](docs/PREDICTION_API.md).
+
+* Issue a key: `python scripts/make_predict_key.py <caller>` prints `<caller>:<key>`; append it to the service variable
+  `VISIT_INTEL_PREDICT_KEYS` (comma-separated) and give the caller only the part after the colon. Revoke by removing it.
+  Changing the variable restarts the service; nothing else is affected.
+* Limits: `VISIT_INTEL_PREDICT_RATE_PER_MIN` (default 600 visits/min per caller), `VISIT_INTEL_PREDICT_LIMITS`
+  (`caller=1200,...`). In-memory per instance: exact on one replica.
+* Unset or invalid prediction settings only switch these two routes off (503, reason in the log); the rest of the
+  service starts as before.
+* `VISIT_INTEL_REQUIRE_MODEL=1` makes the service refuse to start without `models/segment_model.joblib`, so a deploy
+  that lost the model fails its health check and the running deployment stays live.
 
 ## Deploy (Railway + Supabase)
 Lives in the TerritoryIQ repo at `services/visit-intel`; the database is the TerritoryIQ Supabase project (Mumbai), whose
