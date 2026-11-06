@@ -87,6 +87,21 @@ Rules that keep it honest and safe:
 Default model is `VISIT_INTEL_AI_MODEL` (claude-opus-5-5); `--model claude-sonnet-5-5` / `claude-haiku-5-5`
 cut cost. Rough batch cost for ~25k visits: Opus ~$16, Sonnet ~$8, Haiku ~$0.40.
 
+## Raise accuracy with NO API key (active learning)
+The whole segment core — rules, keyword database, ML — runs keyless; the Anthropic key is only for
+fluent chat answers and AI message drafts. To lift accuracy on real data without any LLM, label a small,
+well-chosen set of real visits and retrain:
+```bash
+.venv/bin/python scripts/sample_to_label.py --n 150 --out data/labels/to_label.csv  # picks the most informative visits, balanced across all 10 segments
+# a supervisor fills the `segment` column (valid codes are in the file header)
+.venv/bin/python scripts/import_labels.py data/labels/to_label.csv --labeller human:priya
+.venv/bin/python scripts/train.py --with-db-labels   # retrain ML on the real distribution
+.venv/bin/python scripts/evaluate.py                 # re-measure
+```
+The sampler scores each visit by how much a label would teach the model (review cases, low confidence,
+method disagreement) and stratifies by segment so rare segments still get examples. Imported labels are
+human labels, so they override the model and are never overwritten by a later AI pass.
+
 ## Measure
 ```bash
 .venv/bin/python -m pytest -q                      # unit + API tests
