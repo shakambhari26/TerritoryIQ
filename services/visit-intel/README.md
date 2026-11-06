@@ -53,6 +53,40 @@ VISIT_INTEL_API_KEY=<key> .venv/bin/uvicorn visit_intel.api:app --app-dir src --
 ```
 In TerritoryIQ, set `VISIT_INTEL_URL=http://127.0.0.1:8100` and `VISIT_INTEL_API_KEY=<key>` in `.env.local`.
 
+## Pull real visits from the Elegant API
+Instead of hand-exported CSVs, `scripts/pull_elegant.py` reads visit remarks straight from
+`fapi.elegantsteels.in` and segments them. Keyed on the API's `visit_id`, so re-runs update in
+place and never duplicate — safe to schedule.
+```bash
+export ELEGANT_API_BASE=https://fapi.elegantsteels.in/api   # https, not http
+export ELEGANT_API_TOKEN=<sanctum token>
+.venv/bin/python scripts/pull_elegant.py --days 7 --districts 8 --out /tmp/sample.csv  # look first
+.venv/bin/python scripts/pull_elegant.py --days 30 --ingest --no-phones               # then store
+```
+Note: the API `remarks` are **short English summaries** (median ~8 words), a different distribution
+from the raw voice-note transcripts the model was trained on. The 34-label accuracy numbers below do
+**not** transfer to this data until it is re-labelled and the model retrained — see
+`reports/app_evaluation.md`. On real data the system currently sends ~50% of visits to human review.
+
+## AI-label the real visits (clears the review backlog)
+`scripts/ai_label.py` has Claude read each visit summary and assign one of the 10 segments, so every
+visit gets a confident label instead of a review queue. Uses the Message Batches API (~50% cheaper).
+```bash
+export ANTHROPIC_API_KEY=...
+.venv/bin/python scripts/ai_label.py --dry-run --limit 50   # cost estimate, submits nothing
+.venv/bin/python scripts/ai_label.py --review-only          # label the ~50% review backlog first
+.venv/bin/python scripts/ai_label.py --all                  # label every visit without a human label
+.venv/bin/python scripts/ai_label.py --collect <batch_id>   # resume a submitted batch
+```
+Rules that keep it honest and safe:
+* AI labels are written with labeller `ai:<model>`; a **human label always beats an AI label**
+  (`db.latest_label`), so a supervisor's correction is never overwritten by a later AI pass.
+* AI-decided visits show `decided_by: "ai"` (never "human") — provenance is never disguised.
+* `scripts/evaluate.py` scores only the CSV gold set, so AI labels never flatter the accuracy number.
+  To *train* on them (distillation on the real distribution), run `scripts/train.py --with-db-labels`.
+Default model is `VISIT_INTEL_AI_MODEL` (claude-opus-5-5); `--model claude-sonnet-5-5` / `claude-haiku-5-5`
+cut cost. Rough batch cost for ~25k visits: Opus ~$16, Sonnet ~$8, Haiku ~$0.40.
+
 ## Measure
 ```bash
 .venv/bin/python -m pytest -q                      # unit + API tests

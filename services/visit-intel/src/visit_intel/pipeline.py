@@ -74,6 +74,9 @@ def decide(human_label: dict | None, rule: tuple[str, float], kw: dict, ml: tupl
         return seg, conf, by, review, {"step": step, "votes": {k: {"segment": s, "confidence": round(c, 3)} for k, (s, c) in votes.items()}}
 
     if human_label:
+        if str(human_label.get("labeller") or "").startswith("ai:"):
+            return out(human_label["segment"], config.AI_LABEL_CONFIDENCE, "ai", False,
+                       "Set by AI from the visit summary (not yet confirmed by a person); a supervisor can change it.")
         return out(human_label["segment"], 1.0, "human", False, "A reviewer set this group; a human label always wins.")
     if rule_conf >= config.RULES_CONFIDENT:
         return out(rule_seg, rule_conf, "rules", False,

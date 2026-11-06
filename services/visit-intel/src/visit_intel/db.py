@@ -174,8 +174,14 @@ def init_db() -> None:
 
 
 def latest_label(session: Session, visit_key: str) -> dict | None:
-    row = session.scalars(select(Label).where(Label.visit_key == visit_key).order_by(Label.id.desc()).limit(1)).first()
-    return {"segment": row.segment, "urgency": row.urgency, "labeller": row.labeller} if row else None
+    """The label that decides this visit. A human label always wins over an AI label
+    (labeller prefixed "ai:"), however recent the AI one is; within the same kind, the
+    most recent wins. So a supervisor's correction is never overwritten by a later AI pass."""
+    rows = session.scalars(select(Label).where(Label.visit_key == visit_key).order_by(Label.id.desc())).all()
+    if not rows:
+        return None
+    row = next((r for r in rows if not (r.labeller or "").startswith("ai:")), rows[0])
+    return {"segment": row.segment, "urgency": row.urgency, "labeller": row.labeller}
 
 
 def visit_dict(v: Visit) -> dict:
