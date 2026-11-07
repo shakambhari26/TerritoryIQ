@@ -37,7 +37,9 @@ export type Fetched<T> =
   | { ok: true; data: T }
   | { ok: false; kind: "not-configured" | "unreachable" | "upstream"; message: string };
 
-const TIMEOUT_MS = 10_000;
+// Reads are cached and normally return in ~1s, but the first (cold) dashboard read after a deploy or a
+// data change recomputes over every visit and can take ~10-15s at real volume; 30s leaves headroom.
+const TIMEOUT_MS = 30_000;
 // A chat question may take several AI tool calls; most answer locally in milliseconds.
 const ASK_TIMEOUT_MS = 60_000;
 
