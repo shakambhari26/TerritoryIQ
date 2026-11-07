@@ -67,6 +67,20 @@ import type { BBox, GlobeOverlay, OverlayBlock, OverlayDistrict, Phase, UnitStat
 
 export type FeatureRef = { kind: "state" | "district" | "block"; id: string };
 
+/**
+ * How one outline is painted while a segment or a "colour by" is active (features/globe/segments.ts builds them).
+ * Keyed `${kind}:${id}`. An outline with no entry keeps its provisional-link style from styles.ts.
+ */
+export interface FeaturePaint {
+  fill: string;
+  /** The fill opacity once revealed, before hover and selection emphasis. */
+  fillOpacity: number;
+  /** Multiplies the edge opacity: below 1 for outlines outside the segment. */
+  edgeScale: number;
+  /** Outside the segment: its name label is not shown. */
+  muted: boolean;
+}
+
 export interface RendererEvents {
   onPhase(phase: Phase): void;
   onArrive(kind: FlightKind): void;
@@ -117,6 +131,13 @@ interface FeatureObject {
   edgeMaterial: LineBasicMaterial;
   edgeVertexCount: number;
   highlightGeometry: LineSegmentsGeometry | null;
+  /** Paint the feature is easing towards (segments.ts), and how far it has got. */
+  colourTarget: Color;
+  opacityTarget: number;
+  opacityNow: number;
+  edgeScaleTarget: number;
+  edgeScaleNow: number;
+  muted: boolean;
 }
 
 interface Layer {
@@ -188,6 +209,8 @@ export class GlobeRenderer {
 
   /** The validated, joined outlines. Null until the outline file has loaded and passed validation. */
   private overlay: GlobeOverlay | null = null;
+  /** Segment paint, keyed `${kind}:${id}`; null for the plain provisional-link colours. */
+  private paint: ReadonlyMap<string, FeaturePaint> | null = null;
   private readonly events: RendererEvents;
   private readonly host: HTMLElement;
   private raf = 0;
@@ -558,9 +581,41 @@ export class GlobeRenderer {
       edgeMaterial,
       edgeVertexCount: edgePositions.length / 3,
       highlightGeometry: null,
+      colourTarget: new Color(style.fill),
+      opacityTarget: style.fillOpacity,
+      opacityNow: style.fillOpacity,
+      edgeScaleTarget: 1,
+      edgeScaleNow: 1,
+      muted: false,
     };
     this.featureById.set(`${ref.kind}:${ref.id}`, feature);
+    // A feature built while a segment is active starts in its segment paint, without easing in from the default.
+    this.applyPaint(feature, true);
     return feature;
+  }
+
+  /** Points a feature at its segment paint (or back at its style). `snap` skips the easing. */
+  private applyPaint(feature: FeatureObject, snap = false): void {
+    const paint = this.paint?.get(`${feature.ref.kind}:${feature.ref.id}`);
+    feature.colourTarget.set(paint?.fill ?? feature.style.fill);
+    feature.opacityTarget = paint?.fillOpacity ?? feature.style.fillOpacity;
+    feature.edgeScaleTarget = paint?.edgeScale ?? 1;
+    feature.muted = paint?.muted ?? false;
+    if (snap || this.reducedMotionNow()) {
+      feature.fillMaterial.color.copy(feature.colourTarget);
+      feature.opacityNow = feature.opacityTarget;
+      feature.edgeScaleNow = feature.edgeScaleTarget;
+    }
+  }
+
+  /**
+   * Repaints the outlines for a segment: colours, fades the ones outside it and hides their labels. The change eases
+   * in over a fraction of a second; null returns every outline to its provisional-link colour.
+   */
+  setPaint(paint: ReadonlyMap<string, FeaturePaint> | null): void {
+    this.paint = paint;
+    for (const feature of this.featureById.values()) this.applyPaint(feature);
+    this.dirty = true;
   }
 
   private fillLayer(layer: Layer, items: Array<{ ref: FeatureRef; item: OverlayDistrict | OverlayBlock }>): void {
@@ -915,6 +970,7 @@ export class GlobeRenderer {
         layer.dim = Math.abs(delta) < 0.01 ? layer.dimTarget : layer.dim + delta * Math.min(1, dt * 5);
         active = true;
       }
+      if (this.easePaint(layer, dt)) active = true;
       if (layer.progress !== layer.target || layer.elapsed < 1e8) {
         const duration = layer.target === 1 ? REVEAL_SECONDS : HIDE_SECONDS;
         layer.elapsed += dt;
@@ -933,6 +989,29 @@ export class GlobeRenderer {
     return active;
   }
 
+  /** Eases each feature towards its segment paint. True while anything is still moving. */
+  private easePaint(layer: Layer, dt: number): boolean {
+    let moving = false;
+    const k = Math.min(1, dt * 7);
+    for (const f of layer.features) {
+      const colour = f.fillMaterial.color;
+      const target = f.colourTarget;
+      if (Math.abs(colour.r - target.r) + Math.abs(colour.g - target.g) + Math.abs(colour.b - target.b) > 0.004) {
+        colour.lerp(target, k);
+        moving = true;
+      } else if (!colour.equals(target)) colour.copy(target);
+      if (Math.abs(f.opacityNow - f.opacityTarget) > 0.003) {
+        f.opacityNow += (f.opacityTarget - f.opacityNow) * k;
+        moving = true;
+      } else f.opacityNow = f.opacityTarget;
+      if (Math.abs(f.edgeScaleNow - f.edgeScaleTarget) > 0.003) {
+        f.edgeScaleNow += (f.edgeScaleTarget - f.edgeScaleNow) * k;
+        moving = true;
+      } else f.edgeScaleNow = f.edgeScaleTarget;
+    }
+    return moving;
+  }
+
   private paintLayer(layer: Layer): void {
     for (const feature of layer.features) {
       // Per-feature progress with its stagger: it starts later in the reveal and finishes by the end.
@@ -941,8 +1020,8 @@ export class GlobeRenderer {
       const isSelected = sameRef(feature.ref, this.selected);
       const dim = layer.name === "districts" ? layer.dim : 1;
       const emphasis = isSelected ? 1.25 : sameRef(feature.ref, this.hovered) ? 1.18 : 1;
-      feature.fillMaterial.opacity = Math.min(0.95, feature.style.fillOpacity * local * dim * emphasis);
-      feature.edgeMaterial.opacity = Math.min(1, 0.85 * local * (layer.name === "districts" && dim < 1 ? 0.75 : 1));
+      feature.fillMaterial.opacity = Math.min(0.95, feature.opacityNow * local * dim * emphasis);
+      feature.edgeMaterial.opacity = Math.min(1, 0.85 * local * feature.edgeScaleNow * (layer.name === "districts" && dim < 1 ? 0.75 : 1));
       // Edges draw along their length; fills fade in behind them.
       const edgeProgress = layer.target === 1 ? smootherstep((layer.progress - delay) / (0.6 * (1 - delay) + 1e-6)) : layer.progress;
       const segments = Math.floor((feature.edgeVertexCount / 2) * Math.min(1, edgeProgress));
@@ -986,7 +1065,7 @@ export class GlobeRenderer {
       const sx = (this.tmp.x * 0.5 + 0.5) * this.width;
       const sy = (-this.tmp.y * 0.5 + 0.5) * this.height;
       const inside = sx > 8 && sx < this.width - 8 && sy > 8 && sy < this.height - 8;
-      let visible = facing > 0.3 && inside && layer.progress > 0.55;
+      let visible = facing > 0.3 && inside && layer.progress > 0.55 && !label.feature.muted;
       if (visible) {
         const width = label.feature.name.length * 6.2 + 10;
         for (const [px, py, pw] of placed) {
