@@ -102,6 +102,12 @@ The sampler scores each visit by how much a label would teach the model (review 
 method disagreement) and stratifies by segment so rare segments still get examples. Imported labels are
 human labels, so they override the model and are never overwritten by a later AI pass.
 
+Then measure honestly on the real distribution — `scripts/evaluate.py` is leave-one-out on the 34 curated
+transcripts, which does **not** apply to the real summaries. `scripts/evaluate_real.py` runs leave-one-out
+over the imported real-data human labels instead (training each fold on the 34 seed + the other real labels,
+no leakage), and writes `reports/real_data_evaluation.md` — the accuracy and review-rate numbers that
+actually hold in production. Keyless; trains only in memory.
+
 ## Measure
 ```bash
 .venv/bin/python -m pytest -q                      # unit + API tests
