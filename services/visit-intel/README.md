@@ -108,6 +108,18 @@ over the imported real-data human labels instead (training each fold on the 34 s
 no leakage), and writes `reports/real_data_evaluation.md` — the accuracy and review-rate numbers that
 actually hold in production. Keyless; trains only in memory.
 
+### Shipped label set (1,020 real labels)
+`data/labels/claude_code_labels_v1.csv` holds 1,020 real-visit labels (`visit_id → segment`, no names or
+phones). On a held-out 20% test set, training on these lifted the app from **33% → 57% accuracy** and cut the
+review rate from **50% → 23%** vs the 34-label baseline. To rebuild the improved model anywhere (keyless):
+```bash
+python scripts/pull_elegant.py --start <from> --end <to> --ingest --no-phones   # get the transcripts into the DB
+python scripts/import_labels.py data/labels/claude_code_labels_v1.csv --labeller human:claude-code
+python scripts/train.py --with-db-labels                                        # rebuild models/segment_model.joblib
+```
+The labels are keyed on the Elegant `visit_id`, so they attach to the same visits after ingest. Add more labels
+over time with sample_to_label.py → import_labels.py to push accuracy further.
+
 ## Measure
 ```bash
 .venv/bin/python -m pytest -q                      # unit + API tests
