@@ -156,7 +156,7 @@ class CaseEvent(Base):
     at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now)
 
 
-engine = create_engine(config.DATABASE_URL, pool_pre_ping=True)
+engine = create_engine(config.DATABASE_URL, pool_pre_ping=True, pool_recycle=1800)
 SessionLocal = sessionmaker(engine, expire_on_commit=False)
 
 

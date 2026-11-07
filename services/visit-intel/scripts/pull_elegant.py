@@ -222,7 +222,7 @@ def main() -> None:
 
     if args.ingest:
         from visit_intel import config
-        from visit_intel.db import SessionLocal, init_db
+        from visit_intel.db import SessionLocal, engine, init_db
         from visit_intel.model import SegmentModel
         from visit_intel.service import ingest
         init_db()
@@ -230,12 +230,28 @@ def main() -> None:
         target = config.DATABASE_URL.split("@")[-1]
         log.info("Ingesting into: %s  (model: %s)", target, model.version if model else "rules-only")
         totals = {"received": 0, "stored": 0, "skipped_empty": 0, "needs_review": 0, "errored": 0}
-        BATCH = 500
+        # Small batches + retry-with-backoff + pool recycle: a remote DB (e.g. Supabase pooler) drops SSL
+        # connections under a long bulk load; without this one drop cascades into connection/port exhaustion
+        # and the whole run dies. Here a failed batch recycles the pool and retries instead of taking down the run.
+        BATCH = 200
         for i in range(0, len(rows), BATCH):
-            with SessionLocal() as s:
-                res = ingest(s, rows[i:i + BATCH], model)
-            for k in totals:
-                totals[k] += res.get(k, 0)
+            chunk = rows[i:i + BATCH]
+            for attempt in range(4):
+                try:
+                    with SessionLocal() as s:
+                        res = ingest(s, chunk, model)
+                    for k in totals:
+                        totals[k] += res.get(k, 0)
+                    break
+                except Exception as e:  # transient DB/connection failure: recycle pool and retry
+                    wait = 2 ** attempt
+                    log.warning("batch at %d failed (attempt %d/4): %s — recycling pool, retry in %ss",
+                                i, attempt + 1, str(e).splitlines()[0][:120], wait)
+                    engine.dispose()
+                    time.sleep(wait)
+            else:
+                log.error("batch at %d gave up after 4 attempts; continuing with the rest", i)
+                totals["errored"] += len(chunk)
             log.info("ingested %d/%d", min(i + BATCH, len(rows)), len(rows))
         stored = totals["stored"] or 1
         log.info("DONE %s", totals)

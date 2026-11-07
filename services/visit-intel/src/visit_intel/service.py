@@ -2,6 +2,9 @@
 from __future__ import annotations
 
 import logging
+import os
+import threading
+import time
 
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -49,6 +52,7 @@ def ingest(session: Session, raws: list[dict], model: SegmentModel | None) -> di
             logging.getLogger(__name__).exception("ingest: skipping a visit that failed to analyze")
             errored += 1
     session.commit()
+    invalidate_rows_cache()
     return {"received": len(raws), "stored": stored, "skipped_empty": skipped, "needs_review": review, "errored": errored}
 
 
@@ -59,10 +63,25 @@ def reanalyze(session: Session, model: SegmentModel | None, keys: list[str] | No
         _save(session, v.visit_key, analyze(visit_dict(v), model, latest_label(session, v.visit_key)))
         n += 1
     session.commit()
+    invalidate_rows_cache()
     return n
 
 
-def all_rows(session: Session, with_cases: bool = False) -> list[dict]:
+# Loading every visit + analysis is the heavy read behind the role/explore dashboards. It is identical
+# across viewers and only changes on ingest/reanalyze/label, so cache it in-process with a short TTL and
+# clear it whenever data changes. Without this, each dashboard load re-reads and re-deserializes the whole
+# table (seconds at tens of thousands of visits), which times the frontend out.
+_ROWS_TTL = float(os.environ.get("VISIT_INTEL_ROWS_TTL", "300"))
+_ROWS_CACHE: dict[bool, tuple[float, list[dict]]] = {}
+_ROWS_LOCK = threading.Lock()
+
+
+def invalidate_rows_cache() -> None:
+    with _ROWS_LOCK:
+        _ROWS_CACHE.clear()
+
+
+def _all_rows_uncached(session: Session, with_cases: bool) -> list[dict]:
     rows = session.execute(select(Visit, Analysis).join(Analysis, Analysis.visit_key == Visit.visit_key)).all()
     out = [{**visit_dict(v), "result": a.result} for v, a in rows]
     if with_cases:
@@ -70,3 +89,16 @@ def all_rows(session: Session, with_cases: bool = False) -> list[dict]:
         for r in out:
             r["case"] = state[r["visit_key"]]
     return out
+
+
+def all_rows(session: Session, with_cases: bool = False) -> list[dict]:
+    key = bool(with_cases)
+    now = time.monotonic()
+    with _ROWS_LOCK:
+        hit = _ROWS_CACHE.get(key)
+        if hit and now - hit[0] < _ROWS_TTL:
+            return hit[1]
+    rows = _all_rows_uncached(session, with_cases)
+    with _ROWS_LOCK:
+        _ROWS_CACHE[key] = (time.monotonic(), rows)
+    return rows
