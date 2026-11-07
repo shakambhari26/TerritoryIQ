@@ -7,3 +7,9 @@ reports/
 tests/
 experiments/
 .env*
+
+# label working files (real names and visit notes)
+.batch*.csv
+.mylabels*.tsv
+.label_work*.csv
+.pool.db*
