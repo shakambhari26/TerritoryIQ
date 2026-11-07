@@ -180,6 +180,8 @@ export const CUSTOMER_LABEL: Record<CustomerFacet, string> = {
   Retailer: "Retailer",
   Mason: "Mason",
   IHB: "IHB",
+  Engineer: "Engineer",
+  Contractor: "Contractor",
   none: "None placed",
 };
 

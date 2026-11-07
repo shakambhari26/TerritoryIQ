@@ -13,7 +13,7 @@
  * phone numbers are never part of the app.
  */
 
-export const CUSTOMER_TYPES = ["Dealer", "Retailer", "Mason", "IHB"] as const;
+export const CUSTOMER_TYPES = ["Dealer", "Retailer", "Mason", "IHB", "Engineer", "Contractor"] as const;
 export type CustomerType = (typeof CUSTOMER_TYPES)[number];
 
 export const CONFIDENCES = ["good", "medium", "low"] as const;

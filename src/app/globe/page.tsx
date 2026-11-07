@@ -34,15 +34,15 @@ export default function GlobePage() {
       <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
         <div className="flex items-center gap-3">
           <h1 className="text-xl font-semibold tracking-tight text-ink">Globe</h1>
-          <Badge tone="warning">Local prototype · not for deployment</Badge>
+          <Badge tone="warning">OpenStreetMap outlines</Badge>
         </div>
         <p
           className="min-w-[18rem] flex-1 rounded-xl bg-warn-soft px-4 py-2 text-xs leading-5 text-warn-ink"
           data-testid="globe-provisional-notice"
         >
-          <strong className="font-semibold">Provisional outlines.</strong> They are unofficial OpenStreetMap geometry, not official boundaries, and no
-          authority has reviewed or approved them. Colours show a provisional, unreviewed link to a named representative only. This prototype runs on this
-          machine and is not approved for deployment.
+          <strong className="font-semibold">Real visit coverage.</strong> A block is coloured when a rep&rsquo;s GPS placed at least one real sales visit
+          inside it over the last 30 days; select a block for the real customers visited there. Boundary outlines are OpenStreetMap geometry (unofficial,
+          for orientation only).
         </p>
       </div>
       <div className="mt-3">
