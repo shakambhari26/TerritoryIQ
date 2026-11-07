@@ -108,10 +108,18 @@ over the imported real-data human labels instead (training each fold on the 34 s
 no leakage), and writes `reports/real_data_evaluation.md` — the accuracy and review-rate numbers that
 actually hold in production. Keyless; trains only in memory.
 
-### Shipped label set (1,020 real labels)
-`data/labels/claude_code_labels_v1.csv` holds 1,020 real-visit labels (`visit_id → segment`, no names or
-phones). On a held-out 20% test set, training on these lifted the app from **33% → 57% accuracy** and cut the
-review rate from **50% → 23%** vs the 34-label baseline. To rebuild the improved model anywhere (keyless):
+### Shipped label set (2,520 real labels)
+`data/labels/claude_code_labels_v1.csv` holds 2,520 real-visit labels (`visit_id → segment`, no names or
+phones). On a held-out 20% test set, training on these lifts the app vs the 34-label baseline — and the gain is
+still climbing with volume (diminishing after ~1k):
+
+| Labels | Accuracy | Review rate |
+|---|---|---|
+| 34 (baseline) | ~31% | ~55% |
+| 1,020 | 57% | 23% |
+| 2,520 | **67%** | **14%** |
+
+Model cross-val ≈ 75%. To rebuild the improved model anywhere (keyless):
 ```bash
 python scripts/pull_elegant.py --start <from> --end <to> --ingest --no-phones   # get the transcripts into the DB
 python scripts/import_labels.py data/labels/claude_code_labels_v1.csv --labeller human:claude-code
