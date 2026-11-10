@@ -37,6 +37,12 @@ from build_overlay import decode_rings, layer_to_lnglat, point_in_rings_even_odd
 # Map the API visit category to the globe's customer types (widened in customers.ts to keep real ones).
 TYPE = {"DEALER": "Dealer", "RETAILER": "Retailer", "MASON": "Mason", "IHB": "IHB",
         "ENGINEER": "Engineer", "CONTRACTOR": "Contractor"}
+# Globe customer type -> market dashboard partner/visit key.
+PARTNER_KEY = {"Dealer": "dealers", "Retailer": "retailers", "Engineer": "engineers",
+               "Contractor": "contractors", "Mason": "masons", "IHB": "ihb"}
+VISIT_TYPES = ("dealers", "retailers", "engineers", "contractors", "masons", "ihb")
+LEAD_STATUSES = ("highlyPositive", "positive", "neutral", "negative")
+TODAY = date.today()
 
 
 def category(raw_cat: str) -> str:
@@ -141,6 +147,9 @@ def main() -> None:
     blocks: dict[str, list[dict]] = defaultdict(list)
     report = {"placed": 0, "no_gps": 0, "outside_blocks": 0, "by_confidence": defaultdict(int)}
     seen: dict[str, set] = defaultdict(set)  # dedupe customers per block
+    # market aggregates (every placed visit, not deduped): per block, visit counts by period + reps with last-seen days
+    mkt_visits: dict[str, dict[int, dict]] = defaultdict(lambda: {7: defaultdict(int), 30: defaultdict(int), 90: defaultdict(int)})
+    mkt_reps: dict[str, dict[str, int]] = defaultdict(dict)
     for v in visits:
         pts = gps.get((v["rep"], v["at"].date().isoformat()))
         if not pts:
@@ -159,6 +168,17 @@ def main() -> None:
         if bid is None:
             report["outside_blocks"] += 1
             continue
+        # market: count this visit (not deduped) toward the period buckets + record the rep's last-seen
+        days_ago = (TODAY - v["at"].date()).days
+        vt = PARTNER_KEY.get(category(v["cat"]))
+        if vt in VISIT_TYPES:
+            for P in (7, 30, 90):
+                if 0 <= days_ago < P:
+                    mkt_visits[bid][P][vt] += 1
+        prev = mkt_reps[bid].get(v["rep"])
+        if prev is None or days_ago < prev:
+            mkt_reps[bid][v["rep"]] = days_ago
+
         dedup = (v["firm"].lower(), v["person"].lower())
         if dedup in seen[bid]:
             continue
@@ -203,6 +223,44 @@ def main() -> None:
     report["blocks_with_visits"] = len(blocks)
     report["total_blocks"] = len(blocks_geom)
     (GEN / "globe-placement.json").write_text(json.dumps(report, indent=2))
+
+    # ---- real market dashboard data (replaces features/market/sample-data.ts) ----
+    overlay = json.loads((GEN / "globe-overlay.json").read_text())
+    ob = overlay["blocks"]
+    district_of = {b["id"]: b.get("districtId") for b in (ob if isinstance(ob, list) else ob.values())}
+
+    def partners_for(bid: str) -> dict:
+        p = {k: 0 for k in ("dealers", "retailers", "engineers", "contractors", "masons", "ihb", "mo")}
+        for r in blocks.get(bid, []):
+            key = PARTNER_KEY.get(r["type"])
+            if key:
+                p[key] += 1
+        p["mo"] = len(mkt_reps.get(bid, {}))
+        return p
+
+    market_blocks = {}
+    for bid in all_block_ids:
+        mv = mkt_visits.get(bid)
+        visits = {str(P): {k: int(mv[P].get(k, 0)) for k in VISIT_TYPES} if mv else {k: 0 for k in VISIT_TYPES} for P in (7, 30, 90)}
+        leads = {str(P): {k: 0 for k in LEAD_STATUSES} for P in (7, 30, 90)}  # IHB lead status not ingested yet
+        market_blocks[bid] = {"id": bid, "districtId": district_of.get(bid),
+                              "partners": partners_for(bid), "visits": visits, "leads": leads}
+
+    rep_blocks: dict[str, set] = defaultdict(set)
+    rep_lastago: dict[str, int] = {}
+    for bid, reps in mkt_reps.items():
+        for rep, ago in reps.items():
+            rep_blocks[rep].add(bid)
+            rep_lastago[rep] = min(rep_lastago.get(rep, ago), ago)
+    people = []
+    for i, rep in enumerate(sorted(rep_blocks)):
+        bids = sorted(rep_blocks[rep])
+        people.append({"id": f"so-{i}", "name": rep.title(), "role": "Sales Officer",
+                       "districtId": district_of.get(bids[0]) if bids else None,
+                       "blockIds": bids, "lastVisitDaysAgo": int(rep_lastago.get(rep, 0))})
+    (GEN / "market.json").write_text(json.dumps({"blocks": market_blocks, "people": people}))
+    print(f"Wrote data/generated/market.json ({len(people)} real reps, "
+          f"{sum(1 for b in market_blocks.values() if any(b['partners'].values()))} blocks with partners)")
     print("\nPlacement report:")
     print(json.dumps(report, indent=2))
     print(f"\nWrote data/generated/customers.json ({total} real customers in {len(blocks)} blocks)")

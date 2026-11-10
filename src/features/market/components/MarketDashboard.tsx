@@ -1,9 +1,10 @@
 "use client";
 
-import { useId, useMemo, useState, type ReactNode } from "react";
+import { useEffect, useId, useMemo, useState, type ReactNode } from "react";
 import { cn } from "@/lib/cn";
 import {
   buildMarketSample,
+  deserialiseMarket,
   PERIODS,
   summarise,
   type BlockRef,
@@ -11,6 +12,7 @@ import {
   type PeriodDays,
   type PlaceRef,
   type Scope,
+  type SerializedMarket,
   type VisitType,
 } from "../sample-data";
 
@@ -105,7 +107,17 @@ export interface MarketDashboardProps {
 }
 
 export function MarketDashboard({ blocks, districts, stateName, level, districtId, blockId, onSelectDistrict }: MarketDashboardProps) {
-  const market = useMemo(() => buildMarketSample(blocks, districts), [blocks, districts]);
+  // Prefer the server's real market file (GPS-placed visits); fall back to the sample generator until it loads.
+  const [real, setReal] = useState<SerializedMarket | null>(null);
+  useEffect(() => {
+    let on = true;
+    fetch("/api/globe/market")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => { if (on && d && d.blocks) setReal(d as SerializedMarket); })
+      .catch(() => {});
+    return () => { on = false; };
+  }, []);
+  const market = useMemo(() => (real ? deserialiseMarket(real) : buildMarketSample(blocks, districts)), [real, blocks, districts]);
   const [leadDays, setLeadDays] = useState<PeriodDays>(7);
   const [visitDays, setVisitDays] = useState<PeriodDays>(7);
   const [teamDays, setTeamDays] = useState<PeriodDays>(7);
@@ -137,9 +149,15 @@ export function MarketDashboard({ blocks, districts, stateName, level, districtI
             <strong className="font-semibold text-ink">{place}</strong> · {counts.blockCount === 1 ? "one block" : `${fmt.format(counts.blockCount)} blocks`}. Follows the place selected on the globe; choose a district or block to narrow it.
           </p>
         </div>
-        <span className="rounded-full border border-dashed border-amber-500 bg-amber-50 px-3 py-1 text-xs font-semibold text-amber-800" data-testid="market-sample-badge">
-          Sample data · not real figures or people
-        </span>
+        {real ? (
+          <span className="rounded-full border border-dashed border-emerald-500 bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-800" data-testid="market-sample-badge">
+            Real data · GPS-placed visits (last 30 days)
+          </span>
+        ) : (
+          <span className="rounded-full border border-dashed border-amber-500 bg-amber-50 px-3 py-1 text-xs font-semibold text-amber-800" data-testid="market-sample-badge">
+            Sample data · not real figures or people
+          </span>
+        )}
       </div>
 
       <div className="grid gap-4 lg:grid-cols-[minmax(0,1.5fr)_minmax(0,2.5fr)_minmax(0,1fr)_minmax(0,1fr)]">

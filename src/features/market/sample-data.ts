@@ -248,3 +248,14 @@ export function summarise(market: MarketSample, scope: Scope, days: PeriodDays):
   team.sort((a, b) => (a.person.role === b.person.role ? b.visits - a.visits : a.person.role === "ASM" ? -1 : 1));
   return { blockCount, partners, visits, leads, team };
 }
+
+/** The server-generated real market file (data/generated/market.json): blocks as a plain object, not a Map. */
+export interface SerializedMarket {
+  blocks: Record<string, BlockSample>;
+  people: SalesPerson[];
+}
+
+/** Turn the real market file into a MarketSample the dashboard can summarise, replacing buildMarketSample. */
+export function deserialiseMarket(data: SerializedMarket): MarketSample {
+  return { blocks: new Map(Object.entries(data.blocks)), people: data.people };
+}
