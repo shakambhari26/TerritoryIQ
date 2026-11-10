@@ -1,7 +1,8 @@
 """Visit Intelligence API.
 
 Run locally:  VISIT_INTEL_API_KEY=dev-key uvicorn visit_intel.api:app --app-dir src --reload
-Docs:         http://127.0.0.1:8000/docs
+Docs:         http://127.0.0.1:8000/docs is the public Prediction API only (predict_api.py). The full internal contract
+              is GET /v1/internal/openapi.json with the internal key.
 """
 from __future__ import annotations
 
@@ -9,18 +10,22 @@ import csv
 import hmac
 import io
 import logging
+import os
 import time
 from collections import Counter
 from contextlib import asynccontextmanager
 from typing import Any, Literal
 
 from fastapi import Depends, FastAPI, File, Header, HTTPException, Query, UploadFile
+from fastapi.openapi.docs import get_swagger_ui_html
+from fastapi.openapi.utils import get_openapi
+from fastapi.responses import HTMLResponse
 from pydantic import BaseModel, Field
 from sqlalchemy import select
 
 from . import ask as asker
 from . import rag
-from . import cases, config, explain, insights, keywords, learn, messaging
+from . import cases, config, explain, insights, keywords, learn, messaging, predict_api
 from .db import Analysis, ChatLog, Keyword, Label, Message, SessionLocal, Visit, init_db, visit_dict
 from .model import SegmentModel
 from .pipeline import normalize
@@ -37,11 +42,21 @@ async def lifespan(_: FastAPI):
         raise RuntimeError("Set VISIT_INTEL_API_KEY before starting the API.")
     init_db()
     STATE["model"] = SegmentModel.load(config.MODEL_PATH)
+    if STATE["model"] is None and os.environ.get("VISIT_INTEL_REQUIRE_MODEL") == "1":
+        # Set in production: a deploy that lost the model file fails its health check and the running one stays live,
+        # instead of the service quietly switching to rules-only answers.
+        raise RuntimeError(f"VISIT_INTEL_REQUIRE_MODEL=1 but no trained model at {config.MODEL_PATH}.")
     log.warning("Model: %s", STATE["model"].version if STATE["model"] else "none (rules only)")
+    # Same process, same model object (also after POST /v1/reanalyze reloads it); its own keys, never the ones above.
+    predict_api.enable_in_service(lambda: STATE["model"], reserved=(config.API_KEY, config.INGEST_KEY))
     yield
 
 
-app = FastAPI(title="Visit Intelligence", version="1.0.0", lifespan=lifespan)
+# /docs and /openapi.json are public, so they describe only the public Prediction API (see public_openapi below).
+app = FastAPI(title="Visit Intelligence", version="1.0.0", lifespan=lifespan,
+              docs_url=None, redoc_url=None, openapi_url=None)
+app.add_middleware(predict_api.BodyLimit)
+app.include_router(predict_api.router)
 
 
 def require_key(x_api_key: str = Header(default="")) -> None:
@@ -155,9 +170,33 @@ def _learn_and_refresh(s) -> dict:
     return result
 
 
-@app.get("/health")
+@app.get("/health", summary="Liveness and the version of the model in use (no key needed)")
 def health() -> dict:
     return {"ok": True, "model": STATE["model"].version if STATE["model"] else "rules-only"}
+
+
+PUBLIC_PATHS = ("/health", "/v1/taxonomy", predict_api.PREFIX, predict_api.PREFIX + "/batch")
+_PUBLIC_SPEC: dict[str, Any] = {}
+
+
+@app.get("/openapi.json", include_in_schema=False)
+def public_openapi() -> dict:
+    """The public contract: the prediction routes plus /health and /v1/taxonomy. Internal routes are not listed."""
+    if not _PUBLIC_SPEC:
+        _PUBLIC_SPEC.update(get_openapi(title=predict_api.TITLE, version=predict_api.API_VERSION + ".0.0",
+                                        description=predict_api.DESCRIPTION,
+                                        routes=[r for r in app.routes if getattr(r, "path", None) in PUBLIC_PATHS]))
+    return _PUBLIC_SPEC
+
+
+@app.get("/docs", include_in_schema=False)
+def public_docs() -> HTMLResponse:
+    return get_swagger_ui_html(openapi_url="/openapi.json", title=predict_api.TITLE)
+
+
+@app.get("/v1/internal/openapi.json", include_in_schema=False, dependencies=[Depends(require_key)])
+def internal_openapi() -> dict:
+    return app.openapi()
 
 
 @app.post("/v1/visits/segment", dependencies=[Depends(require_ingest_key)])
@@ -282,11 +321,9 @@ def ask(body: AskIn) -> dict:
     return asker.ask(body.question.strip(), body.role, rows, body.days, _model_meta())
 
 
-@app.get("/v1/taxonomy")
+@app.get("/v1/taxonomy", summary="Every segment, urgency level (with its SLA) and flag the API can return (no key needed)")
 def taxonomy() -> dict:
-    return {"segments": {c: {"name": n, "emoji": e, "group": g, "meaning": m} for c, (n, e, g, m) in SEGMENTS.items()},
-            "urgency": {k: {"name": n, "sla": s} for k, (n, s) in URGENCY.items()},
-            "flags": {f: {"name": n, "parent": FLAG_PARENT.get(f)} for f, n in FLAGS.items()}}
+    return predict_api.taxonomy_body()
 
 
 @app.get("/v1/methodology")
