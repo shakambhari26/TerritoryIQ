@@ -8,6 +8,7 @@ import { LANDED_TEXT, type CardContext } from "@/features/visit-insights/compone
 import { ChatBoard } from "@/features/visit-insights/components/ChatBoard";
 import { AdvancedMenu, PeriodPicker, RolePicker, WordsToggle } from "@/features/visit-insights/components/Controls";
 import { Inbox, laneOf } from "@/features/visit-insights/components/Inbox";
+import { InsightsLoader } from "@/features/visit-insights/components/InsightsLoader";
 import { Recommendations } from "@/features/visit-insights/components/Recommendations";
 import { AnalystView, DataView, MdView, SupervisorView, VpView } from "@/features/visit-insights/components/RoleViews";
 import { AreaTiles } from "@/features/visit-insights/components/AreaTiles";
@@ -60,7 +61,7 @@ export default function VisitInsightsPage({ searchParams }: { searchParams: Sear
         }
       />
       <div className="mt-5 grid grid-cols-1 gap-5">
-        <Suspense fallback={<Card className="p-6 text-sm text-ink-muted">Loading visit insights…</Card>}>
+        <Suspense fallback={<InsightsLoader label="Loading visit insights" />}>
           <InsightsBody searchParams={searchParams} />
         </Suspense>
       </div>

@@ -5,6 +5,7 @@ import { Card } from "@/components/ui/Card";
 import { getMethodology } from "@/features/visit-insights/client.server";
 import { SubNav } from "@/features/visit-insights/components/Messaging";
 import { Section } from "@/features/visit-insights/components/parts";
+import { InsightsLoader } from "@/features/visit-insights/components/InsightsLoader";
 
 export const metadata: Metadata = { title: "How the AI scores · Visit Insights" };
 
@@ -17,7 +18,7 @@ export default function HowItWorksPage() {
       <PageHeader title="How the AI scores" description="Every number on Visit Insights, what it means, and exactly how it is calculated." />
       <div className="mt-5 grid gap-5">
         <SubNav current="how" />
-        <Suspense fallback={<Card className="p-6 text-sm text-ink-muted">Loading…</Card>}>
+        <Suspense fallback={<InsightsLoader label="Loading" />}>
           <Body />
         </Suspense>
       </div>

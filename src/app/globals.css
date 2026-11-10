@@ -134,8 +134,38 @@ body {
   animation: pin-in 220ms ease-out both;
 }
 
+/* Loader: a sheen that travels across the progress track, and a soft fade for rotating lines. */
+@keyframes loader-sheen {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(300%);
+  }
+}
+.loader-sheen {
+  animation: loader-sheen 1.5s ease-in-out infinite;
+}
+@keyframes loader-rise {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.loader-rise {
+  animation: loader-rise 420ms ease-out both;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .pin-in {
+    animation: none;
+  }
+  .loader-sheen,
+  .loader-rise {
     animation: none;
   }
   *,

@@ -7,6 +7,7 @@ import { getContacts, getMessages, getMessagingStatus, getTaxonomy, getVisit, po
 import { ExplanationView } from "@/features/visit-insights/components/ExplanationView";
 import { DraftAnalysis, DraftForm, MessageThread, Notice, SendForm, SubNav } from "@/features/visit-insights/components/Messaging";
 import { RelabelForm, Section, UrgencyPill } from "@/features/visit-insights/components/parts";
+import { InsightsLoader } from "@/features/visit-insights/components/InsightsLoader";
 import { LANGUAGES } from "@/features/visit-insights/types";
 
 export const metadata: Metadata = { title: "Visit · Visit Insights" };
@@ -27,7 +28,7 @@ export default function VisitPage({ searchParams }: { searchParams: SearchParams
       <PageHeader title="Visit" description="Why the AI scored this visit, and what head office asks the rep to do next." />
       <div className="mt-5 grid gap-5">
         <SubNav current="insights" />
-        <Suspense fallback={<Card className="p-6 text-sm text-ink-muted">Loading the visit…</Card>}>
+        <Suspense fallback={<InsightsLoader label="Loading the visit" />}>
           <Body searchParams={searchParams} />
         </Suspense>
       </div>

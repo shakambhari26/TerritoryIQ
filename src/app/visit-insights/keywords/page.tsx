@@ -6,6 +6,7 @@ import { Card } from "@/components/ui/Card";
 import { getKeywords, testKeywords } from "@/features/visit-insights/client.server";
 import { Notice, SubNav } from "@/features/visit-insights/components/Messaging";
 import { DataTable, Section } from "@/features/visit-insights/components/parts";
+import { InsightsLoader } from "@/features/visit-insights/components/InsightsLoader";
 import type { KeywordList, KeywordScore } from "@/features/visit-insights/types";
 
 export const metadata: Metadata = { title: "Keyword database · Visit Insights" };
@@ -35,7 +36,7 @@ export default function KeywordsPage({ searchParams }: { searchParams: SearchPar
       <PageHeader title="Keyword database" description="The words the AI listens for in every visit note, in English, Bengali and Hindi, and how much each one counts." />
       <div className="mt-5 grid gap-5">
         <SubNav current="keywords" />
-        <Suspense fallback={<Card className="p-6 text-sm text-ink-muted">Loading keywords…</Card>}>
+        <Suspense fallback={<InsightsLoader label="Loading keywords" />}>
           <Body searchParams={searchParams} />
         </Suspense>
       </div>

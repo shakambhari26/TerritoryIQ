@@ -5,6 +5,7 @@ import { Card } from "@/components/ui/Card";
 import { getContacts, getMessages, getMessagingStatus, postDraft } from "@/features/visit-insights/client.server";
 import { ContactsTable, DraftAnalysis, DraftForm, MessageThread, Notice, SendForm, SubNav } from "@/features/visit-insights/components/Messaging";
 import { Empty, Section } from "@/features/visit-insights/components/parts";
+import { InsightsLoader } from "@/features/visit-insights/components/InsightsLoader";
 import { LANGUAGES, type SentMessage } from "@/features/visit-insights/types";
 
 export const metadata: Metadata = { title: "Messages · Visit Insights" };
@@ -30,7 +31,7 @@ export default function MessagesPage({ searchParams }: { searchParams: SearchPar
       <PageHeader title="Messages to reps" description="Suggestions and to-dos from head office, by in-app, WhatsApp or email, and the reps' replies." />
       <div className="mt-5 grid gap-5">
         <SubNav current="messages" />
-        <Suspense fallback={<Card className="p-6 text-sm text-ink-muted">Loading messages…</Card>}>
+        <Suspense fallback={<InsightsLoader label="Loading messages" />}>
           <Body searchParams={searchParams} />
         </Suspense>
       </div>
