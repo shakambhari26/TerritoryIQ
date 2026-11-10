@@ -14,3 +14,9 @@ docs/*.docx
 .DS_Store
 .pytest_cache/
 tests/.test.db
+
+# label working files: hold real customer/rep names and visit notes
+.batch*.csv
+.mylabels*.tsv
+.label_work*.csv
+.pool.db-journal

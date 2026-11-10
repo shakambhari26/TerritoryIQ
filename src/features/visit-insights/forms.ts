@@ -129,3 +129,33 @@ export function parseNoteForm(body: string): { id: number; text: string } | null
 
 /** Valid reply-link token, for the public page's path segment. */
 export const isToken = (t: string) => TOKEN.test(t);
+
+/**
+ * Where to go after a card's form: a path on the Visit Insights pages and its query, nothing else (no other host, no
+ * `//`, no backslash, no fragment). Anything else is refused and the caller falls back to its fixed page.
+ */
+export function safeReturn(value: string | null | undefined): string | null {
+  if (!value || value.length > 1500) return null;
+  return /^\/visit-insights(?:\/[a-z-]+)?(?:\?[^#\s\\]*)?$/.test(value) ? value : null;
+}
+
+export const returnToOf = (body: string) => safeReturn(read(body)?.get("return_to"));
+
+export interface CaseSubmission {
+  visit_key: string;
+  action: "seen" | "resolve" | "reopen" | "note";
+  note: string;
+  return_to: string | null;
+}
+
+/** Head office marks a visit seen, resolves or reopens it, or adds a note. A note needs text; the others do not. */
+export function parseCaseForm(body: string): CaseSubmission | null {
+  const f = read(body);
+  if (!f) return null;
+  const key = f.get("visit_key") ?? "";
+  const action = f.get("action") ?? "";
+  const note = text(f.get("note"), 2000);
+  if (!VISIT_KEY.test(key) || !["seen", "resolve", "reopen", "note"].includes(action)) return null;
+  if (action === "note" && !note) return null;
+  return { visit_key: key, action: action as CaseSubmission["action"], note, return_to: safeReturn(f.get("return_to")) };
+}

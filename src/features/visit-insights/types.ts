@@ -46,6 +46,50 @@ export interface VisitBrief {
   transcript: string;
   /** One-sentence reason for the group and urgency (explain.py in the service). */
   why: string | null;
+  /** Head office's follow-through (cases.py in the service). Absent only on an older service. */
+  case?: CaseState | null;
+  /** Which words decided it, as non-overlapping spans of `transcript` (highlight.py in the service). */
+  highlights?: Highlight[];
+  /** The rep's own label: the note opened with "Headline: ORDER" (headline.py; the reps' guide in docs/rep-guide). */
+  rep_headline?: { word: string; segment: string } | null;
+}
+
+export interface Highlight {
+  start: number;
+  end: number;
+  kind: "decisive" | "other" | "flag" | "negated" | "ml";
+  target: string;
+  weight: number;
+  by: "keywords" | "ml";
+  negated_by: string | null;
+}
+
+export const CASE_STATUSES = ["new", "seen", "waiting", "resolved"] as const;
+export type CaseStatus = (typeof CASE_STATUSES)[number];
+export const CASE_ACTIONS = ["seen", "resolve", "reopen", "note"] as const;
+export type CaseAction = (typeof CASE_ACTIONS)[number];
+
+export type CaseEventKind = "visit" | "seen" | "message" | "rep_read" | "rep_replied" | "note" | "rep_done" | "resolved" | "reopened";
+
+export interface CaseEvent {
+  kind: CaseEventKind;
+  at: string | null;
+  actor: string;
+  text: string;
+  todos?: number;
+  message_id?: number;
+}
+
+/** GET/POST /v1/cases/{key}. "waiting" is derived from the visit's messages; `rep_state` is the latest one's status. */
+export interface CaseState {
+  status: CaseStatus;
+  rep_state: "sent" | "read" | "replied" | "done" | null;
+  seen_at: string | null;
+  seen_by: string | null;
+  resolved_at: string | null;
+  resolution_note: string | null;
+  messages: number;
+  events: CaseEvent[];
 }
 
 export interface Recommendation {
@@ -71,18 +115,7 @@ export interface Common {
   ai_enabled: boolean;
 }
 
-export interface AskAnswer {
-  question: string;
-  source: "calculated" | "ai" | "unavailable";
-  matched_question: string | null;
-  answer: string;
-  visits: VisitBrief[];
-  table: { head: string[]; rows: (string | number)[][] } | null;
-  filter: Record<string, string> | null;
-  suggestions: SuggestedQuestion[];
-}
-
-export const FILTER_KEYS = ["group", "segment", "urgency", "flag", "rep", "stakeholder", "review", "q"] as const;
+export const FILTER_KEYS = ["group", "segment", "urgency", "flag", "rep", "stakeholder", "review", "status", "category", "q"] as const;
 export type FilterKey = (typeof FILTER_KEYS)[number];
 export type Filters = Partial<Record<FilterKey, string>>;
 
@@ -110,6 +143,8 @@ export interface Overview {
   avg_note_score: number | null;
   date_from: string | null;
   date_to: string | null;
+  followup?: Partial<Record<CaseStatus, number>>;
+  groups?: Record<string, number>;
 }
 
 export interface SegmentCount {

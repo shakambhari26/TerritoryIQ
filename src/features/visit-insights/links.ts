@@ -15,11 +15,32 @@ export function exploreHref(filters: Filters | Record<string, string>, days: num
   return tabHref("explore", days, clean);
 }
 
-export function askHref(tab: TabId, days: number | null, question: string, filters: Filters = {}): string {
-  return tabHref(tab, days, { ...(tab === "explore" ? (filters as Record<string, string>) : {}), ask: question }) + "#ask";
+/** The Insights page as one value: who is looking, over what period, and the inbox filters (status lane included). */
+export interface View {
+  tab: TabId;
+  days: number | null;
+  filters: Filters;
+}
+
+/** The same view with some filters changed; an empty string removes one. */
+export function viewHref(v: View, change: Filters = {}): string {
+  const merged = Object.fromEntries(
+    Object.entries({ ...v.filters, ...change }).filter(([k, x]) => (FILTER_KEYS as readonly string[]).includes(k) && x),
+  ) as Record<string, string>;
+  return tabHref(v.tab, v.days, merged);
 }
 
 /** One visit's page: its explanation and the send-to-rep form. */
 export function visitHref(key: string, extra: Record<string, string> = {}): string {
   return `/visit-insights/visit?${new URLSearchParams({ key, ...extra })}`;
+}
+
+/** Back to the view a card's form was posted from, scrolled to that card, saying what happened (`done`). */
+export function landingHref(returnTo: string, done: string, key: string): string {
+  const [path, query = ""] = returnTo.split("?");
+  const q = new URLSearchParams(query);
+  q.delete("ask");
+  q.set("done", done);
+  q.set("at", key);
+  return `${path}?${q}#visit-${key}`;
 }

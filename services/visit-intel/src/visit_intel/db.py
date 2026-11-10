@@ -130,6 +130,32 @@ class MessageReply(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now)
 
 
+class VisitCase(Base):
+    """Head office's own state for one visit: seen, resolved (with a note). Absent means new.
+
+    "Waiting on rep" is not stored: it is worked out from the visit's open messages (cases.py)."""
+    __tablename__ = "visit_cases"
+    visit_key: Mapped[str] = mapped_column(String(64), primary_key=True)
+    status: Mapped[str] = mapped_column(String(12), default="seen", index=True)  # seen | resolved
+    seen_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    seen_by: Mapped[str] = mapped_column(String(100), default="")
+    resolved_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    resolved_by: Mapped[str] = mapped_column(String(100), default="")
+    resolution_note: Mapped[str] = mapped_column(Text, default="")
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now, onupdate=_now)
+
+
+class CaseEvent(Base):
+    """What head office did on a visit, in order. Message and rep events come from the messages tables."""
+    __tablename__ = "case_events"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    visit_key: Mapped[str] = mapped_column(String(64), index=True)
+    kind: Mapped[str] = mapped_column(String(12))  # seen | note | resolved | reopened
+    actor: Mapped[str] = mapped_column(String(100))
+    text: Mapped[str] = mapped_column(Text, default="")
+    at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now)
+
+
 engine = create_engine(config.DATABASE_URL, pool_pre_ping=True)
 SessionLocal = sessionmaker(engine, expire_on_commit=False)
 
@@ -148,8 +174,14 @@ def init_db() -> None:
 
 
 def latest_label(session: Session, visit_key: str) -> dict | None:
-    row = session.scalars(select(Label).where(Label.visit_key == visit_key).order_by(Label.id.desc()).limit(1)).first()
-    return {"segment": row.segment, "urgency": row.urgency, "labeller": row.labeller} if row else None
+    """The label that decides this visit. A human label always wins over an AI label
+    (labeller prefixed "ai:"), however recent the AI one is; within the same kind, the
+    most recent wins. So a supervisor's correction is never overwritten by a later AI pass."""
+    rows = session.scalars(select(Label).where(Label.visit_key == visit_key).order_by(Label.id.desc())).all()
+    if not rows:
+        return None
+    row = next((r for r in rows if not (r.labeller or "").startswith("ai:")), rows[0])
+    return {"segment": row.segment, "urgency": row.urgency, "labeller": row.labeller}
 
 
 def visit_dict(v: Visit) -> dict:

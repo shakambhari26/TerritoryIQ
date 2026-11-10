@@ -4,8 +4,11 @@ import { isLoopbackHost } from "@/lib/loopback";
 
 const TEXT = { "Content-Type": "text/plain; charset=utf-8", "Cache-Control": "no-store" };
 
-/** Reachable without a session in hosted mode: the sign-in page, sign-out, and the tab icon the sign-in page shows. */
-const PUBLIC_PATHS = new Set(["/login", "/logout", "/icon.svg"]);
+/**
+ * Reachable without a session in hosted mode: the sign-in page, sign-out, the tab icon the sign-in page shows, and
+ * /sso, where a signed token from Frontier starts a session (src/lib/frontier-sso.ts).
+ */
+const PUBLIC_PATHS = new Set(["/login", "/logout", "/icon.svg", "/sso"]);
 
 /**
  * A field rep's reply link from a head-office WhatsApp or email message (src/app/r/[token]/route.ts). Reps have no

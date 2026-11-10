@@ -1,20 +1,24 @@
 import { connection } from "next/server";
 import { postMessage } from "@/features/visit-insights/client.server";
-import { parseMessageForm } from "@/features/visit-insights/forms";
+import { parseMessageForm, returnToOf } from "@/features/visit-insights/forms";
 import { back, readHoForm } from "@/features/visit-insights/guard.server";
-import { visitHref } from "@/features/visit-insights/links";
+import { landingHref, visitHref } from "@/features/visit-insights/links";
 
 /**
  * POST /api/visit-insights/messages: head office sends a suggestion or to-do list to a rep (in-app, WhatsApp, email).
- * Returns to the visit it was about, or to the Messages page, with a sent / not-sent notice.
+ * Returns to the card it was sent from (`return_to`), else the visit it was about, else the Messages page, with a
+ * sent / not-sent notice.
  */
 export async function POST(request: Request) {
   await connection();
   const body = await readHoForm(request);
   if (body instanceof Response) return body;
   const m = parseMessageForm(body);
+  const returnTo = returnToOf(body);
   const where = (ok: boolean, id?: number) =>
-    m?.visit_key
+    m?.visit_key && returnTo
+      ? landingHref(returnTo, ok ? "sent" : "error", m.visit_key)
+      : m?.visit_key
       ? `${visitHref(m.visit_key, { sent: ok ? "1" : "0" })}#send`
       : `/visit-insights/messages?sent=${ok ? 1 : 0}${id ? `#m${id}` : ""}`;
   if (!m) return back(where(false));

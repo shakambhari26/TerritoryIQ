@@ -473,6 +473,9 @@ export async function getExplore(filters: Filters, days: number | null): Promise
     (skip === "flag" || !filters.flag || r.res.flags.includes(filters.flag)) &&
     (skip === "rep" || !filters.rep || r.rep === filters.rep) &&
     (skip === "stakeholder" || !filters.stakeholder || (r.res.stakeholder ?? "OTHER") === filters.stakeholder) &&
+    (skip === "category" || !filters.category || r.category === filters.category) &&
+    // No case tracking here, so every stored visit is still "new" (and so "open").
+    (skip === "status" || !filters.status || filters.status === "new" || filters.status === "open") &&
     (!filters.review || r.res.needs_human_review) &&
     (!q || [r.customer, r.rep, r.transcript].some((t) => t.toLowerCase().includes(q)));
   const shown = base.filter((r) => matches(r));
@@ -496,6 +499,8 @@ export async function getExplore(filters: Filters, days: number | null): Promise
         flag: facet("flag", (r) => r.res.flags),
         rep: facet("rep", (r) => [r.rep]),
         stakeholder: facet("stakeholder", (r) => [r.res.stakeholder ?? "OTHER"]),
+        status: facet("status", () => ["new"]),
+        category: facet("category", (r) => [r.category]),
       },
       visits: briefs(shown, 200),
       segments: Object.entries(segments).map(([code, s]) => ({ code, name: s.name, emoji: s.emoji, group: s.group })),

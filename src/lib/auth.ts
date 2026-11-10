@@ -128,10 +128,16 @@ export function isRequestAuthorized(headers: Headers, mode: AuthMode = authMode(
   return verifySessionToken(readCookie(headers.get("cookie"), SESSION_COOKIE), mode.config);
 }
 
-/** `Set-Cookie` for a new session. `Secure` everywhere but loopback, where a test over plain http needs it off. */
-export function sessionCookie(token: string, host: string | null): string {
-  const secure = isLoopbackHost(host) ? "" : "; Secure";
-  return `${SESSION_COOKIE}=${token}; Path=/; HttpOnly; SameSite=Lax; Max-Age=${SESSION_TTL_SECONDS}${secure}`;
+/**
+ * `Set-Cookie` for a new session. `Secure` everywhere but loopback, where a test over plain http needs it off.
+ * `framed`: the session starts inside another site's iframe (Frontier, through /sso), where a `Lax` cookie is never
+ * sent back; `None` needs `Secure`, so on loopback it stays `Lax`.
+ */
+export function sessionCookie(token: string, host: string | null, framed = false): string {
+  const loopback = isLoopbackHost(host);
+  const secure = loopback ? "" : "; Secure";
+  const sameSite = framed && !loopback ? "None" : "Lax";
+  return `${SESSION_COOKIE}=${token}; Path=/; HttpOnly; SameSite=${sameSite}; Max-Age=${SESSION_TTL_SECONDS}${secure}`;
 }
 
 export function clearedSessionCookie(host: string | null): string {

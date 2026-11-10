@@ -11,9 +11,21 @@ import {
   parseContactForm,
   parseKeywordForm,
   parseMessageForm,
+  parseCaseForm,
   parseNoteForm,
   parseReplyForm,
+  safeReturn,
 } from "../../src/features/visit-insights/forms.ts";
+import { landingHref, viewHref } from "../../src/features/visit-insights/links.ts";
+import {
+  GROUP_TERMS,
+  OWNER_TERMS,
+  SEGMENT_TERMS,
+  STATUS_TERMS,
+  URGENCY_TERMS,
+  nextStep,
+  parseWords,
+} from "../../src/features/visit-insights/vocab.ts";
 
 /**
  * Visit Insights (src/app/visit-insights): the correction form only accepts fixed-pattern values from this site, and
@@ -64,7 +76,7 @@ describe("visit insights: the API key stays server-side", () => {
   it("only server files read VISIT_INTEL_API_KEY, and every other component is a server component", () => {
     const client = read("src/features/visit-insights/client.server.ts");
     assert.match(client, /process\.env\.VISIT_INTEL_API_KEY/);
-    for (const f of ["components/parts.tsx", "components/RoleViews.tsx", "components/AskPanel.tsx", "components/ExploreView.tsx", "components/Recommendations.tsx", "components/ExplanationView.tsx", "components/Messaging.tsx", "links.ts", "types.ts", "label-form.ts", "chat-form.ts", "forms.ts"]) {
+    for (const f of ["components/parts.tsx", "components/RoleViews.tsx", "components/ActionCard.tsx", "components/Inbox.tsx", "components/AreaTiles.tsx", "components/Transcript.tsx", "components/Controls.tsx", "components/VisitIcons.tsx", "vocab.ts", "components/Recommendations.tsx", "components/ExplanationView.tsx", "components/Messaging.tsx", "links.ts", "types.ts", "label-form.ts", "chat-form.ts", "forms.ts"]) {
       const src = read(`src/features/visit-insights/${f}`);
       assert.doesNotMatch(src, /VISIT_INTEL_API_KEY|^["']use client["']/m, f);
     }
@@ -162,5 +174,76 @@ describe("visit insights: the rep's reply link", () => {
     assert.doesNotMatch(route, /\$\{m\.(title|body|sender)\}/, "message fields must go through esc()");
     assert.match(route, /isSameOrigin\(request\.headers\)/);
     assert.doesNotMatch(route, /<script/i);
+  });
+});
+
+describe("visit insights: simple and expert words", () => {
+  const taxonomy = read("services/visit-intel/src/visit_intel/taxonomy.py");
+  const segments = [...taxonomy.matchAll(/^\s+"([A-Z_]+)": \("[^"]+", "[^"]+", "([^"]+)",/gm)];
+
+  it("every segment, business area, urgency, owner and status from the service has both wordings", () => {
+    assert.equal(segments.length, 10);
+    for (const [, code, group] of segments) {
+      assert.ok(SEGMENT_TERMS[code]?.simple && SEGMENT_TERMS[code]?.expert && SEGMENT_TERMS[code]?.kid, code);
+      assert.ok(GROUP_TERMS[group.replace("&amp;", "&")]?.simple, group);
+    }
+    for (const owner of new Set([...taxonomy.matchAll(/"owner": "([^"]+)"|, "([A-Z][A-Za-z /]+)", "[A-Z][a-z]/g)].map((m) => m[1]).filter(Boolean))) {
+      assert.ok(OWNER_TERMS[owner], owner);
+    }
+    for (const t of [...Object.values(URGENCY_TERMS), ...Object.values(STATUS_TERMS), ...Object.values(OWNER_TERMS)]) {
+      assert.ok(t.simple && t.expert && t.simple !== t.expert, JSON.stringify(t));
+    }
+  });
+
+  it("anything but 'expert' reads as simple, and the next step follows the case", () => {
+    assert.equal(parseWords("expert"), "expert");
+    for (const v of [undefined, "", "EXPERT", "x"]) assert.equal(parseWords(v), "simple");
+    const c = (status: "new" | "seen" | "waiting" | "resolved", rep_state: "sent" | "read" | "replied" | "done" | null = null) =>
+      ({ status, rep_state, seen_at: null, seen_by: null, resolved_at: null, resolution_note: null, messages: 0, events: [] });
+    assert.match(nextStep(null, "RAJA MUKHERJEE", "simple"), /seen it/);
+    assert.match(nextStep(c("seen"), "RAJA MUKHERJEE", "simple"), /Send Raja a to-do/);
+    assert.match(nextStep(c("waiting", "done"), "RAJA MUKHERJEE", "simple"), /Raja says it's done/);
+    assert.match(nextStep(c("resolved"), "RAJA MUKHERJEE", "expert"), /Reopen/);
+  });
+});
+
+describe("visit insights: acting on a card", () => {
+  it("case forms accept the four actions; a note needs text", () => {
+    const back = "/visit-insights?role=md&status=open";
+    assert.deepEqual(parseCaseForm(new URLSearchParams({ visit_key: "a1b2", action: "seen", return_to: back }).toString()), {
+      visit_key: "a1b2", action: "seen", note: "", return_to: back,
+    });
+    assert.equal(parseCaseForm("visit_key=a1b2&action=resolve&note=")?.action, "resolve");
+    assert.equal(parseCaseForm("visit_key=a1b2&action=note&note=%20"), null);
+    assert.equal(parseCaseForm("visit_key=a1b2&action=delete"), null);
+    assert.equal(parseCaseForm("visit_key=../x&action=seen"), null);
+    assert.equal(parseCaseForm("visit_key=a1b2&action=seen&return_to=https://evil.example")?.return_to, null);
+  });
+
+  it("forms only ever return to a Visit Insights page on this site", () => {
+    for (const ok of ["/visit-insights", "/visit-insights?role=md&q=late%20order", "/visit-insights/messages?sent=1"]) assert.equal(safeReturn(ok), ok);
+    for (const bad of ["//evil.example", "https://evil.example/visit-insights", "/visit-insightsx", "/visit-insights/../login", "/visit-insights\\x", "/visit-insights#x", "/visit-insights/a/b", "/login", null, "/visit-insights?" + "a".repeat(1600)]) {
+      assert.equal(safeReturn(bad), null, String(bad));
+    }
+  });
+
+  it("landing on a card keeps the view, drops a question, and points at the card", () => {
+    assert.equal(landingHref("/visit-insights?role=md&ask=x&done=seen&at=old", "sent", "k1"), "/visit-insights?role=md&done=sent&at=k1#visit-k1");
+    assert.equal(landingHref("/visit-insights", "error", "k1"), "/visit-insights?done=error&at=k1#visit-k1");
+  });
+
+  it("view links change one filter and drop empty or unknown ones", () => {
+    const v = { tab: "supervisor" as const, days: 30, filters: { status: "open", group: "Cash" } };
+    assert.equal(viewHref(v, { group: "" }), "/visit-insights?role=supervisor&status=open&days=30");
+    assert.equal(viewHref(v, { urgency: "urgent" }), "/visit-insights?role=supervisor&status=open&group=Cash&urgency=urgent&days=30");
+    assert.equal(viewHref(v, { evil: "1" } as never), "/visit-insights?role=supervisor&status=open&group=Cash&days=30");
+  });
+
+  it("the Simple / Expert switch is a plain link (never prefetched) and its route only returns inside Visit Insights", () => {
+    const controls = read("src/features/visit-insights/components/Controls.tsx");
+    assert.match(controls, /<a\s+href=\{href\}\s+role="switch"/);
+    const route = read("src/app/api/visit-insights/words/route.ts");
+    assert.match(route, /isRequestAuthorized\(request\.headers\)/);
+    assert.match(route, /safeReturn\(/);
   });
 });

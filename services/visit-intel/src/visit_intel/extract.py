@@ -32,10 +32,13 @@ def quantity(text: str) -> dict | None:
 
 
 def money(text: str) -> dict | None:
-    m = _MONEY.search(text)
-    if not m:
+    for m in _MONEY.finditer(text):
+        digits = m.group(1).replace(",", "")
+        if digits and re.fullmatch(r"\d+(?:\.\d+)?", digits):
+            break
+    else:
         return None
-    value = float(m.group(1).replace(",", ""))
+    value = float(digits)
     unit = (m.group(2) or "").lower()
     value *= {"lakh": 100_000, "lac": 100_000, "k": 1_000, "thousand": 1_000}.get(unit, 1)
     return {"value_inr": value, "evidence": _evidence(text, m)}

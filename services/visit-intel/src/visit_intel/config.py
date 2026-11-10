@@ -28,3 +28,6 @@ ML_CONFIDENT = float(os.environ.get("VISIT_INTEL_ML_CONFIDENT", 0.60))
 KEYWORDS_CONFIDENT = float(os.environ.get("VISIT_INTEL_KEYWORDS_CONFIDENT", 0.75))
 KEYWORDS_MARGIN = float(os.environ.get("VISIT_INTEL_KEYWORDS_MARGIN", 0.40))
 AGREE_CONFIDENT = float(os.environ.get("VISIT_INTEL_AGREE_CONFIDENT", 0.70))
+# Confidence shown for an AI-assigned label (labeller "ai:…"). Not a measured accuracy —
+# provenance ("decided_by": "ai") is the honest signal; a human label supersedes it.
+AI_LABEL_CONFIDENCE = float(os.environ.get("VISIT_INTEL_AI_LABEL_CONFIDENCE", 0.90))

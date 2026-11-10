@@ -53,7 +53,7 @@ export function Bars({ rows }: { rows: { label: ReactNode; value: number; key: s
   );
 }
 
-function formatWhen(iso: string | null): string {
+export function formatWhen(iso: string | null): string {
   if (!iso) return "Date unknown";
   const d = new Date(iso);
   return d.toLocaleString("en-IN", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit", hour12: true });
@@ -112,13 +112,19 @@ export function VisitList({ visits, empty, children }: { visits: VisitBrief[]; e
 }
 
 /** The supervisor's one-tap correction: a plain form post, so it works before any script loads. */
-export function LabelForm({ v, taxonomy }: { v: VisitBrief; taxonomy: Taxonomy }) {
+/**
+ * The manual-override control: pick the right group for a visit when the AI (or a layer) got it wrong.
+ * Posts to the same /api/visit-insights/labels route; the saved label is a human label, so it overrides
+ * the model and is never overwritten by a later AI pass. Used on the supervisor review view (LabelForm)
+ * and on every single-visit page, so anyone signed in can correct any visit — not only uncertain ones.
+ */
+export function RelabelForm({ visitKey, segment, urgency, taxonomy }: { visitKey: string; segment: string; urgency: Urgency; taxonomy: Taxonomy }) {
   return (
     <form method="post" action="/api/visit-insights/labels" className="mt-3 flex flex-wrap items-end gap-2 border-t border-line pt-3">
-      <input type="hidden" name="visit_key" value={v.visit_key} />
+      <input type="hidden" name="visit_key" value={visitKey} />
       <label className="text-xs font-medium text-ink-muted">
         Correct group
-        <select name="segment" defaultValue={v.segment} className="mt-1 block h-9 rounded-md border border-line-strong bg-surface px-2 text-sm text-ink">
+        <select name="segment" defaultValue={segment} className="mt-1 block h-9 rounded-md border border-line-strong bg-surface px-2 text-sm text-ink">
           {Object.entries(taxonomy.segments).map(([code, s]) => (
             <option key={code} value={code}>
               {s.emoji} {s.name}
@@ -129,7 +135,7 @@ export function LabelForm({ v, taxonomy }: { v: VisitBrief; taxonomy: Taxonomy }
       <label className="text-xs font-medium text-ink-muted">
         Urgency
         <select name="urgency" defaultValue="" className="mt-1 block h-9 rounded-md border border-line-strong bg-surface px-2 text-sm text-ink">
-          <option value="">Keep ({v.urgency})</option>
+          <option value="">Keep ({urgency})</option>
           {(Object.keys(taxonomy.urgency) as Urgency[]).map((u) => (
             <option key={u} value={u}>
               {URGENCY_LABEL[u]}
@@ -142,6 +148,10 @@ export function LabelForm({ v, taxonomy }: { v: VisitBrief; taxonomy: Taxonomy }
       </button>
     </form>
   );
+}
+
+export function LabelForm({ v, taxonomy }: { v: VisitBrief; taxonomy: Taxonomy }) {
+  return <RelabelForm visitKey={v.visit_key} segment={v.segment} urgency={v.urgency} taxonomy={taxonomy} />;
 }
 
 export function DataTable({ head, rows }: { head: string[]; rows: ReactNode[][] }) {

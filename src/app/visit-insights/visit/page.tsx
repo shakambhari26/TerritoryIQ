@@ -3,10 +3,10 @@ import Link from "next/link";
 import { Suspense } from "react";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Card } from "@/components/ui/Card";
-import { getContacts, getMessages, getMessagingStatus, getVisit, postDraft } from "@/features/visit-insights/client.server";
+import { getContacts, getMessages, getMessagingStatus, getTaxonomy, getVisit, postDraft } from "@/features/visit-insights/client.server";
 import { ExplanationView } from "@/features/visit-insights/components/ExplanationView";
 import { DraftAnalysis, DraftForm, MessageThread, Notice, SendForm, SubNav } from "@/features/visit-insights/components/Messaging";
-import { Section, UrgencyPill } from "@/features/visit-insights/components/parts";
+import { RelabelForm, Section, UrgencyPill } from "@/features/visit-insights/components/parts";
 import { LANGUAGES } from "@/features/visit-insights/types";
 
 export const metadata: Metadata = { title: "Visit · Visit Insights" };
@@ -39,7 +39,7 @@ async function Body({ searchParams }: { searchParams: SearchParams }) {
   const sp = await searchParams;
   const key = first(sp.key) ?? "";
   if (!VISIT_KEY.test(key)) return <Card className="p-6 text-sm">No such visit.</Card>;
-  const [visit, status, contacts, history] = await Promise.all([getVisit(key), getMessagingStatus(), getContacts(), getMessages(null)]);
+  const [visit, status, contacts, history, taxonomy] = await Promise.all([getVisit(key), getMessagingStatus(), getContacts(), getMessages(null), getTaxonomy()]);
   if (!visit.ok) return <Card role="alert" className="p-6 text-sm">{visit.message}</Card>;
   const v = visit.data;
   const r = v.result;
@@ -83,6 +83,15 @@ async function Body({ searchParams }: { searchParams: SearchParams }) {
         <p className="mt-3 text-sm text-ink">
           <span className="font-semibold">{r.action.owner}:</span> {r.action.text}
         </p>
+        {taxonomy.ok ? (
+          <details className="mt-4 border-t border-line pt-3">
+            <summary className="cursor-pointer text-sm font-medium text-ink">
+              Wrong group? Fix it {r.segment.decided_by === "ai" ? "(set by AI)" : ""}
+            </summary>
+            <p className="mt-2 text-xs text-ink-muted">Your correction overrides the AI and teaches the system at the next retrain.</p>
+            <RelabelForm visitKey={key} segment={r.segment.code} urgency={r.urgency.level} taxonomy={taxonomy.data} />
+          </details>
+        ) : null}
       </Card>
 
       {r.explanation ? <ExplanationView e={r.explanation} /> : <Card className="p-5 text-sm text-ink-muted">Re-analyse the visits to get an explanation (POST /v1/reanalyze).</Card>}

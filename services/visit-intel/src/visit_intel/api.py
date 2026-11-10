@@ -1,7 +1,8 @@
 """Visit Intelligence API.
 
 Run locally:  VISIT_INTEL_API_KEY=dev-key uvicorn visit_intel.api:app --app-dir src --reload
-Docs:         http://127.0.0.1:8000/docs
+Docs:         http://127.0.0.1:8000/docs is the public Prediction API only (predict_api.py). The full internal contract
+              is GET /v1/internal/openapi.json with the internal key.
 """
 from __future__ import annotations
 
@@ -9,18 +10,22 @@ import csv
 import hmac
 import io
 import logging
+import os
 import time
 from collections import Counter
 from contextlib import asynccontextmanager
 from typing import Any, Literal
 
 from fastapi import Depends, FastAPI, File, Header, HTTPException, Query, UploadFile
+from fastapi.openapi.docs import get_swagger_ui_html
+from fastapi.openapi.utils import get_openapi
+from fastapi.responses import HTMLResponse
 from pydantic import BaseModel, Field
 from sqlalchemy import select
 
 from . import ask as asker
 from . import rag
-from . import config, explain, insights, keywords, messaging
+from . import cases, config, explain, insights, keywords, learn, messaging, predict_api
 from .db import Analysis, ChatLog, Keyword, Label, Message, SessionLocal, Visit, init_db, visit_dict
 from .model import SegmentModel
 from .pipeline import normalize
@@ -37,11 +42,21 @@ async def lifespan(_: FastAPI):
         raise RuntimeError("Set VISIT_INTEL_API_KEY before starting the API.")
     init_db()
     STATE["model"] = SegmentModel.load(config.MODEL_PATH)
+    if STATE["model"] is None and os.environ.get("VISIT_INTEL_REQUIRE_MODEL") == "1":
+        # Set in production: a deploy that lost the model file fails its health check and the running one stays live,
+        # instead of the service quietly switching to rules-only answers.
+        raise RuntimeError(f"VISIT_INTEL_REQUIRE_MODEL=1 but no trained model at {config.MODEL_PATH}.")
     log.warning("Model: %s", STATE["model"].version if STATE["model"] else "none (rules only)")
+    # Same process, same model object (also after POST /v1/reanalyze reloads it); its own keys, never the ones above.
+    predict_api.enable_in_service(lambda: STATE["model"], reserved=(config.API_KEY, config.INGEST_KEY))
     yield
 
 
-app = FastAPI(title="Visit Intelligence", version="1.0.0", lifespan=lifespan)
+# /docs and /openapi.json are public, so they describe only the public Prediction API (see public_openapi below).
+app = FastAPI(title="Visit Intelligence", version="1.0.0", lifespan=lifespan,
+              docs_url=None, redoc_url=None, openapi_url=None)
+app.add_middleware(predict_api.BodyLimit)
+app.include_router(predict_api.router)
 
 
 def require_key(x_api_key: str = Header(default="")) -> None:
@@ -119,6 +134,12 @@ class MessageIn(BaseModel):
     ai_drafted: bool = False
 
 
+class CaseIn(BaseModel):
+    action: Literal["seen", "resolve", "reopen", "note"]
+    actor: str = Field("Head Office", max_length=100)
+    note: str = Field("", max_length=2000)
+
+
 class DraftIn(BaseModel):
     visit_key: str | None = Field(None, max_length=64)
     rep_name: str | None = Field(None, max_length=200)
@@ -137,9 +158,45 @@ def _model_meta() -> dict | None:
     return STATE["model"].meta if STATE["model"] else None
 
 
-@app.get("/health")
+def _summary(r: dict) -> dict:
+    return {"added": len(r["added"]), "retired": len(r["retired"]), "reweighed": len(r["reweighed"])}
+
+
+def _learn_and_refresh(s) -> dict:
+    """One learning round (learn.py); when the keyword database changed, re-score every visit with it."""
+    result = learn.learn(s)
+    if result["added"] or result["retired"] or result["reweighed"]:
+        reanalyze(s, STATE["model"])
+    return result
+
+
+@app.get("/health", summary="Liveness and the version of the model in use (no key needed)")
 def health() -> dict:
     return {"ok": True, "model": STATE["model"].version if STATE["model"] else "rules-only"}
+
+
+PUBLIC_PATHS = ("/health", "/v1/taxonomy", predict_api.PREFIX, predict_api.PREFIX + "/batch")
+_PUBLIC_SPEC: dict[str, Any] = {}
+
+
+@app.get("/openapi.json", include_in_schema=False)
+def public_openapi() -> dict:
+    """The public contract: the prediction routes plus /health and /v1/taxonomy. Internal routes are not listed."""
+    if not _PUBLIC_SPEC:
+        _PUBLIC_SPEC.update(get_openapi(title=predict_api.TITLE, version=predict_api.API_VERSION + ".0.0",
+                                        description=predict_api.DESCRIPTION,
+                                        routes=[r for r in app.routes if getattr(r, "path", None) in PUBLIC_PATHS]))
+    return _PUBLIC_SPEC
+
+
+@app.get("/docs", include_in_schema=False)
+def public_docs() -> HTMLResponse:
+    return get_swagger_ui_html(openapi_url="/openapi.json", title=predict_api.TITLE)
+
+
+@app.get("/v1/internal/openapi.json", include_in_schema=False, dependencies=[Depends(require_key)])
+def internal_openapi() -> dict:
+    return app.openapi()
 
 
 @app.post("/v1/visits/segment", dependencies=[Depends(require_ingest_key)])
@@ -156,7 +213,9 @@ def segment_one(visit: dict[str, Any]) -> dict:
 @app.post("/v1/visits/batch", dependencies=[Depends(require_ingest_key)])
 def segment_batch(body: BatchIn) -> dict:
     with SessionLocal() as s:
-        return ingest(s, body.visits, STATE["model"])
+        out = ingest(s, body.visits, STATE["model"])
+        out["learning"] = _summary(_learn_and_refresh(s))
+        return out
 
 
 @app.post("/v1/visits/import-csv", dependencies=[Depends(require_ingest_key)])
@@ -164,14 +223,16 @@ async def import_csv(file: UploadFile = File(...)) -> dict:
     text = (await file.read()).decode("utf-8-sig")
     rows = list(csv.DictReader(io.StringIO(text)))
     with SessionLocal() as s:
-        return ingest(s, rows, STATE["model"])
+        out = ingest(s, rows, STATE["model"])
+        out["learning"] = _summary(_learn_and_refresh(s))
+        return out
 
 
 @app.get("/v1/visits", dependencies=[Depends(require_key)])
 def list_visits(segment: str | None = None, urgency: str | None = None, needs_review: bool | None = None,
                 limit: int = Query(200, le=2000)) -> list[dict]:
     with SessionLocal() as s:
-        rows = all_rows(s)
+        rows = all_rows(s, with_cases=True)
     out = [insights.brief(r) for r in rows
            if (segment is None or r["result"]["segment"]["code"] == segment)
            and (urgency is None or r["result"]["urgency"]["level"] == urgency)
@@ -208,6 +269,7 @@ def add_label(body: LabelIn) -> dict:
         s.add(Label(visit_key=body.visit_key, segment=body.segment, urgency=body.urgency, labeller=body.labeller[:100]))
         s.commit()
         reanalyze(s, STATE["model"], [body.visit_key])
+        _learn_and_refresh(s)  # a person's correction is the best teacher for the keyword database
         return {"visit_key": body.visit_key, **s.get(Analysis, body.visit_key).result}
 
 
@@ -230,7 +292,7 @@ def model_health() -> dict:
 def role_insights(role: Literal["md", "vp_sales", "supervisor", "business_analyst", "data_analyst"],
                   days: int | None = Query(None, ge=1, le=3650)) -> dict:
     with SessionLocal() as s:
-        rows = all_rows(s)
+        rows = all_rows(s, with_cases=True)
     data = insights.for_role(role, rows, days, _model_meta())
     data["suggested_questions"] = asker.suggestions(role)
     data["ai_enabled"] = asker.ai_available()
@@ -240,11 +302,12 @@ def role_insights(role: Literal["md", "vp_sales", "supervisor", "business_analys
 @app.get("/v1/explore", dependencies=[Depends(require_key)])
 def explore(group: str | None = None, segment: str | None = None, urgency: str | None = None, flag: str | None = None,
             rep: str | None = None, stakeholder: str | None = None, review: str | None = None,
+            status: str | None = None, category: str | None = None,
             q: str | None = Query(None, max_length=100), days: int | None = Query(None, ge=1, le=3650)) -> dict:
     with SessionLocal() as s:
-        rows = all_rows(s)
+        rows = all_rows(s, with_cases=True)
     filters = {"group": group, "segment": segment, "urgency": urgency, "flag": flag, "rep": rep, "stakeholder": stakeholder,
-               "review": review, "q": q}
+               "review": review, "status": status, "category": category, "q": q}
     data = insights.explore(rows, filters, days, _model_meta())
     data["suggested_questions"] = asker.suggestions("explore")
     data["ai_enabled"] = asker.ai_available()
@@ -258,11 +321,9 @@ def ask(body: AskIn) -> dict:
     return asker.ask(body.question.strip(), body.role, rows, body.days, _model_meta())
 
 
-@app.get("/v1/taxonomy")
+@app.get("/v1/taxonomy", summary="Every segment, urgency level (with its SLA) and flag the API can return (no key needed)")
 def taxonomy() -> dict:
-    return {"segments": {c: {"name": n, "emoji": e, "group": g, "meaning": m} for c, (n, e, g, m) in SEGMENTS.items()},
-            "urgency": {k: {"name": n, "sla": s} for k, (n, s) in URGENCY.items()},
-            "flags": {f: {"name": n, "parent": FLAG_PARENT.get(f)} for f, n in FLAGS.items()}}
+    return predict_api.taxonomy_body()
 
 
 @app.get("/v1/methodology")
@@ -272,6 +333,31 @@ def methodology() -> dict:
             "thresholds": {"rules": config.RULES_CONFIDENT, "ml": config.ML_CONFIDENT, "agree": config.AGREE_CONFIDENT,
                            "keywords": config.KEYWORDS_CONFIDENT, "keywords_margin": config.KEYWORDS_MARGIN,
                            "flag": keywords.FLAG_THRESHOLD, "decay": keywords.DECAY}}
+
+
+# ---------- head-office follow-through ----------
+
+@app.post("/v1/cases/{visit_key}", dependencies=[Depends(require_key)])
+def case_action(visit_key: str, body: CaseIn) -> dict:
+    """Mark a visit seen, resolve or reopen it, or add a note. Returns the visit's state and full history."""
+    with SessionLocal() as s:
+        v = s.get(Visit, visit_key)
+        if not v:
+            raise HTTPException(404, "No such visit")
+        try:
+            cases.act(s, visit_key, body.action, body.actor, body.note)
+        except ValueError as e:
+            raise HTTPException(422, str(e)) from None
+        return cases.for_visits(s, [visit_dict(v)])[visit_key]
+
+
+@app.get("/v1/cases/{visit_key}", dependencies=[Depends(require_key)])
+def case_state(visit_key: str) -> dict:
+    with SessionLocal() as s:
+        v = s.get(Visit, visit_key)
+        if not v:
+            raise HTTPException(404, "No such visit")
+        return cases.for_visits(s, [visit_dict(v)])[visit_key]
 
 
 # ---------- keyword database ----------
@@ -332,6 +418,13 @@ def edit_keyword(keyword_id: int, body: KeywordPatch) -> dict:
         return _kw_dict(k)
 
 
+@app.post("/v1/keywords/learn", dependencies=[Depends(require_key)])
+def learn_keywords(dry_run: bool = False) -> dict:
+    """Run one learning round now. Also runs by itself after every correction and every batch / CSV import."""
+    with SessionLocal() as s:
+        return learn.learn(s, dry_run=True) if dry_run else _learn_and_refresh(s)
+
+
 @app.post("/v1/keywords/test", dependencies=[Depends(require_key)])
 def test_keywords(body: TextIn) -> dict:
     """Score any sentence against the keyword database, to check a new keyword before relying on it."""
@@ -376,6 +469,8 @@ def send_message(body: MessageIn) -> dict:
     with SessionLocal() as s:
         if body.visit_key and not s.get(Visit, body.visit_key):
             raise HTTPException(404, "No such visit")
+        if body.visit_key:
+            cases.act(s, body.visit_key, "seen", body.sender)  # writing to the rep about a visit means head office saw it
         return messaging.send(s, rep_name=body.rep_name.strip(), kind=body.kind, title=body.title.strip(), body=body.body.strip(),
                               todos=todos, channels=list(dict.fromkeys(body.channels)), visit_key=body.visit_key,
                               sender=body.sender, ai_drafted=body.ai_drafted)

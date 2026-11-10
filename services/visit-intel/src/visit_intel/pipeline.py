@@ -6,7 +6,7 @@ import re
 from collections import Counter
 from datetime import date, datetime
 
-from . import config, explain, extract, keywords, quality, rules
+from . import config, explain, extract, headline, keywords, quality, rules
 from .lexicon import Lexicon
 from .model import SegmentModel
 from .taxonomy import STAKEHOLDER, playbook_action, segment_info
@@ -74,6 +74,9 @@ def decide(human_label: dict | None, rule: tuple[str, float], kw: dict, ml: tupl
         return seg, conf, by, review, {"step": step, "votes": {k: {"segment": s, "confidence": round(c, 3)} for k, (s, c) in votes.items()}}
 
     if human_label:
+        if str(human_label.get("labeller") or "").startswith("ai:"):
+            return out(human_label["segment"], config.AI_LABEL_CONFIDENCE, "ai", False,
+                       "Set by AI from the visit summary (not yet confirmed by a person); a supervisor can change it.")
         return out(human_label["segment"], 1.0, "human", False, "A reviewer set this group; a human label always wins.")
     if rule_conf >= config.RULES_CONFIDENT:
         return out(rule_seg, rule_conf, "rules", False,
@@ -126,6 +129,9 @@ def analyze(visit: dict, model: SegmentModel | None, human_label: dict | None = 
     ml = model.predict([visit])[0] if model else []
     ml_seg, ml_conf = (ml[0] if ml else (None, 0.0))
     segment, confidence, decided_by, review, decision = decide(human_label, (rule_seg, rule_conf), kw, (ml_seg, ml_conf))
+    rep_headline = headline.parse(text)
+    if rep_headline and not human_label and rep_headline["segment"] != segment:
+        review = True  # the rep and the system disagree: a supervisor settles it, and that becomes a human label
     hits.add(segment)
 
     secondary = next((c[0] for c in candidates if c[0] != segment and c[1] >= 0.6), None)
@@ -155,6 +161,7 @@ def analyze(visit: dict, model: SegmentModel | None, human_label: dict | None = 
         "note_quality": note,
         "action": playbook_action(level, segment, flag_list),
         "needs_human_review": review,
+        "rep_headline": rep_headline,
         "model_version": model.version if model else "rules-only",
     }
     pulls = model.contributions(visit, ml_seg) if model and ml_seg else None

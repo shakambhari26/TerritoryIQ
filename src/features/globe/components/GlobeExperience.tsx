@@ -14,12 +14,35 @@ import type { GlobeManifest, Level, Phase } from "../types";
 import type { CustomerSummary } from "../customers";
 import { GlobeFallback } from "./GlobeFallback";
 import { GlobeDetails, PlaceSearch } from "./GlobePanel";
+import { SegmentPanel } from "./SegmentPanel";
+import {
+  blockLegend,
+  buildBlockFacts,
+  buildPaint,
+  COLOUR_BY_LABEL,
+  decodeSegment,
+  DISTRICT_RAMP_COLOURS,
+  EMPTY_FILTER,
+  encodeSegment,
+  filterSize,
+  maxDistrictMatches,
+  segment,
+  type ColourBy,
+  type LegendRow,
+  type SegmentFilter,
+} from "../segments";
 import { MarketDashboard } from "@/features/market/components/MarketDashboard";
 
 interface Selection {
   level: Level;
   districtId: string | null;
   blockId: string | null;
+}
+
+/** The `?seg=` value the page was opened with, if any. */
+function readSegmentParam(): string {
+  if (typeof window === "undefined") return "";
+  return new URLSearchParams(window.location.search).get("seg") ?? "";
 }
 
 const ATTRIBUTION_EARTH = "Earth: NASA Earth Observatory, Blue Marble.";
@@ -45,16 +68,38 @@ function placeName(view: GlobeManifest, s: Selection): string {
   return "the globe";
 }
 
-function Legend({ open }: { open: boolean }) {
-  const rows: Array<{ colour: string; label: string; note?: string; ring?: boolean }> = [
-    { colour: DISTRICT_STYLE.represented.fill, label: "District: provisional link", note: "at least one linked block. Not complete or officially verified coverage" },
-    { colour: BLOCK_STYLE.represented.fill, label: "Block: provisional link", note: "named representative, unreviewed" },
-    { colour: "#ffffff", label: "Confirmed: no representative", note: "none yet; needs a reviewed source record", ring: true },
-    { colour: BLOCK_STYLE.unresolved.fill, label: "Unresolved or unverified", note: "not the same as none" },
-  ];
+function Legend({ open, colourBy, segmented, maxMatched }: { open: boolean; colourBy: ColourBy; segmented: boolean; maxMatched: number }) {
+  const plain = colourBy === "link" && !segmented;
+  const rows: LegendRow[] = plain
+    ? [
+        { colour: DISTRICT_STYLE.represented.fill, label: "District: provisional link", note: "at least one linked block. Not complete or officially verified coverage" },
+        { colour: BLOCK_STYLE.represented.fill, label: "Block: provisional link", note: "named representative, unreviewed" },
+        { colour: "#ffffff", label: "Confirmed: no representative", note: "none yet; needs a reviewed source record", ring: true },
+        { colour: BLOCK_STYLE.unresolved.fill, label: "Unresolved or unverified", note: "not the same as none" },
+      ]
+    : [
+        ...blockLegend(colourBy),
+        ...(segmented ? [{ colour: BLOCK_STYLE.unresolved.fill, label: "Faded: outside the segment" }] : [{ colour: DISTRICT_STYLE.represented.fill, label: "District: provisional link" }]),
+      ];
   return (
-    <details key={open ? "open" : "closed"} open={open} aria-label="Legend" className="pointer-events-auto w-60 rounded-xl bg-white/95 p-3 shadow-float ring-1 ring-line">
-      <summary className="cursor-pointer text-[0.6875rem] font-semibold uppercase tracking-wider text-ink-muted">Legend (provisional)</summary>
+    <details key={open ? "open" : "closed"} open={open} aria-label="Legend" className="pointer-events-auto w-60 rounded-xl bg-white/95 p-3 shadow-float ring-1 ring-line" data-testid="globe-legend">
+      <summary className="cursor-pointer text-[0.6875rem] font-semibold uppercase tracking-wider text-ink-muted">
+        Legend (provisional){plain ? "" : ` · ${COLOUR_BY_LABEL[colourBy]}`}
+      </summary>
+      {segmented ? (
+        <div className="mt-2">
+          <p className="text-xs text-ink">District: blocks in the segment</p>
+          <div className="mt-1 flex h-2 overflow-hidden rounded" aria-hidden="true">
+            {DISTRICT_RAMP_COLOURS.map((c) => (
+              <span key={c} className="flex-1" style={{ backgroundColor: c }} />
+            ))}
+          </div>
+          <div className="mt-0.5 flex justify-between text-[0.6875rem] tabular-nums text-ink-muted">
+            <span>1</span>
+            <span>{maxMatched}</span>
+          </div>
+        </div>
+      ) : null}
       <ul className="mt-2 space-y-1.5">
         {rows.map((row) => (
           <li key={row.label} className="flex items-start gap-2 text-xs text-ink">
@@ -185,6 +230,10 @@ function GlobeStage({ manifest, layer, onRetryLayer, insights, customers }: Stag
   // Both panels start open where there is room beside the globe, and closed where they would cover it.
   const [placesOpen, setPlacesOpen] = useState(isWide);
   const [insightsOpen, setInsightsOpen] = useState(isWide);
+  const [leftTab, setLeftTab] = useState<"places" | "segment">(() => (readSegmentParam() ? "segment" : "places"));
+  const [initialSegment] = useState(() => decodeSegment(readSegmentParam(), { districts: new Set(manifest.districts.map((d) => d.id)) }));
+  const [filter, setFilter] = useState<SegmentFilter>(initialSegment.filter);
+  const [colourBy, setColourBy] = useState<ColourBy>(initialSegment.by);
   const placesToggleRef = useRef<HTMLDivElement>(null);
   const insightsToggleRef = useRef<HTMLDivElement>(null);
   const returnFocusTo = useRef<"places" | "insights" | null>(null);
@@ -221,6 +270,24 @@ function GlobeStage({ manifest, layer, onRetryLayer, insights, customers }: Stag
   }, []);
 
   const nameOf = useCallback((s: Selection) => placeName(view, s), [view]);
+
+  // ----------------------------------------------------------- segment --
+  // Facts per block, the faceted result and the paint for the renderer. Everything is from props already on the page.
+  const facts = useMemo(() => buildBlockFacts(view, insights, customers), [view, insights, customers]);
+  const segmentResult = useMemo(() => segment(facts, filter), [facts, filter]);
+  const paint = useMemo(() => buildPaint(view, facts, segmentResult, colourBy), [view, facts, segmentResult, colourBy]);
+  const segmented = segmentResult.active;
+  useEffect(() => {
+    rendererRef.current?.setPaint(paint);
+  }, [paint, status]);
+  // The segment lives in the address bar, so a view can be bookmarked or sent to a colleague.
+  useEffect(() => {
+    const url = new URL(window.location.href);
+    const encoded = encodeSegment(filter, colourBy);
+    if (encoded) url.searchParams.set("seg", encoded);
+    else url.searchParams.delete("seg");
+    if (url.href !== window.location.href) window.history.replaceState(window.history.state, "", url);
+  }, [filter, colourBy]);
 
   // ---------------------------------------------------------- renderer --
   useEffect(() => {
@@ -630,6 +697,18 @@ function GlobeStage({ manifest, layer, onRetryLayer, insights, customers }: Stag
                     {statusText}
                   </span>
                 </div>
+                {segmented ? (
+                  <div className="pointer-events-auto flex items-center gap-1 rounded-full bg-primary py-1 pl-3 pr-1 text-xs font-semibold text-white shadow-float" data-testid="globe-segment-pill">
+                    <button type="button" onClick={() => { setLeftTab("segment"); openPlaces(); }} className="hover:underline">
+                      Segment: {segmentResult.matched.size} of {segmentResult.total} blocks
+                    </button>
+                    <button type="button" onClick={() => setFilter(EMPTY_FILTER)} aria-label="Clear the segment" title="Clear the segment" className="grid size-5 place-items-center rounded-full hover:bg-white/20">
+                      <svg aria-hidden="true" viewBox="0 0 20 20" width="12" height="12" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round">
+                        <path d="m5.5 5.5 9 9m0-9-9 9" />
+                      </svg>
+                    </button>
+                  </div>
+                ) : null}
                 {showProvisional || level !== "globe" ? (
                   <div className="flex w-full flex-wrap items-center justify-center gap-2 md:w-auto">
                     {showProvisional ? (
@@ -697,7 +776,7 @@ function GlobeStage({ manifest, layer, onRetryLayer, insights, customers }: Stag
               </menu>
 
               <div className={cn("pointer-events-none absolute bottom-[4.25rem] left-3 z-10 md:bottom-3", placesOpen ? "lg:left-[19rem]" : "lg:left-3")}>
-                <Legend open={false} />
+                <Legend open={segmented || colourBy !== "link"} colourBy={colourBy} segmented={segmented} maxMatched={maxDistrictMatches(segmentResult)} />
               </div>
               {hoverName || focusName ? (
                 <p className="pointer-events-none absolute bottom-3 left-1/2 z-10 max-w-[40%] -translate-x-1/2 truncate rounded-full bg-white/95 px-3 py-1.5 text-xs font-medium text-ink shadow-float md:max-w-[min(40%,16rem)]" data-testid="globe-hover">
@@ -741,7 +820,42 @@ function GlobeStage({ manifest, layer, onRetryLayer, insights, customers }: Stag
                   data-testid="globe-places"
                 >
                   <CollapseButton label="Hide places" onClick={closePlaces} className="absolute right-2.5 top-2.5 z-10" />
-                  <PlaceSearch targets={targets} districts={districtTargets} blocks={blockTargets} onSelect={selectTarget} disabled={status !== "ready" || flying} activeId={selection.blockId ?? selection.districtId} trail={trail} />
+                  <div role="tablist" aria-label="Left panel" className="mb-3 mr-9 flex gap-1 rounded-xl bg-surface-muted p-1">
+                    {(["places", "segment"] as const).map((tab) => (
+                      <button
+                        key={tab}
+                        type="button"
+                        role="tab"
+                        aria-selected={leftTab === tab}
+                        onClick={() => setLeftTab(tab)}
+                        className={cn("min-h-8 flex-1 rounded-lg px-2 text-xs font-semibold transition-colors", leftTab === tab ? "bg-white text-primary-ink shadow-float" : "text-ink-muted hover:text-ink")}
+                        data-testid={`globe-tab-${tab}`}
+                      >
+                        {tab === "places" ? "Places" : "Segment"}
+                        {tab === "segment" && filterSize(filter) > 0 ? <span className="ml-1.5 rounded-full bg-primary px-1.5 text-[0.625rem] leading-4 text-white">{filterSize(filter)}</span> : null}
+                      </button>
+                    ))}
+                  </div>
+                  {leftTab === "places" ? (
+                    <PlaceSearch targets={targets} districts={districtTargets} blocks={blockTargets} onSelect={selectTarget} disabled={status !== "ready" || flying} activeId={selection.blockId ?? selection.districtId} trail={trail} />
+                  ) : (
+                    <SegmentPanel
+                      filter={filter}
+                      onFilter={setFilter}
+                      colourBy={colourBy}
+                      onColourBy={setColourBy}
+                      result={segmentResult}
+                      facts={facts}
+                      districts={view.districts}
+                      hasInsights={insights !== null}
+                      hasCustomers={customers !== null}
+                      disabled={status !== "ready" || flying}
+                      onSelectBlock={(id) => {
+                        if (!isWide()) setPlacesOpen(false);
+                        goTo({ level: "block", districtId: blocksById.get(id)?.districtId ?? null, blockId: id });
+                      }}
+                    />
+                  )}
                 </div>
               ) : null}
 

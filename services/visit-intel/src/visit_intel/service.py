@@ -1,9 +1,12 @@
 """Ingest and re-analysis, shared by the API and the backfill script so both behave identically."""
 from __future__ import annotations
 
+import logging
+
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from . import cases
 from .db import Analysis, Visit, latest_label, visit_dict
 from .model import SegmentModel
 from .pipeline import analyze, normalize
@@ -24,23 +27,29 @@ def _save(session: Session, key: str, result: dict) -> None:
 
 def ingest(session: Session, raws: list[dict], model: SegmentModel | None) -> dict:
     """Idempotent: the same Frontier visit sent twice is stored once (keyed on its ID or rep+time+customer+phone)."""
-    stored = skipped = review = 0
+    stored = skipped = review = errored = 0
     for raw in raws:
-        visit = normalize(raw)
-        if not visit["transcript"]:
-            skipped += 1
-            continue
-        row = session.get(Visit, visit["visit_key"]) or Visit(visit_key=visit["visit_key"])
-        for field in ("rep_name", "visit_at", "customer_name", "contact_person", "contact_number", "visit_category", "transcript"):
-            setattr(row, field, visit[field])
-        row.raw = {k: (None if v is None else str(v)) for k, v in raw.items()}
-        session.add(row)
-        result = analyze(visit, model, latest_label(session, visit["visit_key"]))
-        _save(session, visit["visit_key"], result)
-        stored += 1
-        review += result["needs_human_review"]
+        try:
+            visit = normalize(raw)
+            if not visit["transcript"]:
+                skipped += 1
+                continue
+            # Analyze first: only write the visit once its analysis succeeds, so a failed
+            # row never leaves a Visit without an Analysis (which the join reads depend on).
+            result = analyze(visit, model, latest_label(session, visit["visit_key"]))
+            row = session.get(Visit, visit["visit_key"]) or Visit(visit_key=visit["visit_key"])
+            for field in ("rep_name", "visit_at", "customer_name", "contact_person", "contact_number", "visit_category", "transcript"):
+                setattr(row, field, visit[field])
+            row.raw = {k: (None if v is None else str(v)) for k, v in raw.items()}
+            session.add(row)
+            _save(session, visit["visit_key"], result)
+            stored += 1
+            review += result["needs_human_review"]
+        except Exception:  # one malformed visit must never lose the rest of the batch
+            logging.getLogger(__name__).exception("ingest: skipping a visit that failed to analyze")
+            errored += 1
     session.commit()
-    return {"received": len(raws), "stored": stored, "skipped_empty": skipped, "needs_review": review}
+    return {"received": len(raws), "stored": stored, "skipped_empty": skipped, "needs_review": review, "errored": errored}
 
 
 def reanalyze(session: Session, model: SegmentModel | None, keys: list[str] | None = None) -> int:
@@ -53,6 +62,11 @@ def reanalyze(session: Session, model: SegmentModel | None, keys: list[str] | No
     return n
 
 
-def all_rows(session: Session) -> list[dict]:
+def all_rows(session: Session, with_cases: bool = False) -> list[dict]:
     rows = session.execute(select(Visit, Analysis).join(Analysis, Analysis.visit_key == Visit.visit_key)).all()
-    return [{**visit_dict(v), "result": a.result} for v, a in rows]
+    out = [{**visit_dict(v), "result": a.result} for v, a in rows]
+    if with_cases:
+        state = cases.for_visits(session, out)
+        for r in out:
+            r["case"] = state[r["visit_key"]]
+    return out
