@@ -109,12 +109,14 @@ export interface MarketDashboardProps {
 export function MarketDashboard({ blocks, districts, stateName, level, districtId, blockId, onSelectDistrict }: MarketDashboardProps) {
   // Prefer the server's real market file (GPS-placed visits); fall back to the sample generator until it loads.
   const [real, setReal] = useState<SerializedMarket | null>(null);
+  const [fetched, setFetched] = useState(false); // real figures resolved (ok or not) — until then we're still fetching
   useEffect(() => {
     let on = true;
     fetch("/api/globe/market")
       .then((r) => (r.ok ? r.json() : null))
       .then((d) => { if (on && d && d.blocks) setReal(d as SerializedMarket); })
-      .catch(() => {});
+      .catch(() => {})
+      .finally(() => { if (on) setFetched(true); });
     return () => { on = false; };
   }, []);
   const market = useMemo(() => (real ? deserialiseMarket(real) : buildMarketSample(blocks, districts)), [real, blocks, districts]);
@@ -152,6 +154,14 @@ export function MarketDashboard({ blocks, districts, stateName, level, districtI
         {real ? (
           <span className="rounded-full border border-dashed border-emerald-500 bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-800" data-testid="market-sample-badge">
             Real data · GPS-placed visits (last 30 days)
+          </span>
+        ) : !fetched ? (
+          <span className="inline-flex items-center gap-1.5 rounded-full border border-dashed border-primary bg-primary-soft px-3 py-1 text-xs font-semibold text-primary-ink" data-testid="market-sample-badge">
+            <svg className="h-3.5 w-3.5 animate-spin" viewBox="0 0 24 24" fill="none" aria-hidden>
+              <circle cx="12" cy="12" r="9" stroke="currentColor" strokeOpacity="0.25" strokeWidth="3" />
+              <path d="M21 12a9 9 0 0 0-9-9" stroke="currentColor" strokeWidth="3" strokeLinecap="round" />
+            </svg>
+            Fetching real figures…
           </span>
         ) : (
           <span className="rounded-full border border-dashed border-amber-500 bg-amber-50 px-3 py-1 text-xs font-semibold text-amber-800" data-testid="market-sample-badge">
