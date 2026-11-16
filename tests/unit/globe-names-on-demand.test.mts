@@ -104,8 +104,9 @@ describe("the projected manifest (what the page carries)", () => {
   it("keeps every field the globe draws from, unchanged", () => {
     assert.equal(manifest.blocks.length, server.blocks.length);
     server.blocks.forEach((block, index) => {
-      const { records: _records, ...rest } = block;
+      const { records: _records, placement: _placement, ...rest } = block;
       void _records;
+      void _placement;
       const { rowIds: _rowIds, ...projected } = manifest.blocks[index] as typeof manifest.blocks[number] & { rowIds: string[] };
       void _rowIds;
       assert.deepEqual(projected, rest, block.id);
@@ -351,8 +352,9 @@ describe("the real build", { skip: ready ? false : "run npm run data:build and n
 
   it("changes nothing else about any block or district (drawing, state, counts and metadata are equal)", () => {
     server.blocks.forEach((block, i) => {
-      const { records: _records, ...rest } = block;
+      const { records: _records, placement: _placement, ...rest } = block;
       void _records;
+      void _placement;
       const { rowIds: _rowIds, ...projected } = manifest.blocks[i];
       void _rowIds;
       assert.deepEqual(projected, rest, block.id);
@@ -418,6 +420,12 @@ const SERVER_ONLY = [
   "src/features/globe/block-rows-route.server.ts",
   // The team assistant's fact sheet (names included), for POST /api/globe/ask only.
   "src/features/globe/ask.server.ts",
+  // The team as it is now, its saved versions, and changing it (names included).
+  "src/features/globe/team-data.server.ts",
+  "src/features/globe/team-store.server.ts",
+  "src/features/globe/team-admin.server.ts",
+  "src/features/globe/roster/roster.server.ts",
+  "src/features/globe/roster/sheet-import.server.ts",
 ];
 
 function resolveImport(from: string, specifier: string): string | null {
@@ -486,10 +494,10 @@ describe("structure: client code cannot reach the names-bearing manifest or its 
     const text = sources.get(join(SRC, "features/globe/overlay.server.ts"))!.replace(/\/\*[\s\S]*?\*\//g, "");
     const exported = [...text.matchAll(/^export\s+(?:async\s+)?(?:function|const|let|var|class|type|interface)\s+(\w+)/gm)].map((m) => m[1]).sort();
     assert.deepEqual(exported, ["blockRowsAvailable", "getBlockRows", "getDistrictTeam", "getGlobeManifest"]);
-    assert.match(text, /function getDistrictTeam\(districtId: string\): Array<\{ blockId: string; rows: BlockRow\[\] \}> \| null/);
+    assert.match(text, /function getDistrictTeam\(districtId: string\): Promise<Array<\{ blockId: string; rows: BlockRow\[\] \}> \| null>/);
     assert.doesNotMatch(text, /^export\s*\{|^export\s+default|export\s+\*/m);
-    assert.match(text, /function getGlobeManifest\(\): GlobeManifest \| null/);
-    assert.match(text, /function getBlockRows\(blockId: string\): BlockRow\[\] \| null/);
+    assert.match(text, /function getGlobeManifest\(\): Promise<GlobeManifest \| null>/);
+    assert.match(text, /function getBlockRows\(blockId: string\): Promise<BlockRow\[\] \| null>/);
   });
 
   it("GlobePanel no longer reads .records, and neither does any other globe source", () => {
@@ -500,7 +508,7 @@ describe("structure: client code cannot reach the names-bearing manifest or its 
       assert.doesNotMatch(code, /\.records\b|\brecords\s*:/, rel(file));
     }
     const panel = sources.get(join(SRC, "features/globe/components/GlobePanel.tsx"))!;
-    assert.match(panel, /<BlockTeam key=\{block\.id\} block=\{block\} \/>/);
+    assert.match(panel, /<BlockTeam key=\{block\.id\} block=\{block\}/);
     assert.match(panel, /<DistrictTeam lookup=\{districtTeam\}/);
     const team = sources.get(join(SRC, "features/globe/components/TeamSection.tsx"))!;
     assert.match(team, /fetchDistrictTeam\(districtId!, expected, signal\)/, "a district's names are fetched with the places the page holds");

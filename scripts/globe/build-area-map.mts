@@ -24,8 +24,8 @@
 import { createHash } from "node:crypto";
 import { readFile, readdir, writeFile } from "node:fs/promises";
 import path from "node:path";
-import { ALIASES, AREAS_WITHOUT_OUTLINE, OUTSIDE_STATE, PLACE_NAME_FIXES, TERRITORY_DISTRICT } from "./area-mapping.config.ts";
-import { deriveKey } from "../../src/features/geo/names.ts";
+import { ALIASES, AREAS_WITHOUT_OUTLINE, OUTSIDE_STATE, TERRITORY_DISTRICT } from "../../src/features/globe/area-mapping.config.ts";
+import { buildCanonical, matchKey, placeName, tidyName } from "../../src/features/globe/roster/sheet-clean.ts";
 import { districtOfBlock, osmName, relationToGeometry, type OsmRelation } from "../../src/features/geo/osm.ts";
 import type { Polygon as GeoPolygon } from "../../src/features/geo/geometry.ts";
 import { encodeShape, unionViewBox } from "../../src/features/geo/layer.ts";
@@ -118,11 +118,6 @@ for (const r of relations) {
   osmBlocks.push({ relationId: r.id, name, districtCode: code, polygons: g.polygons, complete: g.openPieces === 0 });
 }
 
-/** Name key for matching: lower case, dashes and spacing unified, trailing numeral split off, "block"/"subdivision" dropped. */
-function matchKey(label: string): string {
-  const key = deriveKey(label.replace(/\b(block|subdivision)\b/gi, " "));
-  return `${key.compact}#${key.numeral ?? ""}`;
-}
 
 // ------------------------------------------------------------- resolve rows --
 type Resolution =
@@ -195,70 +190,17 @@ if (problems.length > 0) {
  *      more frequent one. Different territories are never merged, so namesakes stay separate people.
  * Every correction is printed by the build.
  */
-function tidyName(raw: string): string {
-  let name = raw.replace(/\s+/g, " ").trim();
-  if (name === name.toUpperCase()) {
-    name = name.toLowerCase().replace(/(^|[\s.\-/'])(\p{L})/gu, (_, sep: string, ch: string) => sep + ch.toUpperCase());
-  }
-  const words = name.split(" ");
-  if (words.length >= 3 && words.at(-1)!.toLowerCase() === words.at(-2)!.toLowerCase()) words.pop();
-  return words.join(" ");
-}
-function editDistance(a: string, b: string): number {
-  const row = Array.from({ length: b.length + 1 }, (_, j) => j);
-  for (let i = 1; i <= a.length; i++) {
-    let prev = row[0];
-    row[0] = i;
-    for (let j = 1; j <= b.length; j++) {
-      const next = Math.min(row[j] + 1, row[j - 1] + 1, prev + (a[i - 1] === b[j - 1] ? 0 : 1));
-      prev = row[j];
-      row[j] = next;
-    }
-  }
-  return row[b.length];
-}
 const nameFixes = new Map<string, string>();
-/** territory → tidy name → canonical name */
-const canonical = new Map<string, Map<string, string>>();
-{
-  const counts = new Map<string, Map<string, number>>();
-  for (const unit of sheet.units) {
-    const territory = territoryLabel.get(unit.salesTerritoryId)!;
-    const names = counts.get(territory) ?? new Map<string, number>();
-    counts.set(territory, names);
-    for (const slot of unit.slots) for (const raw of slot.names) if (raw.trim()) names.set(tidyName(raw), (names.get(tidyName(raw)) ?? 0) + 1);
-  }
-  for (const [territory, names] of counts) {
-    const map = new Map<string, string>([...names.keys()].map((n) => [n, n]));
-    const full = [...names.keys()].filter((n) => n.includes(" "));
-    for (const name of names.keys()) {
-      if (name.includes(" ")) continue;
-      const matches = full.filter((f) => f.split(" ")[0].toLowerCase() === name.toLowerCase());
-      if (matches.length === 1) map.set(name, matches[0]);
-    }
-    const ranked = [...names.keys()].filter((n) => n.includes(" ")).sort((a, b) => names.get(b)! - names.get(a)! || a.localeCompare(b));
-    for (const [i, name] of ranked.entries()) {
-      const key = name.toLowerCase().replace(/\s/g, "");
-      const better = ranked.slice(0, i).find((m) => editDistance(m.toLowerCase().replace(/\s/g, ""), key) <= 1);
-      if (better) map.set(name, map.get(better)!);
-    }
-    canonical.set(territory, map);
-  }
-}
+/** territory → tidy name → canonical name (sheet-clean.ts) */
+const canonical = buildCanonical(
+  sheet.units.flatMap((unit) => unit.slots.flatMap((slot) => slot.names.map((raw) => ({ territory: territoryLabel.get(unit.salesTerritoryId)!, raw })))),
+);
 function cleanName(raw: string, territory: string): string {
   const tidy = tidyName(raw);
   const name = canonical.get(territory)?.get(tidy) ?? tidy;
   const original = raw.replace(/\s+/g, " ").trim();
   if (name.toLowerCase() !== original.toLowerCase()) nameFixes.set(original, name);
   return name;
-}
-
-/** A place's display name: the sheet label tidied (one dash style, numerals as "-I"), then PLACE_NAME_FIXES. */
-function placeName(label: string): string {
-  let name = label.replaceAll("\u2013", "-").replace(/\s+/g, " ").trim().replace(/\s*-\s*/g, "-");
-  name = name.replace(/^(.*\S)[\s-]+(i{1,3}|iv|v)$/i, (_, stem: string, numeral: string) => `${stem}-${numeral.toUpperCase()}`);
-  name = name.replace(/\b(BOROUGH)\b/, "Borough");
-  return PLACE_NAME_FIXES[name] ?? name;
 }
 
 interface Person {
@@ -290,6 +232,8 @@ interface MapUnit {
   district: OsmDistrict;
   block: OsmBlock | null;
   noGeometryReason: string | null;
+  /** For an area without an outline: its key in AREAS_WITHOUT_OUTLINE. */
+  areaKey: string | null;
   mappingNotes: string[];
   rows: Array<{ unitId: string; sourceRow: number; blockLabel: string; territory: string; people: Person[] }>;
 }
@@ -318,6 +262,7 @@ for (const unit of sheet.units) {
       district: districtByCode.get(resolution.block.districtCode)!,
       block: resolution.block,
       noGeometryReason: null,
+      areaKey: null,
       mappingNotes: [],
       rows: [],
     });
@@ -331,6 +276,7 @@ for (const unit of sheet.units) {
       district: resolution.district,
       block: null,
       noGeometryReason: `No outline: ${resolution.note}.`,
+      areaKey: resolution.key,
       mappingNotes: [],
       rows: [],
     });
@@ -418,6 +364,11 @@ const outBlocks = sortedUnits.map((unit) => {
     state: namedCount(unit.rows) > 0 ? ("represented" as const) : ("unresolved" as const),
     reason: unit.mappingNotes.length ? `${reason} Map note: ${unit.mappingNotes.join("; ")}.` : reason,
     contested: false,
+    // How an uploaded sheet finds this place again (src/features/globe/roster/sheet-import.server.ts). Server only.
+    placement: {
+      keys: [...new Set([...(unit.block ? [matchKey(unit.block.name)] : []), matchKey(unit.name), ...unit.rows.map((r) => matchKey(r.blockLabel))])],
+      areaKey: unit.areaKey,
+    },
     staff: staffOf(unit.rows),
     roleCounts: Object.fromEntries(
       ["ASM", "PRIMARY", "SECONDARY", "DSO"].map((role) => [role, new Set(unit.rows.flatMap((r) => r.people.filter((p) => p.name && p.role === role).map((p) => p.name!.toLowerCase()))).size]),

@@ -122,6 +122,7 @@ interface DetailsProps {
  * its team by role and its blocks, fewest people first. A block: its team. Everything comes from the area-mapping sheet.
  */
 export function GlobeDetails({ overlay, level, district, block, districtTeam, onSelectBlock, onSelectDistrict, disabled }: DetailsProps) {
+  const [editing, setEditing] = useState(false);
   const parent = block?.districtId ? (overlay.districts.find((d) => d.id === block.districtId) ?? null) : null;
   const blocks = useMemo(() => (district ? overlay.blocks.filter((b) => b.districtId === district.id) : []), [overlay.blocks, district]);
   const districtRows = useMemo(
@@ -208,7 +209,19 @@ export function GlobeDetails({ overlay, level, district, block, districtTeam, on
               {block.vacancies ? `, ${block.vacancies} vacant` : ""}
             </span>
           </p>
-          <BlockTeam key={block.id} block={block} />
+          <div className="flex items-center justify-between">
+            <h3 className="text-xs font-semibold text-ink-muted">Team</h3>
+            <button
+              type="button"
+              onClick={() => setEditing((e) => !e)}
+              aria-pressed={editing}
+              className={editing ? "rounded-full bg-ink px-3 py-1 text-xs font-semibold text-white" : "rounded-full bg-surface-muted px-3 py-1 text-xs font-semibold text-primary-ink hover:bg-primary-soft"}
+              data-testid="team-edit-toggle"
+            >
+              {editing ? "Done" : "Edit team"}
+            </button>
+          </div>
+          <BlockTeam key={block.id} block={block} version={overlay.meta.teamVersion ?? 0} editable={editing} />
           {!block.geometry ? <p className="text-xs text-ink-subtle" data-testid="globe-no-outline">The map has no boundary for this area, so it shows the district.</p> : null}
         </>
       ) : null}

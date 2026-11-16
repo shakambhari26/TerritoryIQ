@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { connection } from "next/server";
 import { GlobeLoader } from "@/features/globe/components/GlobeLoader";
 import { aiConfigured } from "@/features/globe/ask.server";
 import { getGlobeManifest } from "@/features/globe/overlay.server";
@@ -16,8 +17,10 @@ export const metadata: Metadata = {
  * in the page: they are fetched for the selected place from /api/globe/block-rows and /api/globe/district-team.
  * Dealers, distributors and influencers are planned as later layers.
  */
-export default function GlobePage() {
-  const manifest = getGlobeManifest();
+export default async function GlobePage() {
+  // Rendered per request: the team can change at any time (an upload, a person added or removed).
+  await connection();
+  const manifest = await getGlobeManifest();
   return (
     <>
       <div className="flex flex-wrap items-center gap-x-4 gap-y-2">

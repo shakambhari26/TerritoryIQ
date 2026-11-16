@@ -20,6 +20,12 @@ export interface ServerRecord {
   namedPeople: number;
 }
 
-export type ServerBlock = Omit<ManifestBlock, "rowIds"> & { records: ServerRecord[] };
+/** How a place is found again from a sheet row: its normalised names (sheet-clean.ts matchKey), or its area key. */
+export interface Placement {
+  keys: string[];
+  areaKey: string | null;
+}
+
+export type ServerBlock = Omit<ManifestBlock, "rowIds"> & { records: ServerRecord[]; placement?: Placement };
 
 export type ServerManifest = Omit<GlobeManifest, "blocks"> & { blocks: ServerBlock[] };

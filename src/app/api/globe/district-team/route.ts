@@ -14,7 +14,7 @@ async function respond(request: Request) {
     key: "districtId",
     pattern: DISTRICT_ID_PATTERN,
     field: "blocks",
-    available: blockRowsAvailable(),
+    available: await blockRowsAvailable(),
     lookup: getDistrictTeam,
   });
 }

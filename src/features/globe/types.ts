@@ -136,6 +136,8 @@ export interface GlobeOverlay {
     };
     /** Counts from the area-mapping sheet (no names): its rows, the rows placed on the map, and distinct people. */
     sheet?: { rows: number; mappedRows: number; staff: number; spread?: number[] };
+    /** The saved team version in force (0 = as built from the sheet). Changes whenever someone edits the team. */
+    teamVersion?: number;
   };
   state: { id: string; name: string; bbox: BBox | null; centre: readonly [number, number] | null; basis: string };
   districts: OverlayDistrict[];

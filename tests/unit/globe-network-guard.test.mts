@@ -25,6 +25,12 @@ const ALLOWED: AllowedFetch[] = [
   // A spoken question (base64 WAV) and a spoken answer (its text), each to its own route.
   { file: "src/features/globe/voice-client.ts", url: "/api/globe/ask-voice", constant: "VOICE_URL", method: "POST", bodyKey: "audio" },
   { file: "src/features/globe/speak-client.ts", url: "/api/globe/speak", constant: "SPEAK_URL", method: "POST", bodyKey: "text" },
+  // Managing the team: preview and apply an uploaded sheet, one person added or removed, the history (a GET), a restore.
+  { file: "src/features/globe/team-clients/preview.ts", url: "/api/globe/team/preview", constant: "PREVIEW_URL", method: "POST", bodyKey: "file" },
+  { file: "src/features/globe/team-clients/apply.ts", url: "/api/globe/team/apply", constant: "APPLY_URL", method: "POST", bodyKey: "file" },
+  { file: "src/features/globe/team-clients/edit.ts", url: "/api/globe/team/edit", constant: "EDIT_URL", method: "POST", bodyKey: "change" },
+  { file: "src/features/globe/team-clients/history.ts", url: "/api/globe/team/history", constant: "HISTORY_URL" },
+  { file: "src/features/globe/team-clients/restore.ts", url: "/api/globe/team/restore", constant: "RESTORE_URL", method: "POST", bodyKey: "versionId" },
 ];
 
 function* files(directory: string): Generator<string> {
@@ -54,6 +60,11 @@ describe("network guard: the real source tree", () => {
       "src/features/globe/district-team-client.ts",
       "src/features/globe/layer-client.ts",
       "src/features/globe/speak-client.ts",
+      "src/features/globe/team-clients/apply.ts",
+      "src/features/globe/team-clients/edit.ts",
+      "src/features/globe/team-clients/history.ts",
+      "src/features/globe/team-clients/preview.ts",
+      "src/features/globe/team-clients/restore.ts",
       "src/features/globe/voice-client.ts",
     ]);
     assert.match(sources["src/features/globe/layer-client.ts"], /const LAYER_URL = "\/geo\/globe-boundaries\.json";/);

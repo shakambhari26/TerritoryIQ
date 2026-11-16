@@ -12,6 +12,7 @@ import { bandFor, NO_FILTER, NOT_IN_SHEET, ROLE_COLOUR, ROLE_NAME, ROLE_ORDER, S
 import { StaffFilterPanel } from "./StaffFilter";
 import { TeamChat } from "./TeamChat";
 import { TeamInsights } from "./TeamInsights";
+import { TeamManager } from "./TeamManager";
 import { buildTargets, pickableRefs, type Target } from "../targets";
 import type { GlobeManifest, Level, Phase } from "../types";
 import { GlobeFallback } from "./GlobeFallback";
@@ -236,7 +237,7 @@ function GlobeStage({ manifest, layer, onRetryLayer, aiEnabled }: StageProps) {
   // The open district's team: for the panel and for the person icons on the map.
   const teamDistrictId = selection.level === "district" || selection.level === "block" ? selection.districtId : null;
   const teamBlocks = useMemo(() => (teamDistrictId ? view.blocks.filter((b) => b.districtId === teamDistrictId) : []), [view.blocks, teamDistrictId]);
-  const districtTeam = useDistrictTeam(teamDistrictId, teamBlocks);
+  const districtTeam = useDistrictTeam(teamDistrictId, teamBlocks, view.meta.teamVersion ?? 0);
 
   // The pop-up card: the people of the block under the pointer, or else of the selected block. Names come from the open
   // district's team, so a card shows only once a district is open; nothing is shown on the map otherwise.
@@ -848,6 +849,10 @@ function GlobeStage({ manifest, layer, onRetryLayer, aiEnabled }: StageProps) {
           stageRef.current?.scrollIntoView({ behavior: reducedMotion ? "auto" : "smooth", block: "center" });
           goTo({ level: "district", districtId: id, blockId: null });
         }}
+        onSelectBlock={(id) => {
+          stageRef.current?.scrollIntoView({ behavior: reducedMotion ? "auto" : "smooth", block: "center" });
+          goTo({ level: "block", districtId: blocksById.get(id)?.districtId ?? null, blockId: id });
+        }}
       />
       <StaffFilterPanel
         blocks={view.blocks}
@@ -860,6 +865,7 @@ function GlobeStage({ manifest, layer, onRetryLayer, aiEnabled }: StageProps) {
           goTo({ level: "block", districtId: blocksById.get(id)?.districtId ?? null, blockId: id });
         }}
       />
+      <TeamManager teamVersion={view.meta.teamVersion ?? 0} />
     </>
   );
 }
@@ -883,28 +889,34 @@ const CODE_REASON: Record<string, string> = {
 export default function GlobeExperience({ manifest, aiEnabled = false }: { manifest: GlobeManifest; aiEnabled?: boolean }) {
   const [webgl] = useState(() => webglAvailable());
   const [attempt, setAttempt] = useState(0);
-  const [layer, setLayer] = useState<LayerState>({ status: "loading" });
+  // The outline file is fetched once (per retry); the outlines never change when the team does. Each new manifest (a
+  // team change refreshes the page data) is joined to the same file again, so the map keeps its outlines.
+  const [file, setFile] = useState<{ status: "loading" } | { status: "ready"; data: unknown } | { status: "unavailable"; reason: string }>({ status: "loading" });
 
   useEffect(() => {
     if (!webgl) return;
     const controller = new AbortController();
     fetchBoundaryLayer(controller.signal)
       .then((data) => {
-        if (controller.signal.aborted) return;
-        const outcome = mergeLayer(manifest, data);
-        setLayer(outcome.ok ? { status: "ready", outcome } : { status: "unavailable", reason: outcome.reason });
+        if (!controller.signal.aborted) setFile({ status: "ready", data });
       })
       .catch((error: unknown) => {
         if (controller.signal.aborted) return;
         const known = error instanceof LayerRequestError && error.code ? CODE_REASON[error.code] : undefined;
         const detail = error instanceof Error ? error.message : "unknown error";
-        setLayer({ status: "unavailable", reason: known ?? `The outline data could not be loaded from /geo/globe-boundaries.json (${detail}).` });
+        setFile({ status: "unavailable", reason: known ?? `The outline data could not be loaded from /geo/globe-boundaries.json (${detail}).` });
       });
     return () => controller.abort();
-  }, [manifest, attempt, webgl]);
+  }, [attempt, webgl]);
+
+  const layer = useMemo((): LayerState => {
+    if (file.status !== "ready") return file;
+    const outcome = mergeLayer(manifest, file.data);
+    return outcome.ok ? { status: "ready", outcome } : { status: "unavailable", reason: outcome.reason };
+  }, [file, manifest]);
 
   const retry = useCallback(() => {
-    setLayer({ status: "loading" });
+    setFile({ status: "loading" });
     setAttempt((n) => n + 1);
   }, []);
 

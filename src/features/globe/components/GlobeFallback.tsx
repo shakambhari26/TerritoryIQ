@@ -21,7 +21,7 @@ export function GlobeFallback({ overlay, reason }: { overlay: GlobeManifest; rea
   const block = selected?.kind === "block" ? (overlay.blocks.find((b) => b.id === selected.id) ?? null) : null;
   const level = !selected ? "globe" : selected.kind === "state" ? "state" : selected.kind;
   const districtBlocks = useMemo(() => (district ? overlay.blocks.filter((b) => b.districtId === district.id) : []), [overlay.blocks, district]);
-  const districtTeam = useDistrictTeam(district?.id ?? null, districtBlocks);
+  const districtTeam = useDistrictTeam(district?.id ?? null, districtBlocks, overlay.meta.teamVersion ?? 0);
 
   return (
     <>

@@ -1,8 +1,7 @@
 import "server-only";
 import { ApiError, GoogleGenAI, ThinkingLevel } from "@google/genai";
-import { readFile } from "node:fs/promises";
-import path from "node:path";
 import type { ServerManifest } from "./server-types";
+import { currentTeam } from "./team-data.server";
 import { SUGGESTED_QUESTIONS, TRANSCRIPT_MARK } from "./ask-questions";
 import { ROLE_NAME, ROLE_ORDER } from "./staffing";
 
@@ -48,13 +47,7 @@ interface Facts {
   text: string;
 }
 
-async function loadFacts(): Promise<Facts | null> {
-  let server: ServerManifest;
-  try {
-    server = JSON.parse(await readFile(path.join(process.cwd(), "data", "generated", "globe-overlay.json"), "utf8")) as ServerManifest;
-  } catch {
-    return null;
-  }
+function buildFacts(server: ServerManifest): Facts {
   const districtName = new Map(server.districts.map((d) => [d.id, d.name]));
   const places: Place[] = server.blocks.map((b) => {
     const seen = new Set<string>();
@@ -128,8 +121,14 @@ async function loadFacts(): Promise<Facts | null> {
   return { places, districts, people, totals, text: lines.join("\n") };
 }
 
-let cached: Promise<Facts | null> | null = null;
-const facts = () => (cached ??= loadFacts());
+/** The facts for the team as it is now (team-data.server.ts), rebuilt only when the team version changes. */
+let cached: { versionId: number; facts: Facts } | null = null;
+async function facts(): Promise<Facts | null> {
+  const team = await currentTeam();
+  if (!team) return null;
+  if (cached?.versionId !== team.versionId) cached = { versionId: team.versionId, facts: buildFacts(team.server) };
+  return cached.facts;
+}
 
 const geminiKey = () => process.env.GEMINI_API_KEY?.trim() || null;
 

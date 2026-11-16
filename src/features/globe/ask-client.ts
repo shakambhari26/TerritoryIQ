@@ -13,6 +13,8 @@ export async function askTeam(question: string, onText: (text: string) => void, 
     signal,
     cache: "no-store",
   });
+  // An expired session is refused before the route runs (plain text, not JSON): say so plainly.
+  if (response.status === 401) throw new Error("Your sign-in has expired. Reload the page to sign in again.");
   if (!response.ok || !response.body) {
     let message = "The assistant could not answer. Try again.";
     try {

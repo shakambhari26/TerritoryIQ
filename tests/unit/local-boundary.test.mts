@@ -206,6 +206,11 @@ describe("outbound network", () => {
       "src/features/globe/district-team-client.ts",
       "src/features/globe/layer-client.ts",
       "src/features/globe/speak-client.ts",
+      "src/features/globe/team-clients/apply.ts",
+      "src/features/globe/team-clients/edit.ts",
+      "src/features/globe/team-clients/history.ts",
+      "src/features/globe/team-clients/preview.ts",
+      "src/features/globe/team-clients/restore.ts",
       "src/features/globe/voice-client.ts",
       "src/features/territory/components/Workspace.tsx",
     ]);
@@ -217,6 +222,11 @@ describe("outbound network", () => {
       "src/features/globe/ask-client.ts": "/api/globe/ask",
       "src/features/globe/voice-client.ts": "/api/globe/ask-voice",
       "src/features/globe/speak-client.ts": "/api/globe/speak",
+      "src/features/globe/team-clients/preview.ts": "/api/globe/team/preview",
+      "src/features/globe/team-clients/apply.ts": "/api/globe/team/apply",
+      "src/features/globe/team-clients/edit.ts": "/api/globe/team/edit",
+      "src/features/globe/team-clients/history.ts": "/api/globe/team/history",
+      "src/features/globe/team-clients/restore.ts": "/api/globe/team/restore",
     };
     const constants: Record<string, string> = {
       "src/features/globe/block-rows-client.ts": "BLOCK_ROWS_URL",
@@ -224,6 +234,11 @@ describe("outbound network", () => {
       "src/features/globe/ask-client.ts": "ASK_URL",
       "src/features/globe/voice-client.ts": "VOICE_URL",
       "src/features/globe/speak-client.ts": "SPEAK_URL",
+      "src/features/globe/team-clients/preview.ts": "PREVIEW_URL",
+      "src/features/globe/team-clients/apply.ts": "APPLY_URL",
+      "src/features/globe/team-clients/edit.ts": "EDIT_URL",
+      "src/features/globe/team-clients/history.ts": "HISTORY_URL",
+      "src/features/globe/team-clients/restore.ts": "RESTORE_URL",
     };
     for (const file of offenders) {
       const text = read(file);

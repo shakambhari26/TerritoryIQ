@@ -22,7 +22,7 @@ export interface AllowedFetch {
   /** `POST` when the file's one request is a lookup POST. Omitted for a plain GET. */
   method?: "POST";
   /** The one key a POST body may hold. Default `blockId`. */
-  bodyKey?: "blockId" | "districtId" | "question" | "audio" | "text";
+  bodyKey?: "blockId" | "districtId" | "question" | "audio" | "text" | "file" | "change" | "versionId";
 }
 
 /** Everything that can reach beyond the page. `fetch` is allowed only through the list. */

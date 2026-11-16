@@ -22,7 +22,7 @@ export interface BlockRowsSource<T = BlockRow> {
   /** False when the manifest has not been built. */
   available: boolean;
   /** An exact lookup: the block's rows (possibly none), or null for an unknown ID. */
-  rows: (blockId: string) => T[] | null;
+  rows: (blockId: string) => T[] | null | Promise<T[] | null>;
 }
 
 export function blockRowsError(code: BlockRowsErrorCode): Response {
@@ -74,7 +74,7 @@ async function readCapped(request: Request): Promise<string | null> {
  */
 export async function handleLookupRequest<T>(
   request: Request,
-  options: { key: string; pattern: RegExp; field: string; available: boolean; lookup: (id: string) => T | null },
+  options: { key: string; pattern: RegExp; field: string; available: boolean; lookup: (id: string) => T | null | Promise<T | null> },
 ): Promise<Response> {
   // Second layer after src/proxy.ts, which already applies the same check to every path.
   if (!isRequestAuthorized(request.headers)) return blockRowsError("host");
@@ -97,7 +97,7 @@ export async function handleLookupRequest<T>(
   if (typeof id !== "string" || !options.pattern.test(id)) return blockRowsError("badid");
 
   if (!options.available) return blockRowsError("unavailable");
-  const data = options.lookup(id);
+  const data = await options.lookup(id);
   if (data === null) return blockRowsError("notfound");
   return Response.json({ [options.key]: id, [options.field]: data }, { headers: HEADERS });
 }

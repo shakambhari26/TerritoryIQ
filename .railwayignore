@@ -5,6 +5,8 @@
 # confidential source workbooks and raw downloads: never uploaded, only the built data/generated is
 /data-source/
 /data/raw/
+# local team-version store used only when no DATABASE_URL is set (src/features/globe/team-store.server.ts)
+/data/local/
 
 # secrets: set on Railway as variables instead
 .env*

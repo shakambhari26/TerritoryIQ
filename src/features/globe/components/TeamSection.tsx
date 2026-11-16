@@ -1,18 +1,21 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { fetchBlockRows } from "../block-rows-client";
+import { BlockRowsRequestError, fetchBlockRows } from "../block-rows-client";
 import type { BlockRow } from "../block-rows";
 import { fetchDistrictTeam } from "../district-team-client";
 import type { DistrictTeamPayload } from "../block-rows";
 import { ROLE_COLOUR, ROLE_NAME, ROLE_ORDER } from "../staffing";
+import { editTeamMember } from "../team-clients/edit";
+import type { TeamRole } from "../team-types";
 import type { ManifestBlock } from "../types";
 
 /** A request that has not answered by now is abandoned and shown as an error with a retry. */
 export const TEAM_TIMEOUT_MS = 10_000;
 
-type Outcome<T> = { attempt: number; kind: "ready"; data: T } | { attempt: number; kind: "error" };
-export type Lookup<T> = { state: "idle" } | { state: "loading" } | { state: "error"; retry: () => void } | { state: "ready"; data: T };
+type Outcome<T> = { attempt: number; kind: "ready"; data: T } | { attempt: number; kind: "error"; signedOut?: boolean };
+export type Lookup<T> = { state: "idle" } | { state: "loading" } | { state: "error"; retry: () => void; signedOut: boolean } | { state: "ready"; data: T };
 
 /**
  * Runs `load` once per `key` (and per retry), with a timeout, aborting on change. Names are never on the page: they are
@@ -42,8 +45,8 @@ function useTeamLookup<T>(key: string, enabled: boolean, load: (signal: AbortSig
     }, TEAM_TIMEOUT_MS);
     loadRef.current(controller.signal).then(
       (data) => finish({ attempt, kind: "ready", data }),
-      () => {
-        if (!controller.signal.aborted) finish({ attempt, kind: "error" });
+      (error: unknown) => {
+        if (!controller.signal.aborted) finish({ attempt, kind: "error", signedOut: error instanceof BlockRowsRequestError && error.status === 401 });
       },
     );
     return () => {
@@ -56,14 +59,14 @@ function useTeamLookup<T>(key: string, enabled: boolean, load: (signal: AbortSig
   if (!enabled) return { state: "idle" };
   const current = outcome && outcome.attempt === attempt && outcome.key === key ? outcome : null;
   if (!current) return { state: "loading" };
-  if (current.kind === "error") return { state: "error", retry: () => setAttempt((n) => n + 1) };
+  if (current.kind === "error") return { state: "error", retry: () => setAttempt((n) => n + 1), signedOut: current.signedOut === true };
   return { state: "ready", data: current.data };
 }
 
 /** Everyone in one district (every place with its sheet rows). Idle when no district is open. */
-export function useDistrictTeam(districtId: string | null, blocks: readonly ManifestBlock[]): Lookup<DistrictTeamPayload> {
+export function useDistrictTeam(districtId: string | null, blocks: readonly ManifestBlock[], version = 0): Lookup<DistrictTeamPayload> {
   const expected = useMemo(() => blocks.map((b) => ({ id: b.id, rowIds: b.rowIds })), [blocks]);
-  const key = `${districtId}:${expected.map((e) => `${e.id}=${e.rowIds.join(",")}`).join("|")}`;
+  const key = `v${version}:${districtId}:${expected.map((e) => `${e.id}=${e.rowIds.join(",")}`).join("|")}`;
   return useTeamLookup(key, districtId !== null && expected.length > 0, (signal) => fetchDistrictTeam(districtId!, expected, signal));
 }
 
@@ -80,11 +83,11 @@ function Loading({ testId }: { testId: string }) {
   );
 }
 
-function Failed({ testId, onRetry }: { testId: string; onRetry: () => void }) {
+function Failed({ testId, onRetry, signedOut }: { testId: string; onRetry: () => void; signedOut: boolean }) {
   return (
     <div data-testid={testId} data-state="error" className="space-y-2">
       <p role="alert" className="text-xs text-warn-ink">
-        The team could not be loaded.
+        {signedOut ? "Your sign-in has expired. Reload the page to sign in again." : "The team could not be loaded."}
       </p>
       <button type="button" data-testid={`${testId}-retry`} onClick={onRetry} className="rounded-lg bg-primary-soft px-3 py-1.5 text-xs font-semibold text-primary-ink">
         Retry
@@ -161,16 +164,114 @@ function TeamList({ groups, showPlaces }: { groups: RoleGroup[]; showPlaces: boo
 }
 
 /** The team of one place, fetched when the place is opened. */
-export function BlockTeam({ block }: { block: ManifestBlock }) {
-  const lookup = useTeamLookup(`${block.id}:${block.rowIds.join("|")}`, block.rowIds.length > 0, (signal) => fetchBlockRows(block.id, block.rowIds, signal).then((p) => p.rows));
+export function BlockTeam({ block, version = 0, editable = false }: { block: ManifestBlock; version?: number; editable?: boolean }) {
+  const lookup = useTeamLookup(`v${version}:${block.id}:${block.rowIds.join("|")}`, block.rowIds.length > 0, (signal) => fetchBlockRows(block.id, block.rowIds, signal).then((p) => p.rows));
   const testId = "globe-block-team";
-  if (lookup.state === "idle") return null;
+  if (lookup.state === "idle")
+    return editable ? (
+      <section data-testid={testId} data-state="ready" aria-label={`Team in ${block.name}`}>
+        <TeamEditor block={block} groups={[]} />
+      </section>
+    ) : null;
   if (lookup.state === "loading") return <Loading testId={testId} />;
-  if (lookup.state === "error") return <Failed testId={testId} onRetry={lookup.retry} />;
+  if (lookup.state === "error") return <Failed testId={testId} onRetry={lookup.retry} signedOut={lookup.signedOut} />;
+  const groups = groupByRole([{ place: block.name, rows: lookup.data }]);
   return (
     <section data-testid={testId} data-state="ready" aria-label={`Team in ${block.name}`}>
-      <TeamList groups={groupByRole([{ place: block.name, rows: lookup.data }])} showPlaces={false} />
+      {editable ? <TeamEditor block={block} groups={groups} /> : <TeamList groups={groups} showPlaces={false} />}
     </section>
+  );
+}
+
+/**
+ * Editing one place's team: remove a person (asked to confirm), or add one with a role. Each change is saved as a new
+ * team version, and the page data is refreshed so the map, counts and panels show it at once.
+ */
+function TeamEditor({ block, groups }: { block: ManifestBlock; groups: RoleGroup[] }) {
+  const router = useRouter();
+  const [role, setRole] = useState<TeamRole>("SECONDARY");
+  const [name, setName] = useState("");
+  const [confirming, setConfirming] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [message, setMessage] = useState<{ ok: boolean; text: string } | null>(null);
+
+  const save = async (action: "add" | "remove", r: TeamRole, person: string) => {
+    setBusy(true);
+    setMessage(null);
+    try {
+      const version = await editTeamMember({ action, blockId: block.id, role: r, name: person });
+      setMessage({ ok: true, text: version.summary });
+      setName("");
+      setConfirming(null);
+      router.refresh();
+    } catch (error) {
+      setMessage({ ok: false, text: error instanceof Error ? error.message : "That did not work." });
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <div className="space-y-3" data-testid="team-editor">
+      {groups.map(({ role: r, people }) => (
+        <div key={r}>
+          <h4 className="text-xs font-semibold text-ink-muted">{ROLE_NAME[r] ?? r}</h4>
+          <ul className="mt-1 space-y-1">
+            {people.map((person) => {
+              const key = `${r}|${person.name}`;
+              return (
+                <li key={key} className="flex items-center gap-2">
+                  <PersonIcon role={r} />
+                  <span className="min-w-0 flex-1 truncate text-sm text-ink">{person.name}</span>
+                  {confirming === key ? (
+                    <span className="flex items-center gap-1">
+                      <button type="button" disabled={busy} onClick={() => save("remove", r as TeamRole, person.name)} className="rounded-md bg-[#c62828] px-2 py-1 text-xs font-semibold text-white disabled:opacity-50" data-testid="team-editor-confirm">
+                        Remove
+                      </button>
+                      <button type="button" onClick={() => setConfirming(null)} className="rounded-md px-2 py-1 text-xs text-ink-muted hover:bg-surface-muted">
+                        Keep
+                      </button>
+                    </span>
+                  ) : (
+                    <button type="button" disabled={busy} onClick={() => setConfirming(key)} aria-label={`Remove ${person.name}`} className="grid size-7 place-items-center rounded-md text-ink-muted hover:bg-[#c62828]/10 hover:text-[#c62828]" data-testid="team-editor-remove">
+                      <svg aria-hidden="true" viewBox="0 0 20 20" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                        <path d="m5.5 5.5 9 9m0-9-9 9" />
+                      </svg>
+                    </button>
+                  )}
+                </li>
+              );
+            })}
+          </ul>
+        </div>
+      ))}
+      <form
+        className="space-y-2 rounded-xl bg-surface-muted p-3"
+        onSubmit={(event) => {
+          event.preventDefault();
+          if (name.trim().length >= 2) void save("add", role, name);
+        }}
+        data-testid="team-editor-add"
+      >
+        <p className="text-xs font-semibold text-ink">Add a person to {block.name}</p>
+        <select value={role} onChange={(event) => setRole(event.target.value as TeamRole)} aria-label="Role" className="h-9 w-full rounded-lg bg-white px-2 text-sm text-ink ring-1 ring-line">
+          {ROLE_ORDER.map((r) => (
+            <option key={r} value={r}>
+              {ROLE_NAME[r]}
+            </option>
+          ))}
+        </select>
+        <input value={name} onChange={(event) => setName(event.target.value)} maxLength={80} placeholder="Full name" aria-label="Full name" className="h-9 w-full rounded-lg bg-white px-2 text-sm text-ink ring-1 ring-line" />
+        <button type="submit" disabled={busy || name.trim().length < 2} className="h-9 w-full rounded-lg bg-primary text-sm font-semibold text-white hover:bg-primary-hover disabled:opacity-50">
+          {busy ? "Saving…" : "Add person"}
+        </button>
+      </form>
+      {message ? (
+        <p role="status" className={message.ok ? "text-xs text-ink" : "text-xs text-warn-ink"} data-testid="team-editor-message">
+          {message.text}
+        </p>
+      ) : null}
+    </div>
   );
 }
 
@@ -184,7 +285,7 @@ export function DistrictTeam({ lookup, blocks, districtName }: { lookup: Lookup<
   }, [lookup, blocks]);
   if (lookup.state === "idle") return null;
   if (lookup.state === "loading") return <Loading testId={testId} />;
-  if (lookup.state === "error") return <Failed testId={testId} onRetry={lookup.retry} />;
+  if (lookup.state === "error") return <Failed testId={testId} onRetry={lookup.retry} signedOut={lookup.signedOut} />;
   return (
     <section data-testid={testId} data-state="ready" aria-label={`Team in ${districtName}`}>
       <TeamList groups={groups} showPlaces />

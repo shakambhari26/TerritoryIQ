@@ -61,7 +61,9 @@ describe("the page starts the globe and the outline data independently", () => {
   it("the outline fetch is its own effect, with its own attempt counter and abort, and is started by the experience, not the stage", () => {
     assert.match(experience, /fetchBoundaryLayer\(controller\.signal\)/);
     assert.match(experience, /return \(\) => controller\.abort\(\);/);
-    assert.match(experience, /\[manifest, attempt, webgl\]/);
+    // Fetched once per attempt; each new manifest (a team change) is joined to the same file again (useMemo below).
+    assert.match(experience, /\}, \[attempt, webgl\]\);/);
+    assert.match(experience, /mergeLayer\(manifest, file\.data\)[\s\S]*?\[file, manifest\]/);
     const stage = experience.slice(experience.indexOf("function GlobeStage"), experience.indexOf("const CODE_REASON"));
     assert.doesNotMatch(stage, /fetchBoundaryLayer|mergeLayer/);
   });

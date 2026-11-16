@@ -13,6 +13,7 @@ export async function askByVoice(audio: string, onText: (text: string) => void, 
     signal,
     cache: "no-store",
   });
+  if (response.status === 401) throw new Error("Your sign-in has expired. Reload the page to sign in again.");
   if (!response.ok || !response.body) {
     let message = "The assistant could not hear the question. Try again.";
     try {

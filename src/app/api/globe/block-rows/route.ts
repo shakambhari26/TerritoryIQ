@@ -12,7 +12,7 @@ import { blockRowsAvailable, getBlockRows } from "@/features/globe/overlay.serve
  */
 async function respond(request: Request) {
   await connection();
-  return handleBlockRowsRequest(request, { available: blockRowsAvailable(), rows: getBlockRows });
+  return handleBlockRowsRequest(request, { available: await blockRowsAvailable(), rows: getBlockRows });
 }
 
 export const POST = respond;

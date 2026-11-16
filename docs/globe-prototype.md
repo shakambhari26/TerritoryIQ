@@ -35,6 +35,14 @@ prototype and is kept as history; where it disagrees with this section, this sec
   Dipankar → Dipankar Paul, Biman → Biman Sanyal) and spellings one letter apart are merged (Shibom → Shibam Dutta).
   Place names are tidied to one style and corrected through `PLACE_NAME_FIXES` (e.g. Khoribari → Kharibari,
   Galsi-W → Galsi-I). Jharkhand-W is left out entirely.
+- **Keeping the team up to date (people join and leave):** "Manage the team" under the map uploads a new sheet
+  (same layout), shows exactly who is added and removed per place, rows it could not place and rows placed by a close
+  spelling, then saves on "Save these changes". A block's panel has "Edit team" to add or remove one person. Every change
+  is a new saved version; "Change history" restores any version or the original sheet. Anyone signed in can edit.
+  Storage: table `territoryiq_team_versions` in the project's Supabase Postgres (`DATABASE_URL`, created on first use,
+  row-level security on); without `DATABASE_URL`, a local file `data/local/team-versions.json` (never uploaded). The
+  build's data stays the base; the newest version is applied on every request (`team-data.server.ts`), and the same
+  cleaning rules run for uploads and for the build (`src/features/globe/roster/sheet-clean.ts`).
 - **Checks:** `tests/unit/globe-overlay.test.mts` checks, row by row against the sheet, that every person is shown in
   their role for their row's place and that nobody is added.
 

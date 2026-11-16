@@ -9,14 +9,10 @@ import { isSameOrigin } from "@/features/visit-insights/label-form";
 export const ASK_HEADERS = { "Cache-Control": "private, no-store", "X-Content-Type-Options": "nosniff" } as const;
 export const askFail = (status: number, error: string) => Response.json({ error }, { status, headers: ASK_HEADERS });
 
-export async function readOneField(request: Request, key: string, maxBytes: number): Promise<string | Response> {
-  if (!isRequestAuthorized(request.headers)) return askFail(401, "Sign in required.");
-  if (!isSameOrigin(request.headers)) return askFail(403, "Cross-site request refused.");
-  if (!/^application\/json\b/i.test(request.headers.get("content-type") ?? "")) return askFail(415, "The request must be application/json.");
-  const declared = Number(request.headers.get("content-length") ?? 0);
-  if (declared > maxBytes) return askFail(413, "The request is too large.");
-  const text = await request.text();
-  if (text.length > maxBytes) return askFail(413, "The request is too large.");
+/** The same checks, for a body `{ "<key>": <any JSON value> }`: returns the value (unchecked) or the error Response. */
+export async function readOneValue(request: Request, key: string, maxBytes: number): Promise<{ value: unknown } | Response> {
+  const text = await checkedBody(request, maxBytes);
+  if (text instanceof Response) return text;
   let body: unknown;
   try {
     body = JSON.parse(text);
@@ -26,9 +22,25 @@ export async function readOneField(request: Request, key: string, maxBytes: numb
   if (typeof body !== "object" || body === null || Array.isArray(body) || Object.keys(body).length !== 1 || !Object.hasOwn(body, key)) {
     return askFail(400, `The request must hold exactly one key, ${key}.`);
   }
-  const value = (body as Record<string, unknown>)[key];
-  if (typeof value !== "string" || !value.trim()) return askFail(400, `${key} must be a non-empty string.`);
-  return value;
+  return { value: (body as Record<string, unknown>)[key] };
+}
+
+async function checkedBody(request: Request, maxBytes: number): Promise<string | Response> {
+  if (!isRequestAuthorized(request.headers)) return askFail(401, "Sign in required.");
+  if (!isSameOrigin(request.headers)) return askFail(403, "Cross-site request refused.");
+  if (!/^application\/json\b/i.test(request.headers.get("content-type") ?? "")) return askFail(415, "The request must be application/json.");
+  const declared = Number(request.headers.get("content-length") ?? 0);
+  if (declared > maxBytes) return askFail(413, "The request is too large.");
+  const text = await request.text();
+  if (text.length > maxBytes) return askFail(413, "The request is too large.");
+  return text;
+}
+
+export async function readOneField(request: Request, key: string, maxBytes: number): Promise<string | Response> {
+  const body = await readOneValue(request, key, maxBytes);
+  if (body instanceof Response) return body;
+  if (typeof body.value !== "string" || !body.value.trim()) return askFail(400, `${key} must be a non-empty string.`);
+  return body.value;
 }
 
 /** A text stream response from an async generator of strings. */

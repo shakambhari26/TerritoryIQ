@@ -51,7 +51,12 @@ export interface WorkbookRead {
 const pad = (n: number, width: number) => String(n).padStart(width, "0");
 
 export async function readWorkbook(file: string): Promise<WorkbookRead> {
-  const rows = readFirstSheet(await readFile(file));
+  return parseWorkbook(await readFile(file));
+}
+
+/** The same, from the bytes of an .xlsx file (an upload). Throws with a plain message if the sheet is not this layout. */
+export function parseWorkbook(bytes: Buffer): WorkbookRead {
+  const rows = readFirstSheet(bytes);
   const header = rows.find((r) => r.row === 1);
   if (!header) throw new Error("Workbook has no header row");
   for (const column of COLUMNS) {

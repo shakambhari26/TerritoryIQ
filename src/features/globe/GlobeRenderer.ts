@@ -882,7 +882,11 @@ export class GlobeRenderer {
       for (const feature of layer.features) {
         if (!feature.anchor) continue;
         const element = document.createElement("span");
-        element.className = "absolute left-0 top-0 whitespace-nowrap text-[11px] font-semibold leading-none text-ink opacity-0 transition-opacity duration-300 [text-shadow:0_0_2px_#fff,0_0_3px_#fff,0_0_5px_rgba(255,255,255,0.95),0_0_8px_rgba(255,255,255,0.8)]";
+        // A small white tag: dark text on a soft, slightly translucent pill, readable on every fill colour and on imagery.
+        element.className =
+          this.labelMode === "districts"
+            ? "absolute left-0 top-0 whitespace-nowrap rounded-md bg-white/90 px-2 py-[3px] text-[12px] font-bold leading-[14px] tracking-[0.01em] text-ink opacity-0 shadow-[0_1px_3px_rgba(16,24,40,0.25)] ring-1 ring-black/5 backdrop-blur-sm transition-opacity duration-300"
+            : "absolute left-0 top-0 whitespace-nowrap rounded-md bg-white/90 px-1.5 py-[2px] text-[11px] font-semibold leading-[13px] text-ink opacity-0 shadow-[0_1px_3px_rgba(16,24,40,0.25)] ring-1 ring-black/5 backdrop-blur-sm transition-opacity duration-300";
         element.textContent = feature.name;
         this.labelLayer.appendChild(element);
         this.labels.push({ element, feature, radius: Math.hypot(feature.bbox[2] - feature.bbox[0], feature.bbox[3] - feature.bbox[1]) });
@@ -1200,9 +1204,9 @@ export class GlobeRenderer {
       const visible = facing > 0.3 && inside && layer.progress > 0.55;
       let labelY = sy;
       if (visible) {
-        const width = label.feature.name.length * 6.2 + 10;
-        const clear = (cy: number) => placed.every(([px, py, pw]) => Math.abs(px - sx) >= (pw + width) / 2 || Math.abs(py - cy) >= 13);
-        const offset = [0, 13, -13, 26, -26, 39, -39].find((dy) => clear(sy + dy)) ?? 0;
+        const width = label.feature.name.length * 6.4 + 16;
+        const clear = (cy: number) => placed.every(([px, py, pw]) => Math.abs(px - sx) >= (pw + width) / 2 + 2 || Math.abs(py - cy) >= 19);
+        const offset = [0, 19, -19, 38, -38, 57, -57].find((dy) => clear(sy + dy)) ?? 0;
         labelY = sy + offset;
         placed.push([sx, labelY, width]);
       }

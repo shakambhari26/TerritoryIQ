@@ -15,5 +15,5 @@ import { getGlobeManifest } from "@/features/globe/overlay.server";
  */
 export async function GET() {
   await connection();
-  return globeLayerResponse(await readGlobeLayerFile(path.join(process.cwd(), "data", "generated"), getGlobeManifest()));
+  return globeLayerResponse(await readGlobeLayerFile(path.join(process.cwd(), "data", "generated"), await getGlobeManifest()));
 }

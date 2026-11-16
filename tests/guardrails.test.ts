@@ -83,13 +83,15 @@ describe("no map-tile provider terms arise: no map library is imported (Phase 0F
 
   test("the runtime dependencies are exactly the framework's plus the approved additions, pinned", () => {
     const pkg = JSON.parse(read(join(ROOT, "package.json")));
-    assert.deepEqual(Object.keys(pkg.dependencies).sort(), ["@google/genai", "@supabase/supabase-js", "next", "react", "react-dom", "three"]);
+    assert.deepEqual(Object.keys(pkg.dependencies).sort(), ["@google/genai", "@supabase/supabase-js", "next", "postgres", "react", "react-dom", "three"]);
     // The approved additions, each held to an exact version: three (the globe) and supabase-js (server-side reads of
     // Visit Insights, src/features/visit-insights/supabase.server.ts). Anything else still fails the line above.
     assert.match(pkg.dependencies.three, /^\d+\.\d+\.\d+$/);
     assert.match(pkg.dependencies["@supabase/supabase-js"], /^\d+\.\d+\.\d+$/);
     // The globe's team chat (src/features/globe/ask.server.ts), server-side only; off unless GEMINI_API_KEY is set.
     assert.match(pkg.dependencies["@google/genai"], /^\d+\.\d+\.\d+$/);
+    // The globe's team versions in Supabase Postgres (src/features/globe/team-store.server.ts), server-side only.
+    assert.match(pkg.dependencies.postgres, /^\d+\.\d+\.\d+$/);
   });
 });
 

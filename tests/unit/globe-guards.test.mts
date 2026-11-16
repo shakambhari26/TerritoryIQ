@@ -34,6 +34,11 @@ describe("globe prototype: the browser makes no outbound request", () => {
       "src/features/globe/district-team-client.ts",
       "src/features/globe/layer-client.ts",
       "src/features/globe/speak-client.ts",
+      "src/features/globe/team-clients/apply.ts",
+      "src/features/globe/team-clients/edit.ts",
+      "src/features/globe/team-clients/history.ts",
+      "src/features/globe/team-clients/preview.ts",
+      "src/features/globe/team-clients/restore.ts",
       "src/features/globe/voice-client.ts",
     ]);
     const other = /XMLHttpRequest|\bWebSocket\b|\bEventSource\b|sendBeacon|navigator\.geolocation/;
@@ -48,7 +53,7 @@ describe("globe prototype: the browser makes no outbound request", () => {
     assert.doesNotMatch(client.replace(/\/\*[\s\S]*?\*\//g, ""), /\/geo\/boundaries\.json/, "the globe never asks for the workspace's layer");
     assert.match(client, /export async function fetchBoundaryLayer\(signal: AbortSignal\)/);
     const experience = read("src/features/globe/components/GlobeExperience.tsx");
-    assert.match(experience, /fetchBoundaryLayer\(controller\.signal\)[\s\S]*mergeLayer\(manifest, data\)/);
+    assert.match(experience, /fetchBoundaryLayer\(controller\.signal\)[\s\S]*mergeLayer\(manifest, file\.data\)/);
     // Only the globe experience reaches the client, so no other component can start a request.
     const importers = GLOBE_SOURCES.filter((f) => /from\s+["'][^"']*layer-client["']/.test(readFileSync(f, "utf8"))).map(rel);
     assert.deepEqual(importers, ["src/features/globe/components/GlobeExperience.tsx"]);
@@ -151,7 +156,7 @@ describe("globe prototype: three.js stays inside one lazy, browser-only folder",
       // The globe's own outline and team routes are part of the globe; the workspace's route (geo/boundaries.json) is not.
       .filter(
         (f) =>
-          !["src/app/geo/globe-boundaries.json/route.ts", "src/app/api/globe/block-rows/route.ts", "src/app/api/globe/district-team/route.ts", "src/app/api/globe/ask/route.ts", "src/app/api/globe/ask-voice/route.ts", "src/app/api/globe/speak/route.ts"].includes(rel(f)),
+          !["src/app/geo/globe-boundaries.json/route.ts", "src/app/api/globe/block-rows/route.ts", "src/app/api/globe/district-team/route.ts", "src/app/api/globe/ask/route.ts", "src/app/api/globe/ask-voice/route.ts", "src/app/api/globe/speak/route.ts"].includes(rel(f)) && !rel(f).startsWith("src/app/api/globe/team/"),
       )
       .filter((f) => /features\/globe|globe-prototype/.test(readFileSync(f, "utf8")))
       .map(rel);
