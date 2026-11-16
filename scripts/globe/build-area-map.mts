@@ -419,6 +419,7 @@ const outBlocks = sortedUnits.map((unit) => {
     reason: unit.mappingNotes.length ? `${reason} Map note: ${unit.mappingNotes.join("; ")}.` : reason,
     contested: false,
     staff: staffOf(unit.rows),
+    fieldStaff: new Set(unit.rows.flatMap((r) => r.people.filter((p) => p.name && p.role !== "ASM").map((p) => p.name!.toLowerCase()))).size,
     vacancies: vacanciesOf(unit.rows),
     records: unit.rows.map((r) => ({
       unitId: r.unitId,

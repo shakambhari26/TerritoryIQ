@@ -61,11 +61,28 @@ export const ROLE_COLOUR: Record<string, string> = {
   DSO: "#db2777",
 };
 
-/** Map paint: every block by its headcount, every district by its average. */
-export function staffPaint(manifest: GlobeManifest): Map<string, FeaturePaint> {
+/** The filter under the map: a headcount band (or "ASM only": no field staff), and optionally one district. */
+export interface StaffFilter {
+  band: StaffBand["key"] | "asm-only" | null;
+  districtId: string | null;
+}
+export const NO_FILTER: StaffFilter = { band: null, districtId: null };
+export const filterActive = (f: StaffFilter) => f.band !== null || f.districtId !== null;
+
+export function matchesFilter(block: ManifestBlock, filter: StaffFilter): boolean {
+  if (filter.districtId && block.districtId !== filter.districtId) return false;
+  if (filter.band === "asm-only") return block.fieldStaff === 0;
+  if (filter.band) return bandFor(block.staff).key === filter.band;
+  return true;
+}
+
+/** Map paint: every block by its headcount, every district by its average. With a filter, other blocks fade out. */
+export function staffPaint(manifest: GlobeManifest, filter: StaffFilter = NO_FILTER): Map<string, FeaturePaint> {
   const paint = new Map<string, FeaturePaint>();
+  const active = filterActive(filter);
   for (const block of manifest.blocks) {
-    paint.set(`block:${block.id}`, { fill: bandFor(block.staff).colour, fillOpacity: 0.72, edgeScale: 1, muted: false });
+    const hit = !active || matchesFilter(block, filter);
+    paint.set(`block:${block.id}`, hit ? { fill: bandFor(block.staff).colour, fillOpacity: 0.72, edgeScale: 1, muted: false } : { fill: NOT_IN_SHEET, fillOpacity: 0.12, edgeScale: 0.4, muted: true });
   }
   for (const district of manifest.districts) {
     const average = districtAverage(district, manifest.blocks);

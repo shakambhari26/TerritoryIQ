@@ -31,7 +31,7 @@ const geometry = { bbox: [88.1, 22.2, 88.9, 22.9] as const, anchor: [88.5, 22.5]
 function synthetic(): ServerManifest {
   const person = (role: string, slot: number, name: string | null) => ({ role, slot, name, vacant: name === null });
   const block = (id: string, name: string, records: ServerManifest["blocks"][number]["records"], withGeometry = true): ServerManifest["blocks"][number] => ({
-    id, name, lgdCode: Number(id.slice(3)), districtId: "GD-1", state: records.length > 0 ? "represented" : "unresolved", reason: `reason ${id}`, contested: records.length > 1, staff: records.length, vacancies: 0,
+    id, name, lgdCode: Number(id.slice(3)), districtId: "GD-1", state: records.length > 0 ? "represented" : "unresolved", reason: `reason ${id}`, contested: records.length > 1, staff: records.length, fieldStaff: 0, vacancies: 0,
     records, geometry: withGeometry ? { ...geometry, bbox: [...geometry.bbox], anchor: [...geometry.anchor] } as never : null, noGeometryReason: withGeometry ? null : "no outline",
   });
   return {
@@ -57,7 +57,7 @@ function synthetic(): ServerManifest {
 
 const ALLOWED_KEYS = {
   manifest: ["blocks", "districts", "meta", "rejected", "state"],
-  block: ["contested", "districtId", "geometry", "id", "lgdCode", "name", "noGeometryReason", "reason", "rowIds", "staff", "state", "vacancies"],
+  block: ["contested", "districtId", "geometry", "id", "lgdCode", "name", "noGeometryReason", "reason", "rowIds", "staff", "state", "vacancies"].concat("fieldStaff").sort(),
   district: ["blockCount", "drawnBlockCount", "geometry", "id", "lgdCode", "name", "noGeometryReason", "reason", "representedBlockCount", "staff", "state", "vacancies"],
   geometry: ["anchor", "bbox", "vertices"],
 };

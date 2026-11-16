@@ -8,7 +8,8 @@ import { fetchBoundaryLayer, LayerRequestError } from "../layer-client";
 import { mergeLayer, type MergeOutcome } from "../layer-merge";
 import { arrivalWithoutOutlines, canReveal } from "../outline-gate";
 import { HOVER_COLOUR, SELECTED_COLOUR } from "../styles";
-import { bandFor, districtAverage, NOT_IN_SHEET, ROLE_COLOUR, ROLE_NAME, ROLE_ORDER, STAFF_BANDS, staffPaint } from "../staffing";
+import { bandFor, NO_FILTER, NOT_IN_SHEET, ROLE_COLOUR, ROLE_NAME, ROLE_ORDER, STAFF_BANDS, staffPaint, type StaffFilter } from "../staffing";
+import { StaffFilterPanel } from "./StaffFilter";
 import { buildTargets, pickableRefs, type Target } from "../targets";
 import type { GlobeManifest, Level, Phase } from "../types";
 import { GlobeFallback } from "./GlobeFallback";
@@ -223,7 +224,8 @@ function GlobeStage({ manifest, layer, onRetryLayer }: StageProps) {
 
   // ---------------------------------------------------------- staffing --
   // Every outline is coloured by how many people work there (staffing.ts).
-  const paint = useMemo(() => staffPaint(view), [view]);
+  const [staffFilter, setStaffFilter] = useState<StaffFilter>(NO_FILTER);
+  const paint = useMemo(() => staffPaint(view, staffFilter), [view, staffFilter]);
   useEffect(() => {
     rendererRef.current?.setPaint(paint);
   }, [paint, status]);
@@ -233,38 +235,21 @@ function GlobeStage({ manifest, layer, onRetryLayer }: StageProps) {
   const teamBlocks = useMemo(() => (teamDistrictId ? view.blocks.filter((b) => b.districtId === teamDistrictId) : []), [view.blocks, teamDistrictId]);
   const districtTeam = useDistrictTeam(teamDistrictId, teamBlocks);
 
-  // Headcount pins: a count per district from the state view; one icon per person, named on hover, inside a district.
+  // The pop-up card: the people of the block under the pointer, or else of the selected block. Names come from the open
+  // district's team, so a card shows only once a district is open; nothing is shown on the map otherwise.
+  const pinBlockId = hover?.kind === "block" ? hover.id : selection.level === "block" ? selection.blockId : null;
   const pins = useMemo((): Pin[] => {
-    if (revealed.blocksFor) {
-      const rowsById = districtTeam.state === "ready" ? new Map(districtTeam.data.blocks.map((b) => [b.blockId, b.rows])) : null;
-      return view.blocks
-        .filter((b) => b.districtId === revealed.blocksFor && b.geometry?.anchor)
-        .map((b) => {
-          const rows = rowsById?.get(b.id);
-          const seen = new Set<string>();
-          const people = rows
-            ? ROLE_ORDER.flatMap((role) =>
-                rows.flatMap((r) => r.people.filter((p) => p.role === role && p.name && !seen.has(p.name.toLowerCase()) && seen.add(p.name.toLowerCase()))),
-              ).map((p) => ({ name: p.name!, role: ROLE_NAME[p.role] ?? p.role, colour: ROLE_COLOUR[p.role] ?? "#64748b" }))
-            : null;
-          return { key: b.id, lng: b.geometry!.anchor![0], lat: b.geometry!.anchor![1], title: `${b.name}: ${b.staff} people`, count: b.staff, colour: bandFor(b.staff).colour, people };
-        });
-    }
-    if (revealed.districts) {
-      return view.districts
-        .filter((d) => d.blockCount > 0 && d.geometry?.anchor)
-        .map((d) => ({
-          key: d.id,
-          lng: d.geometry!.anchor![0],
-          lat: d.geometry!.anchor![1],
-          title: `${d.name}: ${d.staff} people`,
-          count: d.staff,
-          colour: bandFor(districtAverage(d, view.blocks) ?? 0).colour,
-          people: null,
-        }));
-    }
-    return [];
-  }, [revealed, view, districtTeam]);
+    const b = pinBlockId ? view.blocks.find((x) => x.id === pinBlockId) : undefined;
+    if (!b?.geometry?.anchor || districtTeam.state !== "ready") return [];
+    const rows = districtTeam.data.blocks.find((x) => x.blockId === b.id)?.rows ?? [];
+    const seen = new Set<string>();
+    const people = ROLE_ORDER.flatMap((role) => rows.flatMap((r) => r.people.filter((p) => p.role === role && p.name && !seen.has(p.name.toLowerCase()) && seen.add(p.name.toLowerCase())))).map((p) => ({
+      name: p.name!,
+      role: ROLE_NAME[p.role] ?? p.role,
+      colour: ROLE_COLOUR[p.role] ?? "#64748b",
+    }));
+    return [{ key: b.id, lng: b.geometry.anchor[0], lat: b.geometry.anchor[1], title: `${b.name} · ${b.staff} ${b.staff === 1 ? "person" : "people"}`, count: b.staff, colour: bandFor(b.staff).colour, people }];
+  }, [pinBlockId, view.blocks, districtTeam]);
   useEffect(() => {
     rendererRef.current?.setPins(pins);
   }, [pins, status]);
@@ -821,6 +806,17 @@ function GlobeStage({ manifest, layer, onRetryLayer }: StageProps) {
           attribution={`${ATTRIBUTION_EARTH} Outlines: ${view.meta.attribution}, ODbL (not official boundaries).`}
         />
       </div>
+      <StaffFilterPanel
+        blocks={view.blocks}
+        districts={view.districts}
+        filter={staffFilter}
+        onFilter={setStaffFilter}
+        disabled={status !== "ready" || flying}
+        onSelectBlock={(id) => {
+          stageRef.current?.scrollIntoView({ behavior: reducedMotion ? "auto" : "smooth", block: "center" });
+          goTo({ level: "block", districtId: blocksById.get(id)?.districtId ?? null, blockId: id });
+        }}
+      />
     </>
   );
 }

@@ -163,7 +163,7 @@ interface LabelItem {
   radius: number;
 }
 
-/** One person on a pin: shown as a small icon whose name pops up on hover, focus or tap. */
+/** One person on a pop-up card. */
 export interface PinPerson {
   name: string;
   /** The role as it is shown, e.g. "Area Sales Manager". */
@@ -172,10 +172,7 @@ export interface PinPerson {
   colour: string;
 }
 
-/**
- * A headcount pin at a place: one icon per person (when the names are known), or a count badge (when only the
- * number is known, e.g. a district seen from the state). `colour` is the staffing colour of the place.
- */
+/** A pop-up card at a place listing its people by name. `colour` is the staffing colour of the place. */
 export interface Pin {
   key: string;
   lng: number;
@@ -186,10 +183,7 @@ export interface Pin {
   people: PinPerson[] | null;
 }
 
-/** At most this many person icons on one pin; the rest are "+n". */
-const PIN_MAX_ICONS = 8;
-const PERSON_SVG =
-  '<svg viewBox="0 0 16 16" width="11" height="11" aria-hidden="true" fill="currentColor"><circle cx="8" cy="5" r="3"/><path d="M2.5 14.5c.6-3 2.8-4.6 5.5-4.6s4.9 1.6 5.5 4.6z"/></svg>';
+
 
 export function webglAvailable(): boolean {
   try {
@@ -781,50 +775,39 @@ export class GlobeRenderer {
     for (const { element } of this.pins) element.remove();
     this.pins = [];
     for (const pin of pins ?? []) {
+      // A small card that pops up under the place: each person's name, with a dot in their role's colour. It never takes
+      // the pointer, so hovering the place under it keeps working.
       const element = document.createElement("div");
-      element.className = "pointer-events-auto absolute left-0 top-0 z-0 flex items-center gap-px rounded-full bg-white/95 px-1 py-0.5 opacity-0 shadow-float ring-2 transition-opacity duration-300 hover:z-20 focus-within:z-20";
+      element.className = "pointer-events-none absolute left-0 top-0 min-w-36 max-w-60 rounded-xl bg-white/95 px-2.5 py-2 opacity-0 shadow-float ring-2 transition-opacity duration-200";
       element.style.setProperty("--tw-ring-color", pin.colour);
       element.dataset.pin = pin.key;
       element.dataset.count = String(pin.count);
-      element.setAttribute("role", "group");
+      element.setAttribute("role", "note");
       element.setAttribute("aria-label", pin.title);
-      const stop = (event: Event) => event.stopPropagation();
-      element.addEventListener("pointerdown", stop);
-      element.addEventListener("click", stop);
-      if (pin.people) {
-        for (const person of pin.people.slice(0, PIN_MAX_ICONS)) {
-          const icon = document.createElement("button");
-          icon.type = "button";
-          icon.className = "group/person relative grid size-[18px] place-items-center rounded-full text-white outline-none focus-visible:ring-2 focus-visible:ring-ink";
-          icon.style.backgroundColor = person.colour;
-          icon.setAttribute("aria-label", `${person.name}, ${person.role}`);
-          icon.dataset.person = person.name;
-          icon.innerHTML = PERSON_SVG;
-          const tip = document.createElement("span");
-          tip.className = "pointer-events-none absolute bottom-full left-1/2 z-10 mb-1.5 hidden -translate-x-1/2 whitespace-nowrap rounded-lg bg-ink px-2 py-1 text-left text-[11px] font-semibold leading-4 text-white shadow-float group-hover/person:block group-focus/person:block";
-          tip.innerHTML = "";
-          tip.append(person.name, document.createElement("br"));
-          const role = document.createElement("span");
-          role.className = "font-normal text-white/75";
-          role.textContent = person.role;
-          tip.append(role);
-          icon.append(tip);
-          element.append(icon);
-        }
-        if (pin.people.length > PIN_MAX_ICONS) {
-          const more = document.createElement("span");
-          more.className = "px-0.5 text-[10px] font-bold text-ink";
-          more.textContent = `+${pin.people.length - PIN_MAX_ICONS}`;
-          element.append(more);
-        }
-      } else {
-        const badge = document.createElement("span");
-        badge.className = "flex items-center gap-0.5 px-1 text-[11px] font-bold leading-4 text-ink";
-        badge.title = pin.title;
-        badge.innerHTML = PERSON_SVG;
-        badge.append(String(pin.count));
-        element.append(badge);
+      const head = document.createElement("p");
+      head.className = "mb-1 text-[11px] font-semibold leading-4 text-ink-muted";
+      head.textContent = pin.title;
+      element.append(head);
+      const list = document.createElement("ul");
+      list.className = "space-y-1";
+      for (const person of pin.people ?? []) {
+        const item = document.createElement("li");
+        item.className = "flex items-start gap-1.5";
+        item.dataset.person = person.name;
+        const dot = document.createElement("span");
+        dot.className = "mt-1 size-2.5 shrink-0 rounded-full";
+        dot.style.backgroundColor = person.colour;
+        const text = document.createElement("span");
+        text.className = "min-w-0 text-[12px] font-semibold leading-4 text-ink";
+        text.append(person.name);
+        const role = document.createElement("span");
+        role.className = "block text-[10px] font-normal leading-3 text-ink-muted";
+        role.textContent = person.role;
+        text.append(role);
+        item.append(dot, text);
+        list.append(item);
       }
+      element.append(list);
       this.pinLayer.appendChild(element);
       this.pins.push({ pin, element });
     }
@@ -844,7 +827,7 @@ export class GlobeRenderer {
       const sy = (-this.tmp.y * 0.5 + 0.5) * this.height;
       const visible = facing > 0.3 && sx > 8 && sx < this.width - 8 && sy > 8 && sy < this.height - 8 && this.camera.phase !== "flying";
       // Just below the place's name label, centred on its label point.
-      element.style.transform = `translate(${sx.toFixed(1)}px, ${(sy + 9).toFixed(1)}px) translate(-50%, 0)`;
+      element.style.transform = `translate(${sx.toFixed(1)}px, ${(sy + 12).toFixed(1)}px) translate(-50%, 0)`;
       element.style.opacity = visible ? "1" : "0";
       element.style.visibility = visible ? "visible" : "hidden";
     }

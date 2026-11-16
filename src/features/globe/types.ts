@@ -74,6 +74,8 @@ export interface OverlayBlock {
   contested: boolean;
   /** Distinct people working here, from the area-mapping sheet (a count, no names). */
   staff: number;
+  /** Of those, the people who are not the ASM (Primary, Secondary, DSO): the field staff. */
+  fieldStaff: number;
   /** Positions the sheet marks "Vacant" here. */
   vacancies: number;
   /** The workbook rows linked to this block, by row ID (`TU-…`), in the manifest's order. Their names are not here. */

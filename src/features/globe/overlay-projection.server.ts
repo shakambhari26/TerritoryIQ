@@ -33,6 +33,7 @@ function projectBlock(block: ServerBlock): ManifestBlock {
     ...(block.confirmation === undefined ? {} : { confirmation: block.confirmation }),
     contested: block.contested,
     staff: block.staff,
+    fieldStaff: block.fieldStaff,
     vacancies: block.vacancies,
     rowIds: block.records.map((record) => record.unitId),
     geometry: geometry(block.geometry),
