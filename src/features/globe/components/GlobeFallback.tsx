@@ -2,12 +2,10 @@
 
 import { useMemo, useState } from "react";
 import { cn } from "@/lib/cn";
-import { DISTRICT_STYLE } from "../styles";
-import type { CustomerSummary } from "../customers";
-import type { GlobeInsights } from "../insights";
 import type { GlobeManifest } from "../types";
-import { GlobeDetails, PlaceSearch } from "./GlobePanel";
-import { MarketDashboard } from "@/features/market/components/MarketDashboard";
+import { GlobeDetails, SearchBox } from "./GlobePanel";
+import { useDistrictTeam } from "./TeamSection";
+import { bandFor, districtAverage, NOT_IN_SHEET } from "../staffing";
 import { buildTargets, type Target } from "../targets";
 
 /**
@@ -15,14 +13,15 @@ import { buildTargets, type Target } from "../targets";
  * globe, and a static picture of the Earth: the same-origin NASA texture, shown as a CSS disc. Nothing moves, and
  * nothing is drawn that has not passed validation: districts are listed as text with their provisional status.
  */
-export function GlobeFallback({ overlay, reason, insights = null, customers = null }: { overlay: GlobeManifest; reason: string; insights?: GlobeInsights | null; customers?: CustomerSummary | null }) {
+export function GlobeFallback({ overlay, reason }: { overlay: GlobeManifest; reason: string }) {
   const targets = useMemo(() => buildTargets(overlay), [overlay]);
   const districts = useMemo(() => targets.filter((t) => t.kind === "district").sort((a, b) => a.name.localeCompare(b.name)), [targets]);
-  const blocks = useMemo(() => targets.filter((t) => t.kind === "block").sort((a, b) => a.name.localeCompare(b.name)), [targets]);
   const [selected, setSelected] = useState<Target | null>(null);
   const district = selected?.kind === "district" ? (overlay.districts.find((d) => d.id === selected.id) ?? null) : selected?.kind === "block" ? (overlay.districts.find((d) => d.id === overlay.blocks.find((b) => b.id === selected.id)?.districtId) ?? null) : null;
   const block = selected?.kind === "block" ? (overlay.blocks.find((b) => b.id === selected.id) ?? null) : null;
   const level = !selected ? "globe" : selected.kind === "state" ? "state" : selected.kind;
+  const districtBlocks = useMemo(() => (district ? overlay.blocks.filter((b) => b.districtId === district.id) : []), [overlay.blocks, district]);
+  const districtTeam = useDistrictTeam(district?.id ?? null, districtBlocks);
 
   return (
     <>
@@ -38,40 +37,30 @@ export function GlobeFallback({ overlay, reason, insights = null, customers = nu
             <p className="text-base font-semibold text-ink">The 3D globe is not available</p>
             <p className="text-sm text-ink-muted">{reason} The places and details below work without it.</p>
           </div>
-          <ul className="flex max-w-lg flex-wrap justify-center gap-1.5" aria-label="Districts and their provisional status">
+          <ul className="flex max-w-lg flex-wrap justify-center gap-1.5" aria-label="Districts in the area-mapping sheet">
             {districts.map((d) => (
               <li key={d.id} className="flex items-center gap-1.5 rounded-full border border-line bg-white/90 px-2 py-0.5 text-xs text-ink">
-                <span aria-hidden="true" className={cn("size-2 rounded-full")} style={{ backgroundColor: DISTRICT_STYLE[d.state].fill }} />
+                <span aria-hidden="true" className={cn("size-2 rounded-full")} style={{ backgroundColor: (() => { const avg = districtAverage(overlay.districts.find((x) => x.id === d.id)!, overlay.blocks); return avg === null ? NOT_IN_SHEET : bandFor(avg).colour; })() }} />
                 {d.name}
               </li>
             ))}
           </ul>
-          <p className="text-[0.6875rem] text-ink-muted">Earth: NASA Earth Observatory, Blue Marble. District status is provisional and unreviewed.</p>
+          <p className="text-[0.6875rem] text-ink-muted">Earth: NASA Earth Observatory, Blue Marble.</p>
         </div>
         <aside className="flex flex-col gap-4 border-t border-line bg-surface p-4 lg:h-[min(74vh,780px)] lg:min-h-[440px] lg:border-l lg:border-t-0">
-          <PlaceSearch targets={targets} districts={districts} blocks={blocks} onSelect={setSelected} disabled={false} activeId={selected && selected.kind !== "state" ? selected.id : null} listClassName="max-h-56 lg:max-h-none" />
+          <SearchBox targets={targets} onSelect={setSelected} disabled={false} />
           <GlobeDetails
             overlay={overlay}
             level={level}
             district={district}
             block={block}
             disabled={false}
-            outlines="unavailable"
-            insights={insights}
-            customers={customers}
+            districtTeam={districtTeam}
             onSelectBlock={(id) => setSelected(targets.find((t) => t.kind === "block" && t.id === id) ?? null)}
             onSelectDistrict={(id) => setSelected(targets.find((t) => t.kind === "district" && t.id === id) ?? null)}
           />
         </aside>
       </div>
-      <MarketDashboard
-        blocks={overlay.blocks}
-        districts={overlay.districts}
-        stateName={overlay.state.name}
-        level={level}
-        districtId={district?.id ?? null}
-        blockId={block?.id ?? null}
-      />
     </>
   );
 }

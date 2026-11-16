@@ -6,8 +6,8 @@ import { fileURLToPath } from "node:url";
 import { networkViolations, type AllowedFetch } from "./helpers/network-guard.mts";
 
 /**
- * The network guard, widened by exactly two requests: the globe's same-origin GET of /geo/globe-boundaries.json and its
- * same-origin POST of `{ blockId }` to /api/globe/block-rows.
+ * The network guard, widened by exactly three requests: the globe's same-origin GET of /geo/globe-boundaries.json, its
+ * same-origin POST of `{ blockId }` to /api/globe/block-rows and its POST of `{ districtId }` to /api/globe/district-team.
  * These tests check the real source tree against the allowed list, and then check that the guard still catches
  * everything it must (external URLs, arbitrary fetch URLs, XHR, sockets, beacons, a third fetch, and a file asking
  * for another file's URL), with synthetic sources, so a guard that has gone slack fails here.
@@ -18,8 +18,8 @@ const ALLOWED: AllowedFetch[] = [
   { file: "src/features/territory/components/Workspace.tsx", url: "/geo/boundaries.json" },
   { file: "src/features/globe/layer-client.ts", url: "/geo/globe-boundaries.json" },
   { file: "src/features/globe/block-rows-client.ts", url: "/api/globe/block-rows", constant: "BLOCK_ROWS_URL", method: "POST" },
-  // Customers placed in one selected block (customers.ts): the same POST of `{ blockId }`, to its own route.
-  { file: "src/features/globe/block-customers-client.ts", url: "/api/globe/block-customers", constant: "BLOCK_CUSTOMERS_URL", method: "POST" },
+  // Everyone in one selected district (the team panel): a POST of `{ districtId }`, to its own route.
+  { file: "src/features/globe/district-team-client.ts", url: "/api/globe/district-team", constant: "DISTRICT_TEAM_URL", method: "POST", bodyKey: "districtId" },
 ];
 
 function* files(directory: string): Generator<string> {
@@ -43,7 +43,7 @@ describe("network guard: the real source tree", () => {
   it("the globe's three allowed files are the only globe files that can request, and they ask for the globe's URLs, not the workspace's", () => {
     const globe = Object.keys(sources).filter((f) => f.startsWith("src/features/globe/") || f.startsWith("src/app/globe/"));
     const requesting = globe.filter((f) => /\bfetch\s*\(|XMLHttpRequest|\bWebSocket\b|\bEventSource\b|sendBeacon/.test(sources[f])).sort();
-    assert.deepEqual(requesting, ["src/features/globe/block-customers-client.ts", "src/features/globe/block-rows-client.ts", "src/features/globe/layer-client.ts"]);
+    assert.deepEqual(requesting, ["src/features/globe/block-rows-client.ts", "src/features/globe/district-team-client.ts", "src/features/globe/layer-client.ts"]);
     assert.match(sources["src/features/globe/layer-client.ts"], /const LAYER_URL = "\/geo\/globe-boundaries\.json";/);
     assert.doesNotMatch(sources["src/features/globe/layer-client.ts"], /"\/geo\/boundaries\.json"/);
   });
@@ -151,5 +151,23 @@ describe("network guard: the block-rows POST", () => {
     assert.notDeepEqual(flagged(post("/api/globe/block-rows", undefined, 'navigator.sendBeacon("/api/globe/block-rows", "x");')), []);
     const layer = 'const LAYER_URL = "/geo/globe-boundaries.json";\nexport const a = () => fetch(LAYER_URL, { method: "POST", body: JSON.stringify({ blockId }) });';
     assert.match(networkViolations({ "src/features/globe/layer-client.ts": layer }, ALLOWED).join("\n"), /plain GET entry/);
+  });
+});
+
+describe("network guard: the district-team POST", () => {
+  const FILE = "src/features/globe/district-team-client.ts";
+  const post = (url: string, body = "JSON.stringify({ districtId })") =>
+    `const DISTRICT_TEAM_URL = "${url}";\nexport const load = async (districtId: string, signal: AbortSignal) => {\n  const response = await fetch(DISTRICT_TEAM_URL, {\n    method: "POST",\n    body: ${body},\n    signal,\n    cache: "no-store",\n  });\n  return response;\n};\n`;
+  const flagged = (text: string) => networkViolations({ [FILE]: text }, ALLOWED);
+
+  it("the real client is the one allowed POST of { districtId }", () => {
+    assert.deepEqual(flagged(readFileSync(join(ROOT, FILE), "utf8")), []);
+  });
+
+  it("blocks another URL, and a body that is not exactly { districtId }", () => {
+    assert.notDeepEqual(flagged(post("/api/globe/block-rows")), []);
+    for (const body of ["JSON.stringify({ blockId })", "JSON.stringify({ districtId, x: 1 })", "districtId"]) {
+      assert.match(flagged(post("/api/globe/district-team", body)).join("\n"), /body is not exactly JSON\.stringify\(\{ districtId \}\)/, body);
+    }
   });
 });

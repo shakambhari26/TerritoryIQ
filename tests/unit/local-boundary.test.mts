@@ -145,8 +145,7 @@ describe("generated data stays out of public assets", () => {
       .filter((f) => /from\s+["'][^"']*dataset\.server["']/.test(readFileSync(f, "utf8")))
       .map(rel)
       .sort();
-    // The Globe page reads the Overview's name-free data (getOverviewData) for its insight counts; it never reads the dataset itself.
-    assert.deepEqual(importers, ["src/app/geo/boundaries.json/route.ts", "src/app/globe/page.tsx", "src/app/page.tsx", "src/app/workspace/page.tsx"]);
+    assert.deepEqual(importers, ["src/app/geo/boundaries.json/route.ts", "src/app/page.tsx", "src/app/workspace/page.tsx"]);
   });
 });
 
@@ -198,12 +197,12 @@ describe("outbound network", () => {
   it("the only requests the app makes are same-origin fetches of four literal URLs, one from each of four files", () => {
     const pattern = /\bfetch\s*\(|XMLHttpRequest|\bWebSocket\b|\bEventSource\b|sendBeacon|navigator\.geolocation/;
     const offenders = sources("src").filter((f) => pattern.test(readFileSync(f, "utf8"))).map(rel).sort();
-    // The Territory Workspace (its own layer), the globe's layer client (the globe's own file), and the globe's block-rows
-    // and block-customers clients (each a POST of `{ blockId }`). A fifth place, or a file asking for another's URL, fails
-    // here (rule and its negative tests: globe-network-guard.test.mts).
+    // The Territory Workspace (its own layer), the globe's layer client (the globe's own file), and the globe's two team
+    // lookups (a POST of `{ blockId }` and a POST of `{ districtId }`). A fifth place, or a file asking for another's URL,
+    // fails here (rule and its negative tests: globe-network-guard.test.mts).
     assert.deepEqual(offenders, [
-      "src/features/globe/block-customers-client.ts",
       "src/features/globe/block-rows-client.ts",
+      "src/features/globe/district-team-client.ts",
       "src/features/globe/layer-client.ts",
       "src/features/territory/components/Workspace.tsx",
     ]);
@@ -211,11 +210,11 @@ describe("outbound network", () => {
       "src/features/territory/components/Workspace.tsx": "/geo/boundaries.json",
       "src/features/globe/layer-client.ts": "/geo/globe-boundaries.json",
       "src/features/globe/block-rows-client.ts": "/api/globe/block-rows",
-      "src/features/globe/block-customers-client.ts": "/api/globe/block-customers",
+      "src/features/globe/district-team-client.ts": "/api/globe/district-team",
     };
     const constants: Record<string, string> = {
       "src/features/globe/block-rows-client.ts": "BLOCK_ROWS_URL",
-      "src/features/globe/block-customers-client.ts": "BLOCK_CUSTOMERS_URL",
+      "src/features/globe/district-team-client.ts": "DISTRICT_TEAM_URL",
     };
     for (const file of offenders) {
       const text = read(file);

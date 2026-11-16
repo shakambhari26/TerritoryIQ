@@ -49,3 +49,8 @@ next-env.d.ts
 # legacy location of the boundary layer. Nothing may be written under public/
 # any more (a test fails if a data file is there); this is only a backstop.
 /public/geo/
+
+# confidential workbooks dropped at the project root (the build reads data-source/ only)
+/*.xlsx
+/*.xls
+__pycache__/

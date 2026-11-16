@@ -1,9 +1,8 @@
 /**
  * Colour semantics for the globe overlay, in one place so the legend, the shapes and the details panel agree.
  *
- * The colour says whether a provisional, unreviewed link ties a workbook row with a named person to the area.
- * It is not the allocation classification (Assigned, Vacant, Unallocated, Data Missing / Unknown), it does not
- * mean the area is covered, and it is never inferred from a missing record.
+ * The colour says whether the area-mapping sheet lists the place (and so has a team for it). It is not the allocation
+ * classification used elsewhere in the app, and it is never inferred from anything but the sheet.
  */
 
 import type { UnitState } from "./types.ts";
@@ -33,12 +32,12 @@ export const HOVER_COLOUR = "#2dd4bf";
 
 export const DISTRICT_STYLE: Record<UnitState, StateStyle> = {
   represented: {
-    label: "District with a provisional representative link",
+    label: "District in the area-mapping sheet",
     short: "Royal blue",
     fill: ROYAL_BLUE,
     fillOpacity: 0.7,
     edge: "#cfe0ff",
-    description: "At least one block has a provisional link to a named representative. This does not mean the district is completely covered, and no link is officially verified.",
+    description: "The area-mapping sheet lists at least one place in this district, with its team.",
   },
   "no-representative": {
     label: "District confirmed to have no representative",
@@ -49,23 +48,23 @@ export const DISTRICT_STYLE: Record<UnitState, StateStyle> = {
     description: "Explicitly confirmed to have no associated representative.",
   },
   unresolved: {
-    label: "Unresolved or unverified",
+    label: "Not in the sheet",
     short: "Grey",
     fill: NEUTRAL,
     fillOpacity: 0.42,
     edge: "#dbe3f1",
-    description: "No provisional link to a named representative is known. This is not the same as unrepresented.",
+    description: "The area-mapping sheet lists no place in this district. This is not the same as unrepresented.",
   },
 };
 
 export const BLOCK_STYLE: Record<UnitState, StateStyle> = {
   represented: {
-    label: "Block with a provisional representative link",
+    label: "Block in the area-mapping sheet",
     short: "Orange",
     fill: ORANGE,
     fillOpacity: 0.78,
     edge: "#fff1df",
-    description: "A workbook row is linked by exact name (unreviewed) and lists a named person.",
+    description: "The area-mapping sheet lists this block with its team.",
   },
   "no-representative": {
     label: "Block confirmed to have no representative",
@@ -76,11 +75,11 @@ export const BLOCK_STYLE: Record<UnitState, StateStyle> = {
     description: "Explicitly confirmed to have no associated representative.",
   },
   unresolved: {
-    label: "Unresolved or unverified",
+    label: "Not in the sheet",
     short: "Grey",
     fill: NEUTRAL,
     fillOpacity: 0.5,
     edge: "#e6ecf7",
-    description: "Unknown, ambiguous, unmatched or missing a validated outline. Not the same as unrepresented.",
+    description: "The area-mapping sheet does not list this block. Not the same as unrepresented.",
   },
 };

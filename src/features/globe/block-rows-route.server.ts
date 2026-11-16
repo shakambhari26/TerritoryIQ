@@ -3,7 +3,7 @@
  * tests can drive it with synthetic requests and rows. Server only.
  *
  * One fixed URL, one method. The request must be `application/json`, at most 256 bytes, with exactly one key, `blockId`,
- * a string like `GB-1234`. The block is resolved with an exact `Map.get`, never by using the string as a key, path or
+ * a string like `GB-1234` (or `districtId`, `GD-123`, for POST /api/globe/district-team). The block is resolved with an exact `Map.get`, never by using the string as a key, path or
  * query. The response holds only that block's rows. Every response, errors included, is `private, no-store` and
  * `nosniff`, and an error is a fixed code and sentence that never echo the request or any data.
  *
@@ -17,7 +17,7 @@ import { BLOCK_ID_PATTERN, BLOCK_ROWS_ERRORS, MAX_REQUEST_BYTES, type BlockRow, 
 
 const HEADERS = { "Cache-Control": "private, no-store", "X-Content-Type-Options": "nosniff" } as const;
 
-/** `T` is a workbook row here, and a customer for POST /api/globe/block-customers, which uses the same handler. */
+/** `T` is a sheet row. */
 export interface BlockRowsSource<T = BlockRow> {
   /** False when the manifest has not been built. */
   available: boolean;
@@ -68,7 +68,14 @@ async function readCapped(request: Request): Promise<string | null> {
   }
 }
 
-export async function handleBlockRowsRequest<T>(request: Request, source: BlockRowsSource<T>): Promise<Response> {
+/**
+ * One hardened POST lookup: `{"<key>": "<id>"}` in, `{"<key>": id, "<field>": data}` out. `pattern` is checked before
+ * any lookup, and `lookup` is an exact Map-style get (null for an unknown ID).
+ */
+export async function handleLookupRequest<T>(
+  request: Request,
+  options: { key: string; pattern: RegExp; field: string; available: boolean; lookup: (id: string) => T | null },
+): Promise<Response> {
   // Second layer after src/proxy.ts, which already applies the same check to every path.
   if (!isRequestAuthorized(request.headers)) return blockRowsError("host");
   if (request.method !== "POST") return blockRowsError("method");
@@ -85,12 +92,16 @@ export async function handleBlockRowsRequest<T>(request: Request, source: BlockR
   }
   if (typeof body !== "object" || body === null || Array.isArray(body)) return blockRowsError("badrequest");
   const keys = Object.keys(body);
-  if (keys.length !== 1 || keys[0] !== "blockId") return blockRowsError("badrequest");
-  const blockId = (body as { blockId: unknown }).blockId;
-  if (typeof blockId !== "string" || !BLOCK_ID_PATTERN.test(blockId)) return blockRowsError("badid");
+  if (keys.length !== 1 || keys[0] !== options.key) return blockRowsError("badrequest");
+  const id = (body as Record<string, unknown>)[options.key];
+  if (typeof id !== "string" || !options.pattern.test(id)) return blockRowsError("badid");
 
-  if (!source.available) return blockRowsError("unavailable");
-  const rows = source.rows(blockId);
-  if (rows === null) return blockRowsError("notfound");
-  return Response.json({ blockId, rows }, { headers: HEADERS });
+  if (!options.available) return blockRowsError("unavailable");
+  const data = options.lookup(id);
+  if (data === null) return blockRowsError("notfound");
+  return Response.json({ [options.key]: id, [options.field]: data }, { headers: HEADERS });
+}
+
+export function handleBlockRowsRequest<T>(request: Request, source: BlockRowsSource<T>): Promise<Response> {
+  return handleLookupRequest(request, { key: "blockId", pattern: BLOCK_ID_PATTERN, field: "rows", available: source.available, lookup: source.rows });
 }

@@ -13,7 +13,7 @@ import type { BoundaryLayer } from "../../src/features/territory/types.ts";
  * not the workspace's layer) instead of in the page, so the join to the validated manifest is where the geographic
  * validation is kept in the browser. These tests tamper with the served file and the manifest and check that
  * nothing unvalidated is drawn. (The server-side checks are in globe-layer-integrity.test.mts; the white rule is
- * in globe-reviewed-record.test.mts.) Needs `npm run data:build` and `python -I scripts/globe/build_overlay.py`.
+ * in globe-reviewed-record.test.mts.) Needs `npm run data:build` and `npm run data:build-globe`.
  */
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..", "..");
 const overlayPath = join(ROOT, "data", "generated", "globe-overlay.json");
@@ -22,7 +22,7 @@ const ready = existsSync(overlayPath) && existsSync(layerPath);
 
 const clone = <T,>(value: T): T => JSON.parse(JSON.stringify(value)) as T;
 
-describe("joining the served outlines to the validated manifest", { skip: ready ? false : "run npm run data:build and python -I scripts/globe/build_overlay.py first" }, () => {
+describe("joining the served outlines to the validated manifest", { skip: ready ? false : "run npm run data:build and npm run data:build-globe first" }, () => {
   const manifest = ready ? projectManifest(JSON.parse(readFileSync(overlayPath, "utf8")) as ServerManifest) : (null as never);
   const layer = ready ? (JSON.parse(readFileSync(layerPath, "utf8")) as BoundaryLayer) : (null as never);
   const drawnBlocks = () => manifest.blocks.filter((b) => b.geometry);
@@ -32,7 +32,7 @@ describe("joining the served outlines to the validated manifest", { skip: ready 
     assert.ok(result.ok);
     assert.deepEqual(result.refused, []);
     assert.equal(result.overlay.districts.filter((d) => d.geometry).length, 23);
-    assert.equal(result.overlay.blocks.filter((b) => b.geometry).length, 309);
+    assert.equal(result.overlay.blocks.filter((b) => b.geometry).length, 341);
     assert.ok(result.overlay.blocks.every((b) => !b.geometry || b.geometry.d.startsWith("M")));
   });
 

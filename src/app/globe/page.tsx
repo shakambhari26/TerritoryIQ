@@ -1,58 +1,38 @@
 import type { Metadata } from "next";
-import { Badge } from "@/components/ui/Badge";
 import { GlobeLoader } from "@/features/globe/components/GlobeLoader";
-import { getCustomerSummary } from "@/features/globe/customers.server";
-import { buildGlobeInsights } from "@/features/globe/insights";
 import { getGlobeManifest } from "@/features/globe/overlay.server";
-import { getOverviewData } from "@/features/territory/dataset.server";
 
 export const metadata: Metadata = {
   title: "Globe",
 };
 
 /**
- * A realistic, rotating 3D Earth for the territory experience, linked from the navigation as a locally integrated
- * prototype. It does not replace or change the Territory Overview or the Territory Workspace; a selected place can be
- * opened in the 2D workspace through a link (features/globe/workspace-link.ts). Outlines are the provisional
- * OpenStreetMap shapes that passed validation in scripts/globe/build_overlay.py; the page carries only that validation
- * record, and the browser fetches the outlines themselves, in parallel with the textures, from the same-origin
- * /geo/globe-boundaries.json (the globe's own file, not the workspace's /geo/boundaries.json). /globe-prototype, the
- * route this page started on, redirects here (next.config.ts).
+ * The sales team map: a 3D Earth that flies to West Bengal and shows, for every district and block, who works there.
  *
- * The page is the globe first: a slim header with the standing provisional notice, then a stage that the globe fills
- * and the place list and insights float over. The insight figures are counts computed from the Overview's own data
- * (features/globe/insights.ts); like the Overview's, they carry no staff name.
+ * The ONLY data on the globe is the area-mapping sheet (data-source/AREA MAPPING.xlsx), placed on OpenStreetMap
+ * outlines by scripts/globe/build-area-map.mts (rules in scripts/globe/area-mapping.config.ts). Clicking a district
+ * shows everyone working there by role; clicking a block shows its ASM, Primary, Secondary and DSO. Staff names are not
+ * in the page: they are fetched for the selected place from /api/globe/block-rows and /api/globe/district-team.
+ * Dealers, distributors and influencers are planned as later layers.
  */
 export default function GlobePage() {
   const manifest = getGlobeManifest();
-  const overview = getOverviewData();
-  const insights = overview ? buildGlobeInsights(overview) : null;
-  // Counts only: customer names are fetched for one selected block (POST /api/globe/block-customers).
-  const customers = getCustomerSummary();
   return (
     <>
       <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
-        <div className="flex items-center gap-3">
-          <h1 className="text-xl font-semibold tracking-tight text-ink">Globe</h1>
-          <Badge tone="warning">OpenStreetMap outlines</Badge>
-        </div>
-        <p
-          className="min-w-[18rem] flex-1 rounded-xl bg-warn-soft px-4 py-2 text-xs leading-5 text-warn-ink"
-          data-testid="globe-provisional-notice"
-        >
-          <strong className="font-semibold">Real visit coverage.</strong> A block is coloured when a rep&rsquo;s GPS placed at least one real sales visit
-          inside it over the last 30 days; select a block for the real customers visited there. Boundary outlines are OpenStreetMap geometry (unofficial,
-          for orientation only).
+        <h1 className="text-xl font-semibold tracking-tight text-ink">Globe</h1>
+        <p className="min-w-[18rem] flex-1 text-xs leading-5 text-ink-muted" data-testid="globe-provisional-notice">
+          How many people work in each district and block. Red means few people: hire there. Click a place to see who works there.
         </p>
       </div>
       <div className="mt-3">
         {manifest ? (
-          <GlobeLoader manifest={manifest} insights={insights} customers={customers} />
+          <GlobeLoader manifest={manifest} />
         ) : (
           <div className="rounded-card bg-surface p-6 shadow-card" role="alert">
             <p className="text-base font-semibold text-ink">The globe data has not been built</p>
             <p className="mt-1 text-sm text-ink-muted">
-              Run <code className="font-mono">npm run data:build</code>, then <code className="font-mono">python -I scripts/globe/build_overlay.py</code>, and restart the server.
+              Run <code className="font-mono">npm run data:build</code>, then <code className="font-mono">npm run data:build-globe</code>, and restart the server.
             </p>
           </div>
         )}

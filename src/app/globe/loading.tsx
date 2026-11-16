@@ -12,7 +12,7 @@ export default function GlobeLoading() {
           title="Fetching the globe"
           lines={[
             "Loading the Earth textures and district outlines.",
-            "Placing real GPS visits onto the map.",
+            "Placing the area-mapping sheet on the map.",
             "Almost there — spinning up the globe.",
           ]}
         />

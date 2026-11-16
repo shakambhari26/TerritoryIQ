@@ -4,7 +4,6 @@ import path from "node:path";
 import { after, before, describe, it } from "node:test";
 import type { Browser, Page } from "playwright-core";
 import { staffNames } from "../../scripts/verify-public-assets.mjs";
-import { workspaceHref, type WorkspaceLookup } from "../../src/features/globe/workspace-link.ts";
 import { buildModel } from "../../src/features/territory/model.ts";
 import { blockPins, type PinAnchor, type RepresentativePin } from "../../src/features/territory/representatives.ts";
 import { selectionForFeature, selectionToHash } from "../../src/features/territory/selection.ts";
@@ -230,12 +229,10 @@ describe("block selection, hover and the representative pins in a real browser",
     await context.close();
   });
 
-  it("a block opened from the globe's own link lands on that block's card and details, and Escape steps up to its district", async () => {
-    const { context, a, district } = await openPair();
+  it("a block opened from a #feature= deep link lands on that block's card and details, and Escape steps up to its district", async () => {
+    const { context, a } = await openPair();
     await context.close();
-    const lookup = { districts: [{ id: district.id }], blocks: [{ id: a.anchorFeatureId, districtId: district.id, rowIds: [] }] } as unknown as WorkspaceLookup;
-    const href = workspaceHref(lookup, { kind: "block", id: a.anchorFeatureId });
-    assert.ok(href, "the globe builds a link for the block");
+    const href = `/workspace${selectionToHash({ kind: "feature", id: a.anchorFeatureId })}`;
     const { page, context: landed } = await open(1440, 1000, href.replace("/workspace", ""));
     assert.equal(await page.locator('[data-testid="geo-map"]').getAttribute("data-level"), "block");
     await page.locator(CARD).waitFor();

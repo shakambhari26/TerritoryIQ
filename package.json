@@ -22,7 +22,7 @@
     "data:verify": "node scripts/verify-sources.mts",
     "data:fetch-osm": "node scripts/fetch-osm.mts",
     "data:build": "node scripts/build-data.mts",
-    "data:build-customers": "node scripts/build-customers.mts"
+    "data:build-globe": "node scripts/globe/build-area-map.mts"
   },
   "dependencies": {
     "@supabase/supabase-js": "2.118.0",

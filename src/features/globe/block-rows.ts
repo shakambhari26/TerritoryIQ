@@ -8,8 +8,14 @@
  * server can ask for any block ID.
  */
 
-/** A block's feature ID: `GB-` and one to nine digits. Anything else is refused before any lookup. */
-export const BLOCK_ID_PATTERN = /^GB-[0-9]{1,9}$/;
+/**
+ * A place's ID: `GB-` (a block with an outline) or `GU-` (a sheet area the map has no outline for), then one to nine
+ * digits. Anything else is refused before any lookup.
+ */
+export const BLOCK_ID_PATTERN = /^G[BU]-[0-9]{1,9}$/;
+
+/** A district's ID: `GD-` and one to nine digits. */
+export const DISTRICT_ID_PATTERN = /^GD-[0-9]{1,9}$/;
 
 /** A request body is `{"blockId":"GB-1234"}`: far below this. Larger bodies are refused unread. */
 export const MAX_REQUEST_BYTES = 256;
@@ -35,6 +41,12 @@ export interface BlockRowsPayload {
   rows: BlockRow[];
 }
 
+/** POST /api/globe/district-team: every place in one district, each with its sheet rows. */
+export interface DistrictTeamPayload {
+  districtId: string;
+  blocks: Array<{ blockId: string; rows: BlockRow[] }>;
+}
+
 /** Fixed error codes of the route, each with the one sentence it ever sends. Neither ever echoes input. */
 export const BLOCK_ROWS_ERRORS = {
   method: { status: 405, message: "Use POST." },
@@ -42,9 +54,9 @@ export const BLOCK_ROWS_ERRORS = {
   mediatype: { status: 415, message: "The request must be application/json." },
   toolarge: { status: 413, message: "The request body is too large." },
   badjson: { status: 400, message: "The request body is not valid JSON." },
-  badrequest: { status: 400, message: "The request must be an object with one key, blockId." },
-  badid: { status: 400, message: "The block ID is not valid." },
-  notfound: { status: 404, message: "No such block." },
+  badrequest: { status: 400, message: "The request must be an object with exactly one ID key." },
+  badid: { status: 400, message: "The ID is not valid." },
+  notfound: { status: 404, message: "No such place." },
   unavailable: { status: 404, message: "The globe data has not been built." },
 } as const;
 
@@ -74,9 +86,37 @@ function rowProblem(value: unknown): boolean {
  */
 export function parseBlockRowsPayload(value: unknown, blockId: string, rowIds: readonly string[]): BlockRowsPayload | null {
   if (!isObject(value) || !hasExactKeys(value, ["blockId", "rows"])) return null;
-  if (value.blockId !== blockId || !Array.isArray(value.rows)) return null;
-  const rows: unknown[] = value.rows;
+  if (value.blockId !== blockId) return null;
+  const rows = parseRows(value.rows, rowIds);
+  return rows ? { blockId, rows } : null;
+}
+
+/** The rows, if they are exactly the expected row IDs in order and each is well formed; otherwise null. */
+function parseRows(value: unknown, rowIds: readonly string[]): BlockRow[] | null {
+  if (!Array.isArray(value)) return null;
+  const rows: unknown[] = value;
   if (rows.length !== rowIds.length || rows.some(rowProblem)) return null;
   if (!(rows as BlockRow[]).every((row, index) => row.unitId === rowIds[index])) return null;
-  return { blockId, rows: rows as BlockRow[] };
+  return rows as BlockRow[];
+}
+
+/**
+ * The district-team response, or null unless it lists exactly the district's places (`expected`, in the page's order),
+ * each with exactly the row IDs the page was given for it.
+ */
+export function parseDistrictTeamPayload(
+  value: unknown,
+  districtId: string,
+  expected: ReadonlyArray<{ id: string; rowIds: readonly string[] }>,
+): DistrictTeamPayload | null {
+  if (!isObject(value) || !hasExactKeys(value, ["districtId", "blocks"])) return null;
+  if (value.districtId !== districtId || !Array.isArray(value.blocks) || value.blocks.length !== expected.length) return null;
+  const blocks: DistrictTeamPayload["blocks"] = [];
+  for (const [index, entry] of (value.blocks as unknown[]).entries()) {
+    if (!isObject(entry) || !hasExactKeys(entry, ["blockId", "rows"]) || entry.blockId !== expected[index].id) return null;
+    const rows = parseRows(entry.rows, expected[index].rowIds);
+    if (!rows) return null;
+    blocks.push({ blockId: expected[index].id, rows });
+  }
+  return { districtId, blocks };
 }

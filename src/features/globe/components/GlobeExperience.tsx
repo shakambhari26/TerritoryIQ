@@ -3,46 +3,22 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent, type ReactNode } from "react";
 import { cn } from "@/lib/cn";
 import { usePrefersReducedMotion } from "@/lib/use-reduced-motion";
-import { GlobeRenderer, webglAvailable, type FeatureRef } from "../GlobeRenderer";
-import type { GlobeInsights } from "../insights";
+import { GlobeRenderer, webglAvailable, type FeatureRef, type Pin } from "../GlobeRenderer";
 import { fetchBoundaryLayer, LayerRequestError } from "../layer-client";
 import { mergeLayer, type MergeOutcome } from "../layer-merge";
-import { arrivalWithoutOutlines, canReveal, type OutlinesStatus } from "../outline-gate";
-import { BLOCK_STYLE, DISTRICT_STYLE, HOVER_COLOUR, SELECTED_COLOUR } from "../styles";
+import { arrivalWithoutOutlines, canReveal } from "../outline-gate";
+import { HOVER_COLOUR, SELECTED_COLOUR } from "../styles";
+import { bandFor, districtAverage, NOT_IN_SHEET, ROLE_COLOUR, ROLE_NAME, ROLE_ORDER, STAFF_BANDS, staffPaint } from "../staffing";
 import { buildTargets, pickableRefs, type Target } from "../targets";
 import type { GlobeManifest, Level, Phase } from "../types";
-import type { CustomerSummary } from "../customers";
 import { GlobeFallback } from "./GlobeFallback";
-import { GlobeDetails, PlaceSearch } from "./GlobePanel";
-import { SegmentPanel } from "./SegmentPanel";
-import {
-  blockLegend,
-  buildBlockFacts,
-  buildPaint,
-  COLOUR_BY_LABEL,
-  decodeSegment,
-  DISTRICT_RAMP_COLOURS,
-  EMPTY_FILTER,
-  encodeSegment,
-  filterSize,
-  maxDistrictMatches,
-  segment,
-  type ColourBy,
-  type LegendRow,
-  type SegmentFilter,
-} from "../segments";
-import { MarketDashboard } from "@/features/market/components/MarketDashboard";
+import { GlobeDetails, SearchBox } from "./GlobePanel";
+import { useDistrictTeam } from "./TeamSection";
 
 interface Selection {
   level: Level;
   districtId: string | null;
   blockId: string | null;
-}
-
-/** The `?seg=` value the page was opened with, if any. */
-function readSegmentParam(): string {
-  if (typeof window === "undefined") return "";
-  return new URLSearchParams(window.location.search).get("seg") ?? "";
 }
 
 const ATTRIBUTION_EARTH = "Earth: NASA Earth Observatory, Blue Marble.";
@@ -68,56 +44,39 @@ function placeName(view: GlobeManifest, s: Selection): string {
   return "the globe";
 }
 
-function Legend({ open, colourBy, segmented, maxMatched }: { open: boolean; colourBy: ColourBy; segmented: boolean; maxMatched: number }) {
-  const plain = colourBy === "link" && !segmented;
-  const rows: LegendRow[] = plain
-    ? [
-        { colour: DISTRICT_STYLE.represented.fill, label: "District: provisional link", note: "at least one linked block. Not complete or officially verified coverage" },
-        { colour: BLOCK_STYLE.represented.fill, label: "Block: provisional link", note: "named representative, unreviewed" },
-        { colour: "#ffffff", label: "Confirmed: no representative", note: "none yet; needs a reviewed source record", ring: true },
-        { colour: BLOCK_STYLE.unresolved.fill, label: "Unresolved or unverified", note: "not the same as none" },
-      ]
-    : [
-        ...blockLegend(colourBy),
-        ...(segmented ? [{ colour: BLOCK_STYLE.unresolved.fill, label: "Faded: outside the segment" }] : [{ colour: DISTRICT_STYLE.represented.fill, label: "District: provisional link" }]),
-      ];
+/** How many people work in a place, as a colour; and what the person icons' colours mean. Always open: it is the key. */
+function Legend() {
   return (
-    <details key={open ? "open" : "closed"} open={open} aria-label="Legend" className="pointer-events-auto w-60 rounded-xl bg-white/95 p-3 shadow-float ring-1 ring-line" data-testid="globe-legend">
-      <summary className="cursor-pointer text-[0.6875rem] font-semibold uppercase tracking-wider text-ink-muted">
-        Legend (provisional){plain ? "" : ` · ${COLOUR_BY_LABEL[colourBy]}`}
-      </summary>
-      {segmented ? (
-        <div className="mt-2">
-          <p className="text-xs text-ink">District: blocks in the segment</p>
-          <div className="mt-1 flex h-2 overflow-hidden rounded" aria-hidden="true">
-            {DISTRICT_RAMP_COLOURS.map((c) => (
-              <span key={c} className="flex-1" style={{ backgroundColor: c }} />
-            ))}
-          </div>
-          <div className="mt-0.5 flex justify-between text-[0.6875rem] tabular-nums text-ink-muted">
-            <span>1</span>
-            <span>{maxMatched}</span>
-          </div>
-        </div>
-      ) : null}
-      <ul className="mt-2 space-y-1.5">
-        {rows.map((row) => (
-          <li key={row.label} className="flex items-start gap-2 text-xs text-ink">
-            <span aria-hidden="true" className={cn("mt-0.5 size-3 shrink-0 rounded-sm", row.ring && "ring-1 ring-ink/50")} style={{ backgroundColor: row.colour }} />
-            <span className="min-w-0 flex-1 leading-4">
-              {row.label}
-              {row.note ? <span className="block text-[0.6875rem] text-ink-muted">{row.note}</span> : null}
-            </span>
+    <div aria-label="Legend" className="pointer-events-auto w-56 rounded-xl bg-white/95 p-3 shadow-float ring-1 ring-line" data-testid="globe-legend">
+      <p className="text-xs font-semibold text-ink">People per block</p>
+      <p className="text-[0.6875rem] leading-4 text-ink-muted">District: average of its blocks</p>
+      <ul className="mt-1.5 space-y-1">
+        {STAFF_BANDS.map((band) => (
+          <li key={band.key} className="flex items-center gap-2 text-xs text-ink">
+            <span aria-hidden="true" className="size-3 shrink-0 rounded-sm" style={{ backgroundColor: band.colour }} />
+            {band.label}
           </li>
         ))}
-        <li className="flex items-center gap-2 border-t border-line pt-1.5 text-xs text-ink">
-          <span aria-hidden="true" className="h-1 w-3 shrink-0 rounded bg-white ring-1 ring-ink/60" style={{ backgroundColor: SELECTED_COLOUR }} />
-          Selected
-          <span aria-hidden="true" className="ml-2 h-1 w-3 shrink-0 rounded" style={{ backgroundColor: HOVER_COLOUR }} />
-          Hover or focus
+        <li className="flex items-center gap-2 text-xs text-ink">
+          <span aria-hidden="true" className="size-3 shrink-0 rounded-sm" style={{ backgroundColor: NOT_IN_SHEET }} />
+          Not in the sheet
         </li>
       </ul>
-    </details>
+      <ul className="mt-2 space-y-0.5 border-t border-line pt-2">
+        {ROLE_ORDER.map((role) => (
+          <li key={role} className="flex items-center gap-2 text-[0.6875rem] text-ink">
+            <span aria-hidden="true" className="size-2.5 shrink-0 rounded-full" style={{ backgroundColor: ROLE_COLOUR[role] }} />
+            {ROLE_NAME[role]}
+          </li>
+        ))}
+      </ul>
+      <p className="mt-2 flex items-center gap-2 border-t border-line pt-1.5 text-[0.6875rem] text-ink-muted">
+        <span aria-hidden="true" className="h-1 w-3 shrink-0 rounded ring-1 ring-ink/60" style={{ backgroundColor: SELECTED_COLOUR }} />
+        Selected
+        <span aria-hidden="true" className="ml-1 h-1 w-3 shrink-0 rounded" style={{ backgroundColor: HOVER_COLOUR }} />
+        Hover
+      </p>
+    </div>
   );
 }
 
@@ -134,7 +93,7 @@ function OutlineDataStrip({ layer, onRetry, drawn, attribution }: { layer: Layer
         ) : null}
         {layer.status === "ready" ? (
           <p role="status" className="min-w-0 flex-1">
-            Validated: {drawn.districts} district and {drawn.blocks} block outlines, provisional.
+            {drawn.districts} district and {drawn.blocks} block outlines drawn.
           </p>
         ) : null}
         {layer.status === "unavailable" ? (
@@ -205,12 +164,9 @@ interface StageProps {
   manifest: GlobeManifest;
   layer: LayerState;
   onRetryLayer: () => void;
-  insights: GlobeInsights | null;
-  /** Counts only; null when the customer file has not been built. */
-  customers: CustomerSummary | null;
 }
 
-function GlobeStage({ manifest, layer, onRetryLayer, insights, customers }: StageProps) {
+function GlobeStage({ manifest, layer, onRetryLayer }: StageProps) {
   const reducedMotion = usePrefersReducedMotion();
   const hostRef = useRef<HTMLDivElement>(null);
   const stageRef = useRef<HTMLDivElement>(null);
@@ -228,12 +184,9 @@ function GlobeStage({ manifest, layer, onRetryLayer, insights, customers }: Stag
   const [focus, setFocus] = useState<FeatureRef | null>(null);
   const [announcement, setAnnouncement] = useState("");
   // Both panels start open where there is room beside the globe, and closed where they would cover it.
-  const [placesOpen, setPlacesOpen] = useState(isWide);
+  // The left side is only a search box now; it is always shown.
+  const [placesOpen, setPlacesOpen] = useState(true);
   const [insightsOpen, setInsightsOpen] = useState(isWide);
-  const [leftTab, setLeftTab] = useState<"places" | "segment">(() => (readSegmentParam() ? "segment" : "places"));
-  const [initialSegment] = useState(() => decodeSegment(readSegmentParam(), { districts: new Set(manifest.districts.map((d) => d.id)) }));
-  const [filter, setFilter] = useState<SegmentFilter>(initialSegment.filter);
-  const [colourBy, setColourBy] = useState<ColourBy>(initialSegment.by);
   const placesToggleRef = useRef<HTMLDivElement>(null);
   const insightsToggleRef = useRef<HTMLDivElement>(null);
   const returnFocusTo = useRef<"places" | "insights" | null>(null);
@@ -252,13 +205,10 @@ function GlobeStage({ manifest, layer, onRetryLayer, insights, customers }: Stag
   // overlay (which also drops any outline the join refused). Both carry the same validated summaries.
   const outlinesOverlay = layer.status === "ready" ? layer.outcome.overlay : null;
   const view: GlobeManifest = outlinesOverlay ?? manifest;
-  const outlines: OutlinesStatus = layer.status;
   const viewRef = useRef(view);
   const layerStatusRef = useRef(layer.status);
 
   const targets = useMemo(() => buildTargets(view), [view]);
-  const districtTargets = useMemo(() => targets.filter((t) => t.kind === "district").sort((a, b) => a.name.localeCompare(b.name)), [targets]);
-  const blockTargets = useMemo(() => targets.filter((t) => t.kind === "block").sort((a, b) => a.name.localeCompare(b.name)), [targets]);
   const districtsById = useMemo(() => new Map(view.districts.map((d) => [d.id, d])), [view.districts]);
   const blocksById = useMemo(() => new Map(view.blocks.map((b) => [b.id, b])), [view.blocks]);
   const district = selection.districtId ? (districtsById.get(selection.districtId) ?? null) : null;
@@ -271,23 +221,53 @@ function GlobeStage({ manifest, layer, onRetryLayer, insights, customers }: Stag
 
   const nameOf = useCallback((s: Selection) => placeName(view, s), [view]);
 
-  // ----------------------------------------------------------- segment --
-  // Facts per block, the faceted result and the paint for the renderer. Everything is from props already on the page.
-  const facts = useMemo(() => buildBlockFacts(view, insights, customers), [view, insights, customers]);
-  const segmentResult = useMemo(() => segment(facts, filter), [facts, filter]);
-  const paint = useMemo(() => buildPaint(view, facts, segmentResult, colourBy), [view, facts, segmentResult, colourBy]);
-  const segmented = segmentResult.active;
+  // ---------------------------------------------------------- staffing --
+  // Every outline is coloured by how many people work there (staffing.ts).
+  const paint = useMemo(() => staffPaint(view), [view]);
   useEffect(() => {
     rendererRef.current?.setPaint(paint);
   }, [paint, status]);
-  // The segment lives in the address bar, so a view can be bookmarked or sent to a colleague.
+
+  // The open district's team: for the panel and for the person icons on the map.
+  const teamDistrictId = selection.level === "district" || selection.level === "block" ? selection.districtId : null;
+  const teamBlocks = useMemo(() => (teamDistrictId ? view.blocks.filter((b) => b.districtId === teamDistrictId) : []), [view.blocks, teamDistrictId]);
+  const districtTeam = useDistrictTeam(teamDistrictId, teamBlocks);
+
+  // Headcount pins: a count per district from the state view; one icon per person, named on hover, inside a district.
+  const pins = useMemo((): Pin[] => {
+    if (revealed.blocksFor) {
+      const rowsById = districtTeam.state === "ready" ? new Map(districtTeam.data.blocks.map((b) => [b.blockId, b.rows])) : null;
+      return view.blocks
+        .filter((b) => b.districtId === revealed.blocksFor && b.geometry?.anchor)
+        .map((b) => {
+          const rows = rowsById?.get(b.id);
+          const seen = new Set<string>();
+          const people = rows
+            ? ROLE_ORDER.flatMap((role) =>
+                rows.flatMap((r) => r.people.filter((p) => p.role === role && p.name && !seen.has(p.name.toLowerCase()) && seen.add(p.name.toLowerCase()))),
+              ).map((p) => ({ name: p.name!, role: ROLE_NAME[p.role] ?? p.role, colour: ROLE_COLOUR[p.role] ?? "#64748b" }))
+            : null;
+          return { key: b.id, lng: b.geometry!.anchor![0], lat: b.geometry!.anchor![1], title: `${b.name}: ${b.staff} people`, count: b.staff, colour: bandFor(b.staff).colour, people };
+        });
+    }
+    if (revealed.districts) {
+      return view.districts
+        .filter((d) => d.blockCount > 0 && d.geometry?.anchor)
+        .map((d) => ({
+          key: d.id,
+          lng: d.geometry!.anchor![0],
+          lat: d.geometry!.anchor![1],
+          title: `${d.name}: ${d.staff} people`,
+          count: d.staff,
+          colour: bandFor(districtAverage(d, view.blocks) ?? 0).colour,
+          people: null,
+        }));
+    }
+    return [];
+  }, [revealed, view, districtTeam]);
   useEffect(() => {
-    const url = new URL(window.location.href);
-    const encoded = encodeSegment(filter, colourBy);
-    if (encoded) url.searchParams.set("seg", encoded);
-    else url.searchParams.delete("seg");
-    if (url.href !== window.location.href) window.history.replaceState(window.history.state, "", url);
-  }, [filter, colourBy]);
+    rendererRef.current?.setPins(pins);
+  }, [pins, status]);
 
   // ---------------------------------------------------------- renderer --
   useEffect(() => {
@@ -312,7 +292,7 @@ function GlobeStage({ manifest, layer, onRetryLayer, insights, customers }: Stag
         renderer.showBlocks(null);
         renderer.setLabels("districts");
         setRevealed({ districts: true, blocksFor: null });
-        setAnnouncement(`Arrived at ${v.state.name}. ${v.meta.counts.districtsDrawn} provisional district outlines shown.`);
+        setAnnouncement(`Arrived at ${v.state.name}. ${v.meta.counts.districtsDrawn} district outlines shown.`);
       } else if (current.districtId) {
         renderer.showBlocks(current.districtId);
         renderer.setLabels("blocks");
@@ -321,7 +301,7 @@ function GlobeStage({ manifest, layer, onRetryLayer, insights, customers }: Stag
         setAnnouncement(
           current.level === "block"
             ? `Arrived at ${v.blocks.find((b) => b.id === current.blockId)?.name ?? "the block"}. Details are in the panel.`
-            : `Arrived at ${d?.name ?? "the district"}. ${d?.drawnBlockCount ?? 0} provisional block outlines shown.`,
+            : `Arrived at ${d?.name ?? "the district"}. ${d?.drawnBlockCount ?? 0} block outlines shown.`,
         );
       }
     };
@@ -535,19 +515,10 @@ function GlobeStage({ manifest, layer, onRetryLayer, insights, customers }: Stag
     } else goTo(current);
   }, [goTo]);
 
-  const openPlaces = useCallback(() => {
-    focusInto.current = "places";
-    setPlacesOpen(true);
-    if (!isWide()) setInsightsOpen(false);
-  }, []);
   const openInsights = useCallback(() => {
     focusInto.current = "insights";
     setInsightsOpen(true);
     if (!isWide()) setPlacesOpen(false);
-  }, []);
-  const closePlaces = useCallback(() => {
-    returnFocusTo.current = "places";
-    setPlacesOpen(false);
   }, []);
   const closeInsights = useCallback(() => {
     returnFocusTo.current = "insights";
@@ -621,24 +592,22 @@ function GlobeStage({ manifest, layer, onRetryLayer, insights, customers }: Stag
             ? "Still (reduced motion)"
             : "Rotating"
         : `Arrived: ${nameOf(selection)}`;
-  const hoverName = hover
-    ? hover.kind === "district"
-      ? districtsById.get(hover.id)?.name
-      : hover.kind === "block"
-        ? blocksById.get(hover.id)?.name
-        : view.state.name
-    : null;
-  const focusName = focus ? (focus.kind === "district" ? districtsById.get(focus.id)?.name : blocksById.get(focus.id)?.name) : null;
-  const showProvisional = revealed.districts || revealed.blocksFor !== null;
-  const trail = ["Earth", ...(level === "globe" ? [] : [view.state.name]), ...(district ? [district.name] : []), ...(block ? [block.name] : [])];
+  const describe = (ref: FeatureRef | null): string | null => {
+    if (!ref) return null;
+    if (ref.kind === "district") {
+      const d = districtsById.get(ref.id);
+      return d ? (d.blockCount ? `${d.name} · ${d.staff} people in ${d.blockCount} blocks` : `${d.name} · not in the sheet`) : null;
+    }
+    if (ref.kind === "block") {
+      const b = blocksById.get(ref.id);
+      return b ? `${b.name} · ${b.staff} ${b.staff === 1 ? "person" : "people"}` : null;
+    }
+    return view.state.name;
+  };
+  const hoverName = describe(hover);
+  const focusName = describe(focus);
   const placeLabel = level === "globe" ? "Earth" : nameOf(selection);
 
-  const searchIcon = (
-    <Icon>
-      <circle cx="9" cy="9" r="5.5" />
-      <path d="m13.5 13.5 3.5 3.5" />
-    </Icon>
-  );
   const insightsIcon = (
     <Icon>
       <path d="M4 16V9m6 7V4m6 12v-5" />
@@ -675,7 +644,7 @@ function GlobeStage({ manifest, layer, onRetryLayer, insights, customers }: Stag
             <div ref={hostRef} className="absolute inset-0" data-testid="globe-canvas-host" />
           </div>
           <p id="globe-help" className="sr-only">
-            Use the search and place list on the left, or press Enter to fly to West Bengal. When outlines are shown, the arrow keys move between them, Enter selects one, and Escape goes back one step.
+            Use the search box, or press Enter to fly to West Bengal. When outlines are shown, the arrow keys move between them, Enter selects one, and Escape goes back one step.
           </p>
           <div className="sr-only" role="status" aria-live="polite" data-testid="globe-announcement">
             {announcement}
@@ -687,7 +656,7 @@ function GlobeStage({ manifest, layer, onRetryLayer, insights, customers }: Stag
               <div
                 className={cn(
                   "pointer-events-none absolute left-3 right-3 top-3 z-10 flex flex-wrap items-start justify-center gap-2 md:left-[6.5rem] md:right-[6.5rem]",
-                  placesOpen ? "lg:left-[19rem]" : "lg:left-[6.5rem]",
+                  "md:left-[18.5rem]",
                   insightsOpen ? "lg:right-[21rem]" : "lg:right-[6.5rem]",
                 )}
               >
@@ -697,48 +666,24 @@ function GlobeStage({ manifest, layer, onRetryLayer, insights, customers }: Stag
                     {statusText}
                   </span>
                 </div>
-                {segmented ? (
-                  <div className="pointer-events-auto flex items-center gap-1 rounded-full bg-primary py-1 pl-3 pr-1 text-xs font-semibold text-white shadow-float" data-testid="globe-segment-pill">
-                    <button type="button" onClick={() => { setLeftTab("segment"); openPlaces(); }} className="hover:underline">
-                      Segment: {segmentResult.matched.size} of {segmentResult.total} blocks
-                    </button>
-                    <button type="button" onClick={() => setFilter(EMPTY_FILTER)} aria-label="Clear the segment" title="Clear the segment" className="grid size-5 place-items-center rounded-full hover:bg-white/20">
-                      <svg aria-hidden="true" viewBox="0 0 20 20" width="12" height="12" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round">
-                        <path d="m5.5 5.5 9 9m0-9-9 9" />
-                      </svg>
-                    </button>
-                  </div>
-                ) : null}
-                {showProvisional || level !== "globe" ? (
+                {level !== "globe" ? (
                   <div className="flex w-full flex-wrap items-center justify-center gap-2 md:w-auto">
-                    {showProvisional ? (
-                      <span className="rounded-full border border-warn-line bg-warn-soft px-3 py-1 text-[0.6875rem] font-semibold uppercase leading-5 tracking-wider text-warn-ink shadow-sm">
-                        Provisional outlines
-                      </span>
-                    ) : null}
-                    {level !== "globe" ? (
-                      <div className="pointer-events-auto flex gap-2">
-                        <button type="button" onClick={back} className="rounded-lg bg-white px-3 py-1.5 text-xs font-semibold text-ink shadow-float ring-1 ring-line hover:bg-surface-muted">
-                          Back
-                        </button>
-                        <button type="button" onClick={reset} className="rounded-lg bg-primary px-3 py-1.5 text-xs font-semibold text-white shadow-float hover:bg-primary-hover">
-                          Return to globe
-                        </button>
-                      </div>
-                    ) : null}
+                    <div className="pointer-events-auto flex gap-2">
+                      <button type="button" onClick={back} className="rounded-lg bg-white px-3 py-1.5 text-xs font-semibold text-ink shadow-float ring-1 ring-line hover:bg-surface-muted">
+                        Back
+                      </button>
+                      <button type="button" onClick={reset} className="rounded-lg bg-primary px-3 py-1.5 text-xs font-semibold text-white shadow-float hover:bg-primary-hover">
+                        Return to globe
+                      </button>
+                    </div>
                   </div>
                 ) : null}
               </div>
 
               {/* Closed panels leave one button each, in the top corners. */}
-              {!placesOpen ? (
-                <div ref={placesToggleRef} className="pointer-events-none absolute left-3 top-3 z-20">
-                  <PanelToggle label="Places" onClick={openPlaces} icon={searchIcon} controls="globe-places" />
-                </div>
-              ) : null}
               {!insightsOpen ? (
                 <div ref={insightsToggleRef} className="pointer-events-none absolute right-3 top-3 z-20">
-                  <PanelToggle label="Insights" onClick={openInsights} icon={insightsIcon} controls="globe-insights-panel" />
+                  <PanelToggle label="Team" onClick={openInsights} icon={insightsIcon} controls="globe-insights-panel" />
                 </div>
               ) : null}
 
@@ -775,8 +720,8 @@ function GlobeStage({ manifest, layer, onRetryLayer, insights, customers }: Stag
                 </li>
               </menu>
 
-              <div className={cn("pointer-events-none absolute bottom-[4.25rem] left-3 z-10 md:bottom-3", placesOpen ? "lg:left-[19rem]" : "lg:left-3")}>
-                <Legend open={segmented || colourBy !== "link"} colourBy={colourBy} segmented={segmented} maxMatched={maxDistrictMatches(segmentResult)} />
+              <div className="pointer-events-none absolute bottom-[4.25rem] left-3 z-10 md:bottom-3">
+                <Legend />
               </div>
               {hoverName || focusName ? (
                 <p className="pointer-events-none absolute bottom-3 left-1/2 z-10 max-w-[40%] -translate-x-1/2 truncate rounded-full bg-white/95 px-3 py-1.5 text-xs font-medium text-ink shadow-float md:max-w-[min(40%,16rem)]" data-testid="globe-hover">
@@ -796,7 +741,7 @@ function GlobeStage({ manifest, layer, onRetryLayer, insights, customers }: Stag
                     data-testid="globe-details-strip"
                   >
                     <span className="min-w-0">
-                      <span className="block text-[0.6875rem] font-semibold uppercase tracking-wide text-ink-muted">{level === "globe" ? "Region insights" : "Details"}</span>
+                      <span className="block text-[0.6875rem] font-semibold uppercase tracking-wide text-ink-muted">{level === "globe" ? "Sales team" : "Team"}</span>
                       <span className="block truncate text-sm font-semibold text-ink">{placeLabel}</span>
                     </span>
                     <span aria-hidden="true" className="text-primary-ink">
@@ -808,70 +753,24 @@ function GlobeStage({ manifest, layer, onRetryLayer, insights, customers }: Stag
                 </div>
               ) : null}
 
-              {/* Left: go to a place. */}
-              {placesOpen ? (
-                <div
-                  id="globe-places"
-                  ref={placesPanelRef}
-                  role="region"
-                  aria-label="Places"
-                  onKeyDown={(event) => panelEscape(event, closePlaces)}
-                  className="pointer-events-auto absolute bottom-3 left-3 top-3 z-30 flex w-[min(20rem,calc(100%-1.5rem))] flex-col rounded-2xl bg-white p-4 [&_h2]:pr-8 shadow-[0_8px_30px_-12px_rgb(23_43_77/0.35)] ring-1 ring-line lg:z-20 lg:w-[17.5rem]"
-                  data-testid="globe-places"
-                >
-                  <CollapseButton label="Hide places" onClick={closePlaces} className="absolute right-2.5 top-2.5 z-10" />
-                  <div role="tablist" aria-label="Left panel" className="mb-3 mr-9 flex gap-1 rounded-xl bg-surface-muted p-1">
-                    {(["places", "segment"] as const).map((tab) => (
-                      <button
-                        key={tab}
-                        type="button"
-                        role="tab"
-                        aria-selected={leftTab === tab}
-                        onClick={() => setLeftTab(tab)}
-                        className={cn("min-h-8 flex-1 rounded-lg px-2 text-xs font-semibold transition-colors", leftTab === tab ? "bg-white text-primary-ink shadow-float" : "text-ink-muted hover:text-ink")}
-                        data-testid={`globe-tab-${tab}`}
-                      >
-                        {tab === "places" ? "Places" : "Segment"}
-                        {tab === "segment" && filterSize(filter) > 0 ? <span className="ml-1.5 rounded-full bg-primary px-1.5 text-[0.625rem] leading-4 text-white">{filterSize(filter)}</span> : null}
-                      </button>
-                    ))}
-                  </div>
-                  {leftTab === "places" ? (
-                    <PlaceSearch targets={targets} districts={districtTargets} blocks={blockTargets} onSelect={selectTarget} disabled={status !== "ready" || flying} activeId={selection.blockId ?? selection.districtId} trail={trail} />
-                  ) : (
-                    <SegmentPanel
-                      filter={filter}
-                      onFilter={setFilter}
-                      colourBy={colourBy}
-                      onColourBy={setColourBy}
-                      result={segmentResult}
-                      facts={facts}
-                      districts={view.districts}
-                      hasInsights={insights !== null}
-                      hasCustomers={customers !== null}
-                      disabled={status !== "ready" || flying}
-                      onSelectBlock={(id) => {
-                        if (!isWide()) setPlacesOpen(false);
-                        goTo({ level: "block", districtId: blocksById.get(id)?.districtId ?? null, blockId: id });
-                      }}
-                    />
-                  )}
-                </div>
-              ) : null}
+              {/* Left: a search box. */}
+              <div id="globe-places" ref={placesPanelRef} role="search" className="pointer-events-auto absolute left-3 top-3 z-30 w-[min(17rem,calc(100%-7rem))]" data-testid="globe-places">
+                <SearchBox targets={targets} onSelect={selectTarget} disabled={status !== "ready" || flying} />
+              </div>
 
-              {/* Right: insights and details. A bottom sheet on a phone. */}
+              {/* Right: the selected place and its team. A bottom sheet on a phone. */}
               {insightsOpen ? (
                 <aside
                   id="globe-insights-panel"
                   ref={insightsPanelRef}
-                  aria-label="Insights"
+                  aria-label="Team"
                   onKeyDown={(event) => panelEscape(event, closeInsights)}
                   className="pointer-events-auto absolute inset-x-3 bottom-3 z-30 flex max-h-[72%] flex-col rounded-2xl bg-white p-4 shadow-[0_8px_30px_-12px_rgb(23_43_77/0.35)] ring-1 ring-line md:inset-x-auto md:right-3 md:top-3 md:max-h-none md:w-[19.5rem] lg:z-20"
                   data-testid="globe-insights-panel"
                 >
                   <div className="-mt-1 mb-2 flex items-center justify-between gap-2">
-                    <p className="text-[0.6875rem] font-semibold uppercase tracking-wider text-ink-muted">Insights</p>
-                    <CollapseButton label="Hide insights" onClick={closeInsights} className="-mr-1" />
+                    <p className="text-[0.6875rem] font-semibold uppercase tracking-wider text-ink-muted">Sales team</p>
+                    <CollapseButton label="Hide team" onClick={closeInsights} className="-mr-1" />
                   </div>
                   <GlobeDetails
                     key={`${level}:${selection.blockId ?? selection.districtId ?? ""}`}
@@ -880,9 +779,7 @@ function GlobeStage({ manifest, layer, onRetryLayer, insights, customers }: Stag
                     district={district}
                     block={block}
                     disabled={status !== "ready" || flying}
-                    outlines={outlines}
-                    insights={insights}
-                    customers={customers}
+                    districtTeam={districtTeam}
                     onSelectBlock={(id) => goTo({ level: "block", districtId: blocksById.get(id)?.districtId ?? null, blockId: id })}
                     onSelectDistrict={(id) => goTo({ level: "district", districtId: id, blockId: null })}
                   />
@@ -921,18 +818,9 @@ function GlobeStage({ manifest, layer, onRetryLayer, insights, customers }: Stag
           layer={layer}
           onRetry={onRetryLayer}
           drawn={{ districts: view.meta.counts.districtsDrawn, blocks: view.meta.counts.blocksDrawn }}
-          attribution={`${ATTRIBUTION_EARTH} Outlines: ${view.meta.attribution}, ODbL, provisional and not official boundaries.`}
+          attribution={`${ATTRIBUTION_EARTH} Outlines: ${view.meta.attribution}, ODbL (not official boundaries).`}
         />
       </div>
-      <MarketDashboard
-        blocks={manifest.blocks}
-        districts={manifest.districts}
-        stateName={manifest.state.name}
-        level={level}
-        districtId={selection.districtId}
-        blockId={selection.blockId}
-        onSelectDistrict={status === "ready" && !flying ? (id) => goTo({ level: "district", districtId: id, blockId: null }) : undefined}
-      />
     </>
   );
 }
@@ -953,7 +841,7 @@ const CODE_REASON: Record<string, string> = {
  * if the textures fail, the globe shows its own error and retry, and the outline status is unaffected. Without
  * WebGL there is nothing to draw on, so the list-only view is shown and the outline file is not requested.
  */
-export default function GlobeExperience({ manifest, insights = null, customers = null }: { manifest: GlobeManifest; insights?: GlobeInsights | null; customers?: CustomerSummary | null }) {
+export default function GlobeExperience({ manifest }: { manifest: GlobeManifest }) {
   const [webgl] = useState(() => webglAvailable());
   const [attempt, setAttempt] = useState(0);
   const [layer, setLayer] = useState<LayerState>({ status: "loading" });
@@ -981,6 +869,6 @@ export default function GlobeExperience({ manifest, insights = null, customers =
     setAttempt((n) => n + 1);
   }, []);
 
-  if (!webgl) return <GlobeFallback overlay={manifest} insights={insights} customers={customers} reason="WebGL is not available in this browser, so the 3D globe cannot run." />;
-  return <GlobeStage manifest={manifest} layer={layer} onRetryLayer={retry} insights={insights} customers={customers} />;
+  if (!webgl) return <GlobeFallback overlay={manifest} reason="WebGL is not available in this browser, so the 3D globe cannot run." />;
+  return <GlobeStage manifest={manifest} layer={layer} onRetryLayer={retry} />;
 }

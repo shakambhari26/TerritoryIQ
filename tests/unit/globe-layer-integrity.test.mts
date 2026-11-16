@@ -15,7 +15,7 @@ import type { GlobeManifest } from "../../src/features/globe/types.ts";
 /**
  * The server side of /geo/globe-boundaries.json: it serves the validated globe dataset and nothing else. Success,
  * a missing file, a tampered file, another dataset, a structurally wrong file, and an unbuilt manifest, against the
- * real generated files and tampered copies of them. Needs `npm run data:build` and `python -I scripts/globe/build_overlay.py`.
+ * real generated files and tampered copies of them. Needs `npm run data:build` and `npm run data:build-globe`.
  */
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..", "..");
 const GENERATED = join(ROOT, "data", "generated");
@@ -24,7 +24,7 @@ const ready = ["globe-overlay.json", GLOBE_LAYER_FILE, "boundaries.json"].every(
 const sha = (bytes: Uint8Array) => createHash("sha256").update(bytes).digest("hex");
 const clone = <T,>(value: T): T => JSON.parse(JSON.stringify(value)) as T;
 
-describe("the globe outline file is served only if it is the validated dataset", { skip: ready ? false : "run npm run data:build and python -I scripts/globe/build_overlay.py first" }, () => {
+describe("the globe outline file is served only if it is the validated dataset", { skip: ready ? false : "run npm run data:build and npm run data:build-globe first" }, () => {
   const manifest = ready ? projectManifest(JSON.parse(readFileSync(join(GENERATED, "globe-overlay.json"), "utf8")) as ServerManifest) : (null as never);
   const bytes = ready ? readFileSync(join(GENERATED, GLOBE_LAYER_FILE)) : (null as never);
   const workspaceBytes = ready ? readFileSync(join(GENERATED, "boundaries.json")) : (null as never);
@@ -43,7 +43,7 @@ describe("the globe outline file is served only if it is the validated dataset",
       assert.ok(result.ok);
       assert.equal(result.sha256, manifest.meta.inputs[GLOBE_LAYER_FILE].sha256);
       assert.equal(Buffer.from(result.text, "utf8").equals(bytes), true, "the text served is the file, byte for byte");
-      assert.equal(manifest.meta.inputs[GLOBE_LAYER_FILE].datasetId, "globe-osm-west-bengal-admin-5-6");
+      assert.equal(manifest.meta.inputs[GLOBE_LAYER_FILE].datasetId, "globe-area-mapping");
       assert.equal(manifest.meta.inputs[GLOBE_LAYER_FILE].kind, GLOBE_LAYER_KIND);
     });
 
@@ -59,11 +59,10 @@ describe("the globe outline file is served only if it is the validated dataset",
     it("the served file is exactly the validated outlines: the same set of units, each once, none the manifest rejected", () => {
       const validated = [...manifest.districts, ...manifest.blocks].filter((u) => u.geometry).map((u) => u.id).sort();
       assert.deepEqual(parsed.shapes.map((s) => s.featureId).sort(), validated);
-      assert.equal(parsed.shapes.length, 332);
+      assert.equal(parsed.shapes.length, 23 + 341, "23 districts and 341 outlined places from the area-mapping sheet");
       assert.equal(parsed.meta.kind, GLOBE_LAYER_KIND);
       assert.match(String(parsed.meta.status), /^Provisional/);
-      assert.equal((parsed.meta.derivedFrom as { sha256: string }).sha256, sha(workspaceBytes), "records which workspace layer it was cut from");
-      assert.equal(manifest.meta.inputs["boundaries.json"].sha256, sha(workspaceBytes));
+      assert.match(manifest.meta.inputs["AREA MAPPING.xlsx"].sha256, /^[0-9a-f]{64}$/, "records the sheet it was built from");
     });
 
     it("joins to the manifest in the browser with nothing refused", () => {
@@ -171,10 +170,10 @@ describe("the globe outline file is served only if it is the validated dataset",
       assert.ok(!result.ok);
       assert.equal(result.fault, "identity");
       assert.equal(globeLayerResponse(result).status, 500);
-      // The browser agrees: it refuses the workspace layer for the same reason.
+      // The browser refuses it too: either for its identity or, first, because it holds outlines the globe does not know.
       const merged = mergeLayer(manifest, JSON.parse(workspaceBytes.toString("utf8")));
       assert.ok(!merged.ok);
-      assert.match(merged.reason, /not the one this overlay was validated against/);
+      assert.match(merged.reason, /not the one this overlay was validated against|does not belong to any official unit/);
     });
 
     it("another dataset ID, or no kind, or another kind: identity (checked before the hash)", () => {

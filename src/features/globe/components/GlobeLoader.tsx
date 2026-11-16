@@ -2,8 +2,6 @@
 
 import dynamic from "next/dynamic";
 import { Component, type ReactNode } from "react";
-import type { CustomerSummary } from "../customers";
-import type { GlobeInsights } from "../insights";
 import type { GlobeManifest } from "../types";
 
 /**
@@ -35,10 +33,10 @@ class LoadBoundary extends Component<{ children: ReactNode }, { failed: boolean 
   }
 }
 
-export function GlobeLoader({ manifest, insights = null, customers = null }: { manifest: GlobeManifest; insights?: GlobeInsights | null; customers?: CustomerSummary | null }) {
+export function GlobeLoader({ manifest }: { manifest: GlobeManifest }) {
   return (
     <LoadBoundary>
-      <GlobeExperience manifest={manifest} insights={insights} customers={customers} />
+      <GlobeExperience manifest={manifest} />
     </LoadBoundary>
   );
 }

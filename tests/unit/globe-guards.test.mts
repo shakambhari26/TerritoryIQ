@@ -26,11 +26,11 @@ const sources = (dir: string, extensions = [".ts", ".tsx", ".mts"]) => [...files
 const GLOBE_SOURCES = [...sources("src/features/globe"), ...sources("src/app/globe")];
 
 describe("globe prototype: the browser makes no outbound request", () => {
-  it("the three requests are the same-origin layer fetch in layer-client.ts and the block-rows and block-customers POSTs; no XHR, socket, beacon or geolocation anywhere", () => {
+  it("the only requests are the same-origin layer fetch and the two team POSTs; no XHR, socket, beacon or geolocation anywhere", () => {
     const fetches = /\bfetch\s*\(/;
     assert.deepEqual(GLOBE_SOURCES.filter((f) => fetches.test(readFileSync(f, "utf8"))).map(rel).sort(), [
-      "src/features/globe/block-customers-client.ts",
       "src/features/globe/block-rows-client.ts",
+      "src/features/globe/district-team-client.ts",
       "src/features/globe/layer-client.ts",
     ]);
     const other = /XMLHttpRequest|\bWebSocket\b|\bEventSource\b|sendBeacon|navigator\.geolocation/;
@@ -51,35 +51,33 @@ describe("globe prototype: the browser makes no outbound request", () => {
     assert.deepEqual(importers, ["src/features/globe/components/GlobeExperience.tsx"]);
   });
 
-  it("the block-rows client is a literal same-origin POST of { blockId } that takes no URL, and only the rows section uses it", () => {
-    const client = read("src/features/globe/block-rows-client.ts");
-    assert.match(client, /const BLOCK_ROWS_URL = "\/api\/globe\/block-rows";/);
-    assert.match(client, /export async function fetchBlockRows\(blockId: string, rowIds: readonly string\[\], signal: AbortSignal\)/);
-    assert.match(client, /method: "POST"/);
-    assert.match(client, /body: JSON\.stringify\(\{ blockId \}\)/);
-    assert.match(client, /cache: "no-store"/);
-    assert.match(client, /parseBlockRowsPayload\(body, blockId, rowIds\)/, "the answer is checked against the selected block and the page's row IDs");
-    const importers = GLOBE_SOURCES.filter((f) => /from\s+["'][^"']*block-rows-client["']/.test(readFileSync(f, "utf8"))).map(rel);
-    assert.deepEqual(importers, ["src/features/globe/components/BlockRowsSection.tsx"]);
-  });
-
-  it("the block-customers client is a literal same-origin POST of { blockId } that takes no URL, and only the customers section uses it", () => {
-    const client = read("src/features/globe/block-customers-client.ts");
-    assert.match(client, /const BLOCK_CUSTOMERS_URL = "\/api\/globe\/block-customers";/);
-    assert.match(client, /export async function fetchBlockCustomers\(blockId: string, expected: number, signal: AbortSignal\)/);
-    assert.match(client, /method: "POST"/);
-    assert.match(client, /body: JSON\.stringify\(\{ blockId \}\)/);
-    assert.match(client, /cache: "no-store"/);
-    assert.match(client, /parseBlockCustomersPayload\(body, blockId, expected\)/, "the answer is checked against the selected block and the page's count");
-    const importers = GLOBE_SOURCES.filter((f) => /from\s+["'][^"']*block-customers-client["']/.test(readFileSync(f, "utf8"))).map(rel);
-    assert.deepEqual(importers, ["src/features/globe/components/CustomersSection.tsx"]);
+  it("each team client is a literal same-origin POST that takes no URL, and only the team section uses them", () => {
+    const rows = read("src/features/globe/block-rows-client.ts");
+    assert.match(rows, /const BLOCK_ROWS_URL = "\/api\/globe\/block-rows";/);
+    assert.match(rows, /export async function fetchBlockRows\(blockId: string, rowIds: readonly string\[\], signal: AbortSignal\)/);
+    assert.match(rows, /body: JSON\.stringify\(\{ blockId \}\)/);
+    assert.match(rows, /parseBlockRowsPayload\(body, blockId, rowIds\)/, "the answer is checked against the place and the page's row IDs");
+    const district = read("src/features/globe/district-team-client.ts");
+    assert.match(district, /const DISTRICT_TEAM_URL = "\/api\/globe\/district-team";/);
+    assert.match(district, /body: JSON\.stringify\(\{ districtId \}\)/);
+    assert.match(district, /parseDistrictTeamPayload\(body, districtId, expected\)/, "the answer is checked against the page's places and row IDs");
+    for (const client of [rows, district]) {
+      assert.match(client, /method: "POST"/);
+      assert.match(client, /cache: "no-store"/);
+    }
+    for (const name of ["block-rows-client", "district-team-client"]) {
+      const importers = GLOBE_SOURCES.filter((f) => new RegExp(`from\\s+["'][^"']*${name}["']`).test(readFileSync(f, "utf8"))).map(rel);
+      const allowed = name === "block-rows-client" ? ["src/features/globe/components/TeamSection.tsx", "src/features/globe/district-team-client.ts"] : ["src/features/globe/components/TeamSection.tsx"];
+      assert.deepEqual(importers.sort(), allowed, name);
+    }
   });
 
   it("outline path data is never in public/ and never in the page props: the manifest holds summaries only", () => {
     assert.ok(!existsSync(join(ROOT, "public", "geo")));
-    const builder = read("scripts/globe/build_overlay.py");
-    const geometryFor = builder.slice(builder.indexOf("def geometry_for"), builder.indexOf("out_blocks = []"));
-    assert.doesNotMatch(geometryFor, /"d"/, "the builder does not write path data into the manifest");
+    const builder = read("scripts/globe/build-area-map.mts");
+    const summary = builder.slice(builder.indexOf("    summary: {"), builder.indexOf("const districtFeature"));
+    assert.ok(summary.length > 0);
+    assert.doesNotMatch(summary, /\bd:/, "the builder does not write path data into the manifest");
     assert.doesNotMatch(read("src/features/globe/types.ts").split("export interface OverlayGeometry")[0].split("export interface GeometrySummary")[1] ?? "", /\bd:/, "a summary has no path data");
   });
 
@@ -130,9 +128,14 @@ describe("globe prototype: three.js stays inside one lazy, browser-only folder",
     const importers = sources("src")
       .filter((f) => /from\s+["'][^"']*overlay\.server["']/.test(readFileSync(f, "utf8")))
       .map(rel);
-    // The page (for the manifest props), the globe's outline route (for the integrity record) and the block-rows route (for one
-    // selected block's rows). Nothing else.
-    assert.deepEqual(importers.sort(), ["src/app/api/globe/block-rows/route.ts", "src/app/geo/globe-boundaries.json/route.ts", "src/app/globe/page.tsx"]);
+    // The page (for the manifest props), the globe's outline route (for the integrity record) and the two team routes (one
+    // selected place's rows, one selected district's rows). Nothing else.
+    assert.deepEqual(importers.sort(), [
+      "src/app/api/globe/block-rows/route.ts",
+      "src/app/api/globe/district-team/route.ts",
+      "src/app/geo/globe-boundaries.json/route.ts",
+      "src/app/globe/page.tsx",
+    ]);
     const clientImporters = sources("src")
       .filter((f) => /^\s*["']use client["']/m.test(readFileSync(f, "utf8")))
       .filter((f) => /overlay\.server/.test(readFileSync(f, "utf8")));
@@ -142,11 +145,10 @@ describe("globe prototype: three.js stays inside one lazy, browser-only folder",
   it("the Territory Workspace does not import the globe", () => {
     const offenders = sources("src")
       .filter((f) => !f.includes(`${join("src", "features", "globe")}`) && !f.includes(join("src", "app", "globe")))
-      // The globe's own outline, block-rows and block-customers routes are part of the prototype; the workspace's route
-      // (geo/boundaries.json) is not.
+      // The globe's own outline and team routes are part of the globe; the workspace's route (geo/boundaries.json) is not.
       .filter(
         (f) =>
-          !["src/app/geo/globe-boundaries.json/route.ts", "src/app/api/globe/block-rows/route.ts", "src/app/api/globe/block-customers/route.ts"].includes(rel(f)),
+          !["src/app/geo/globe-boundaries.json/route.ts", "src/app/api/globe/block-rows/route.ts", "src/app/api/globe/district-team/route.ts"].includes(rel(f)),
       )
       .filter((f) => /features\/globe|globe-prototype/.test(readFileSync(f, "utf8")))
       .map(rel);
@@ -155,7 +157,7 @@ describe("globe prototype: three.js stays inside one lazy, browser-only folder",
   });
 });
 
-describe("globe prototype: wording stays provisional", () => {
+describe("globe prototype: wording stays honest", () => {
   it("no text calls a link verified or an outline official", () => {
     for (const file of sources("src/features/globe", [".tsx", ".ts"])) {
       const text = readFileSync(file, "utf8");
@@ -164,11 +166,10 @@ describe("globe prototype: wording stays provisional", () => {
     }
   });
 
-  it("the legend and the page keep the attribution and the provisional wording on screen", () => {
+  it("the page keeps the OpenStreetMap and NASA attribution on screen, and says the outlines are not official boundaries", () => {
     const experience = read("src/features/globe/components/GlobeExperience.tsx");
     assert.match(experience, /meta\.attribution/);
-    assert.match(experience, /provisional and not official boundaries/);
-    assert.match(experience, /Provisional outlines/);
+    assert.match(experience, /not official boundaries/);
     assert.match(experience, /NASA Earth Observatory/);
   });
 
@@ -179,7 +180,7 @@ describe("globe prototype: wording stays provisional", () => {
   });
 });
 
-describe("globe prototype: Python tooling and asset provenance", () => {
+describe("globe prototype: build tooling and asset provenance", () => {
   const python = (name: string) => read(`scripts/globe/${name}`);
 
   it("only the texture fetcher can reach a network: one host, a generic User-Agent, no address", () => {
@@ -190,14 +191,17 @@ describe("globe prototype: Python tooling and asset provenance", () => {
     assert.doesNotMatch(fetcher, /[A-Za-z0-9._%+-]+@[A-Za-z0-9-]+\.[A-Za-z]{2,}/);
     const hosts = [...fetcher.matchAll(/https?:\/\/([a-z0-9.-]+)/gi)].map((m) => m[1]);
     for (const host of hosts) assert.ok(host === "assets.science.nasa.gov" || host === "science.nasa.gov", host);
-    const builder = python("build_overlay.py");
-    assert.doesNotMatch(builder, /urllib|requests|socket|http\.client|\bftp/);
+    const builder = read("scripts/globe/build-area-map.mts");
+    assert.doesNotMatch(builder, /\bfetch\s*\(|node:https?|node:net|https?:\/\//, "the globe build is offline");
   });
 
   it("the build script writes only under data/generated/, and the fetcher only under public/globe/ and scripts/globe/", () => {
-    const builder = python("build_overlay.py");
-    assert.match(builder, /GENERATED = ROOT \/ "data" \/ "generated"/);
-    assert.doesNotMatch(builder, /"public"|data-source/);
+    const builder = read("scripts/globe/build-area-map.mts");
+    assert.match(builder, /const GENERATED = path\.join\(ROOT, "data", "generated"\);/);
+    const writes = [...builder.matchAll(/writeFile\(([^,]+),/g)].map((m) => m[1]);
+    assert.ok(writes.length > 0);
+    for (const target of writes) assert.match(target, /^path\.join\(GENERATED\b/, "every write is under data/generated/");
+    assert.doesNotMatch(builder, /"public"/);
     const fetcher = python("fetch_textures.py");
     assert.match(fetcher, /OUT_DIR = ROOT \/ "public" \/ "globe"/);
     assert.doesNotMatch(fetcher, /data-source|"data"/);
@@ -238,28 +242,20 @@ describe("globe prototype: Python tooling and asset provenance", () => {
 
 describe("globe prototype: the outline data's provenance record matches the files", () => {
   const generated = join(ROOT, "data", "generated");
-  const present = existsSync(join(generated, "globe-boundaries.json")) && existsSync(join(generated, "boundaries.json"));
+  const present = existsSync(join(generated, "globe-boundaries.json")) && existsSync(join(generated, "globe-overlay.json"));
   const sha = (file: string) => createHash("sha256").update(readFileSync(file)).digest("hex");
 
-  it("records the globe's outline file and the workspace layer it was cut from, by SHA-256, and says it is provisional ODbL data", { skip: present ? false : "run npm run data:build and python -I scripts/globe/build_overlay.py first" }, () => {
-    const record = JSON.parse(read("scripts/globe/texture-manifest.json")).outlineData;
-    assert.equal(record.file, "data/generated/globe-boundaries.json");
-    assert.equal(record.servedAt, "/geo/globe-boundaries.json");
-    assert.equal(record.sha256, sha(join(generated, "globe-boundaries.json")));
-    assert.equal(record.bytes, readFileSync(join(generated, "globe-boundaries.json")).length);
-    assert.equal(record.derivedFrom.sha256, sha(join(generated, "boundaries.json")));
-    assert.equal(record.derivedFrom.bytes, readFileSync(join(generated, "boundaries.json")).length);
+  it("the manifest records the outline file by SHA-256, and the file says it is provisional ODbL OpenStreetMap data", { skip: present ? false : "run npm run data:build and npm run data:build-globe first" }, () => {
     const overlay = JSON.parse(readFileSync(join(generated, "globe-overlay.json"), "utf8"));
-    assert.equal(overlay.meta.inputs["globe-boundaries.json"].sha256, record.sha256, "the manifest the server checks against says the same");
-    assert.equal(record.shapes, record.districts + record.blocks);
-    assert.match(record.licence, /ODbL|Open Database Licence/);
-    assert.match(record.attribution, /OpenStreetMap contributors/);
-    assert.match(record.status, /^Provisional/);
-    assert.ok(record.snapshots.length >= 1 && /^2026-/.test(record.snapshots[0]));
-  });
-
-  it("the texture script keeps this record when it rewrites the manifest", () => {
-    assert.match(read("scripts/globe/fetch_textures.py"), /get\("outlineData"\)/);
+    const record = overlay.meta.inputs["globe-boundaries.json"];
+    assert.equal(record.sha256, sha(join(generated, "globe-boundaries.json")));
+    const layer = JSON.parse(readFileSync(join(generated, "globe-boundaries.json"), "utf8"));
+    assert.equal(record.shapes, layer.shapes.length);
+    assert.equal(layer.meta.counts.shapes, layer.meta.counts.districts + layer.meta.counts.blocks);
+    assert.match(layer.meta.licence, /ODbL|Open Database Licence/);
+    assert.match(layer.meta.attribution, /OpenStreetMap contributors/);
+    assert.match(layer.meta.status, /^Provisional/);
+    assert.ok(layer.meta.snapshots.length >= 1 && /^2026-/.test(layer.meta.snapshots[0]));
   });
 
   it("no geometry file is in public/", () => {

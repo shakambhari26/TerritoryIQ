@@ -31,7 +31,7 @@ const geometry = { bbox: [88.1, 22.2, 88.9, 22.9] as const, anchor: [88.5, 22.5]
 function synthetic(): ServerManifest {
   const person = (role: string, slot: number, name: string | null) => ({ role, slot, name, vacant: name === null });
   const block = (id: string, name: string, records: ServerManifest["blocks"][number]["records"], withGeometry = true): ServerManifest["blocks"][number] => ({
-    id, name, lgdCode: Number(id.slice(3)), districtId: "GD-1", state: records.length > 0 ? "represented" : "unresolved", reason: `reason ${id}`, contested: records.length > 1,
+    id, name, lgdCode: Number(id.slice(3)), districtId: "GD-1", state: records.length > 0 ? "represented" : "unresolved", reason: `reason ${id}`, contested: records.length > 1, staff: records.length, vacancies: 0,
     records, geometry: withGeometry ? { ...geometry, bbox: [...geometry.bbox], anchor: [...geometry.anchor] } as never : null, noGeometryReason: withGeometry ? null : "no outline",
   });
   return {
@@ -41,7 +41,7 @@ function synthetic(): ServerManifest {
       counts: { districts: 1, districtsDrawn: 1, districtsRepresented: 1, blocks: 4, blocksDrawn: 3, blocksRepresented: 2, blocksRepresentedAndDrawn: 2, blocksNoRepresentativeConfirmed: 0, blocksUnresolved: 2, blocksContested: 1, shapesRejected: 0, parentFailures: 0, duplicateShapes: 0 },
     },
     state: { id: "GS-1", name: "Synthetic State", bbox: [88, 22, 89, 23], centre: [88.5, 22.5], basis: "synthetic" },
-    districts: [{ id: "GD-1", name: "Synthetic District", lgdCode: 1, state: "represented", reason: "r", blockCount: 4, representedBlockCount: 2, drawnBlockCount: 3, geometry, noGeometryReason: null }],
+    districts: [{ id: "GD-1", name: "Synthetic District", lgdCode: 1, state: "represented", reason: "r", blockCount: 4, staff: 3, vacancies: 0, representedBlockCount: 2, drawnBlockCount: 3, geometry, noGeometryReason: null }],
     blocks: [
       block("GB-1", "Block One", [{ unitId: "TU-1", blockLabel: LABELS[0], territory: TERRITORIES[0], namedPeople: 2, people: [person("ASM", 1, NAMES[0]), person("TSI", 1, NAMES[1])] }]),
       block("GB-22", "Block Two", [
@@ -57,8 +57,8 @@ function synthetic(): ServerManifest {
 
 const ALLOWED_KEYS = {
   manifest: ["blocks", "districts", "meta", "rejected", "state"],
-  block: ["contested", "districtId", "geometry", "id", "lgdCode", "name", "noGeometryReason", "reason", "rowIds", "state"],
-  district: ["blockCount", "drawnBlockCount", "geometry", "id", "lgdCode", "name", "noGeometryReason", "reason", "representedBlockCount", "state"],
+  block: ["contested", "districtId", "geometry", "id", "lgdCode", "name", "noGeometryReason", "reason", "rowIds", "staff", "state", "vacancies"],
+  district: ["blockCount", "drawnBlockCount", "geometry", "id", "lgdCode", "name", "noGeometryReason", "reason", "representedBlockCount", "staff", "state", "vacancies"],
   geometry: ["anchor", "bbox", "vertices"],
 };
 const sorted = (value: object) => Object.keys(value).sort();
@@ -320,7 +320,7 @@ const overlayPath = join(ROOT, "data", "generated", "globe-overlay.json");
 const datasetPath = join(ROOT, "data", "generated", "dataset.json");
 const ready = existsSync(overlayPath) && existsSync(datasetPath);
 
-describe("the real build", { skip: ready ? false : "run npm run data:build and python -I scripts/globe/build_overlay.py first" }, () => {
+describe("the real build", { skip: ready ? false : "run npm run data:build and npm run data:build-globe first" }, () => {
   const server = ready ? (JSON.parse(readFileSync(overlayPath, "utf8")) as ServerManifest) : (null as never);
   const names = ready ? staffNames(JSON.parse(readFileSync(datasetPath, "utf8")) as TerritoryDataset) : [];
   const manifest = ready ? projectManifest(server) : (null as never);
@@ -416,7 +416,6 @@ const SERVER_ONLY = [
   "src/features/globe/overlay-projection.server.ts",
   "src/features/globe/server-types.ts",
   "src/features/globe/block-rows-route.server.ts",
-  "src/features/globe/customers.server.ts",
 ];
 
 function resolveImport(from: string, specifier: string): string | null {
@@ -433,7 +432,7 @@ describe("structure: client code cannot reach the names-bearing manifest or its 
 
   it("finds the globe's client components", () => {
     const names = clientRoots.map(rel);
-    for (const expected of ["src/features/globe/components/GlobePanel.tsx", "src/features/globe/components/GlobeExperience.tsx", "src/features/globe/components/BlockRowsSection.tsx", "src/features/globe/components/GlobeFallback.tsx"]) {
+    for (const expected of ["src/features/globe/components/GlobePanel.tsx", "src/features/globe/components/GlobeExperience.tsx", "src/features/globe/components/TeamSection.tsx", "src/features/globe/components/GlobeFallback.tsx"]) {
       assert.ok(names.includes(expected), expected);
     }
   });
@@ -463,11 +462,14 @@ describe("structure: client code cannot reach the names-bearing manifest or its 
         if (target && SERVER_ONLY.includes(rel(target))) importers.set(rel(target), [...(importers.get(rel(target)) ?? []), rel(file)]);
       }
     }
-    assert.deepEqual((importers.get("src/features/globe/overlay.server.ts") ?? []).sort(), ["src/app/api/globe/block-rows/route.ts", "src/app/geo/globe-boundaries.json/route.ts", "src/app/globe/page.tsx"]);
-    // The block-customers route reuses the same handler for one selected block's customers.
-    assert.deepEqual((importers.get("src/features/globe/block-rows-route.server.ts") ?? []).sort(), ["src/app/api/globe/block-customers/route.ts", "src/app/api/globe/block-rows/route.ts"]);
-    // Customer names: the page reads counts only, the route one block's records.
-    assert.deepEqual((importers.get("src/features/globe/customers.server.ts") ?? []).sort(), ["src/app/api/globe/block-customers/route.ts", "src/app/globe/page.tsx"]);
+    assert.deepEqual((importers.get("src/features/globe/overlay.server.ts") ?? []).sort(), [
+      "src/app/api/globe/block-rows/route.ts",
+      "src/app/api/globe/district-team/route.ts",
+      "src/app/geo/globe-boundaries.json/route.ts",
+      "src/app/globe/page.tsx",
+    ]);
+    // The two team routes share one hardened handler.
+    assert.deepEqual((importers.get("src/features/globe/block-rows-route.server.ts") ?? []).sort(), ["src/app/api/globe/block-rows/route.ts", "src/app/api/globe/district-team/route.ts"]);
     assert.deepEqual((importers.get("src/features/globe/overlay-projection.server.ts") ?? []).sort(), ["src/features/globe/overlay.server.ts"]);
     for (const file of importers.get("src/features/globe/server-types.ts") ?? []) assert.match(file, /\.server\.ts$/, `${file} should import server-types only from a server module`);
     for (const [file, text] of sources) {
@@ -478,10 +480,11 @@ describe("structure: client code cannot reach the names-bearing manifest or its 
     }
   });
 
-  it("overlay.server exports only the projection and one block's rows, never the parsed manifest", () => {
+  it("overlay.server exports only the projection, one block's rows and one district's rows, never the parsed manifest", () => {
     const text = sources.get(join(SRC, "features/globe/overlay.server.ts"))!.replace(/\/\*[\s\S]*?\*\//g, "");
     const exported = [...text.matchAll(/^export\s+(?:async\s+)?(?:function|const|let|var|class|type|interface)\s+(\w+)/gm)].map((m) => m[1]).sort();
-    assert.deepEqual(exported, ["blockRowsAvailable", "getBlockRows", "getGlobeManifest"]);
+    assert.deepEqual(exported, ["blockRowsAvailable", "getBlockRows", "getDistrictTeam", "getGlobeManifest"]);
+    assert.match(text, /function getDistrictTeam\(districtId: string\): Array<\{ blockId: string; rows: BlockRow\[\] \}> \| null/);
     assert.doesNotMatch(text, /^export\s*\{|^export\s+default|export\s+\*/m);
     assert.match(text, /function getGlobeManifest\(\): GlobeManifest \| null/);
     assert.match(text, /function getBlockRows\(blockId: string\): BlockRow\[\] \| null/);
@@ -495,8 +498,11 @@ describe("structure: client code cannot reach the names-bearing manifest or its 
       assert.doesNotMatch(code, /\.records\b|\brecords\s*:/, rel(file));
     }
     const panel = sources.get(join(SRC, "features/globe/components/GlobePanel.tsx"))!;
-    assert.match(panel, /<BlockRowsSection key=\{block\.id\}/);
-    assert.match(panel, /rowIds=\{block\.rowIds\}/);
+    assert.match(panel, /<BlockTeam key=\{block\.id\} block=\{block\} \/>/);
+    assert.match(panel, /<DistrictTeam lookup=\{districtTeam\}/);
+    const team = sources.get(join(SRC, "features/globe/components/TeamSection.tsx"))!;
+    assert.match(team, /fetchDistrictTeam\(districtId!, expected, signal\)/, "a district's names are fetched with the places the page holds");
+    assert.match(team, /fetchBlockRows\(block\.id, block\.rowIds, signal\)/, "a place's names are fetched with the row IDs the page holds");
   });
 
   it("the client-facing types carry no record type, and the server-only types are the only place the records are declared", () => {
@@ -507,24 +513,27 @@ describe("structure: client code cannot reach the names-bearing manifest or its 
   });
 });
 
-describe("structure: the route", () => {
-  const route = sources.get(join(SRC, "app/api/globe/block-rows/route.ts"))!.replace(/\/\*[\s\S]*?\*\//g, "");
+describe("structure: the routes", () => {
+  const routes = ["app/api/globe/block-rows/route.ts", "app/api/globe/district-team/route.ts"].map((file) => [file, sources.get(join(SRC, file))!.replace(/\/\*[\s\S]*?\*\//g, "")] as const);
   const handlerFile = sources.get(join(SRC, "features/globe/block-rows-route.server.ts"))!.replace(/\/\*[\s\S]*?\*\//g, "");
-  const handler = handlerFile.slice(handlerFile.indexOf("export async function handleBlockRowsRequest"));
+  const handler = handlerFile.slice(handlerFile.indexOf("export async function handleLookupRequest"), handlerFile.indexOf("export function handleBlockRowsRequest"));
 
-  it("is dynamic, reads no URL or query, and routes every method through one handler", () => {
-    assert.match(route, /import \{ connection \} from "next\/server";/);
-    assert.match(route, /await connection\(\);/);
-    for (const method of ["POST", "GET", "PUT", "PATCH", "DELETE", "OPTIONS"]) assert.match(route, new RegExp(`export const ${method} = respond;`));
-    assert.doesNotMatch(route, /searchParams|params|\.url\b|nextUrl|cookies\(|headers\(\)/);
-    assert.doesNotMatch(route, /export const (?:dynamic|revalidate|fetchCache|runtime)\b/);
+  it("each is dynamic, reads no URL or query, and routes every method through one handler", () => {
+    for (const [file, route] of routes) {
+      assert.match(route, /import \{ connection \} from "next\/server";/, file);
+      assert.match(route, /await connection\(\);/, file);
+      for (const method of ["POST", "GET", "PUT", "PATCH", "DELETE", "OPTIONS"]) assert.match(route, new RegExp(`export const ${method} = respond;`), file);
+      assert.doesNotMatch(route, /searchParams|params|\.url\b|nextUrl|cookies\(|headers\(\)/, file);
+      assert.doesNotMatch(route, /export const (?:dynamic|revalidate|fetchCache|runtime)\b/, file);
+    }
+    assert.match(routes[1][1], /key: "districtId",\s*pattern: DISTRICT_ID_PATTERN,/);
   });
 
   it("the handler checks the host, method, media type and size before it reads a lookup, and never builds a key from input", () => {
-    const order = ["isRequestAuthorized(", 'request.method !== "POST"', "isJson(", "readCapped(", "JSON.parse(", "BLOCK_ID_PATTERN.test", "source.rows(blockId)"].map((needle) => handler.indexOf(needle));
+    const order = ["isRequestAuthorized(", 'request.method !== "POST"', "isJson(", "readCapped(", "JSON.parse(", "options.pattern.test(id)", "options.lookup(id)"].map((needle) => handler.indexOf(needle));
     assert.ok(order.every((n) => n >= 0), "every check is present");
     assert.deepEqual([...order].sort((a, b) => a - b), order, "the checks run in this order");
-    assert.doesNotMatch(handler, /\[blockId\]|\[body|\[key|new URL|searchParams|readFile|path\.join/);
+    assert.doesNotMatch(handler, /\[id\]|\[body|\[blockId\]|new URL|searchParams|readFile|path\.join/);
   });
 
   it("next.config.ts marks /api/:path* private, no-store", async () => {
@@ -538,10 +547,8 @@ describe("structure: the route", () => {
 describe("Workspace links outside Workspace do not prefetch its named payload", () => {
   const source = (file: string) => readFileSync(resolve(import.meta.dirname, "..", "..", file), "utf8");
 
-  it("the Globe's Workspace link (panel and row links) sets prefetch={false}", () => {
-    const link = source("src/features/globe/components/WorkspaceLink.tsx");
-    assert.equal(link.match(/<Link\b/g)?.length, 1);
-    assert.match(link, /<Link\b[^>]*\bprefetch=\{false\}/);
+  it("the Globe links to the Workspace nowhere, so it cannot prefetch its payload", () => {
+    for (const [file, text] of sources) if (rel(file).startsWith("src/features/globe/")) assert.doesNotMatch(text, /href=\{?["'`]\/workspace/, rel(file));
   });
 
   it("the navigation link turns prefetch off for /workspace only", () => {

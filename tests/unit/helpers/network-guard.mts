@@ -4,7 +4,8 @@
  * The rule: the app may make same-origin `fetch` requests from an explicit list of files, each to one literal
  * relative URL declared as `const <NAME> = "...";` (`LAYER_URL` unless the entry names another constant), with exactly
  * one `fetch(<NAME>, ...)` in the file. An entry may be a `POST`: its one fetch must then say `method: "POST"` and send
- * exactly `body: JSON.stringify({ blockId })`, and an entry without `method` must not say `method` at all. Nothing
+ * exactly `body: JSON.stringify({ <bodyKey> })` (`blockId` unless the entry names another key), and an entry without
+ * `method` must not say `method` at all. Nothing
  * else in `src/` may call `fetch`, open an XHR, a WebSocket, an EventSource, send a beacon or ask for a location.
  * (External addresses in source text are checked separately, in local-boundary.test.mts and globe-guards.test.mts.)
  * A new endpoint is allowed only by adding its file and exact URL to the list, which is a change to the tests, so it
@@ -18,8 +19,10 @@ export interface AllowedFetch {
   url: string;
   /** The name of the constant that holds the URL. Default `LAYER_URL`. */
   constant?: string;
-  /** `POST` when the file's one request is the block-rows POST. Omitted for a plain GET. */
+  /** `POST` when the file's one request is a lookup POST. Omitted for a plain GET. */
   method?: "POST";
+  /** The one key a POST body may hold. Default `blockId`. */
+  bodyKey?: "blockId" | "districtId";
 }
 
 /** Everything that can reach beyond the page. `fetch` is allowed only through the list. */
@@ -37,7 +40,7 @@ export function networkViolations(sources: Record<string, string>, allowed: read
       problems.push(`${file}: makes or can make a network request and is not on the allowed list`);
       continue;
     }
-    const { url, constant = "LAYER_URL", method } = entry;
+    const { url, constant = "LAYER_URL", method, bodyKey = "blockId" } = entry;
     if (OTHER_CHANNELS.test(text)) problems.push(`${file}: uses XHR, a socket, an event stream, a beacon or geolocation`);
     const declared = text.match(new RegExp(`const ${constant} = "([^"]*)";`));
     if (!declared) problems.push(`${file}: the URL is not one literal constant named ${constant}`);
@@ -48,7 +51,7 @@ export function networkViolations(sources: Record<string, string>, allowed: read
     const call = text.match(/\bfetch\s*\([\s\S]*?\n\s*\}\);|\bfetch\s*\([^;]*;/)?.[0] ?? "";
     if (method === "POST") {
       if (!/\bmethod:\s*"POST"/.test(call)) problems.push(`${file}: the fetch is not method: "POST"`);
-      if (!/\bbody:\s*JSON\.stringify\(\{ blockId \}\)/.test(call)) problems.push(`${file}: the fetch body is not exactly JSON.stringify({ blockId })`);
+      if (!new RegExp(`\\bbody:\\s*JSON\\.stringify\\(\\{ ${bodyKey} \\}\\)`).test(call)) problems.push(`${file}: the fetch body is not exactly JSON.stringify({ ${bodyKey} })`);
       if ((text.match(/\bbody:\s*JSON/g) ?? []).length !== 1) problems.push(`${file}: does not send exactly one JSON body`);
     } else if (/\bmethod:\s*"|\bbody:\s*JSON/.test(text)) {
       problems.push(`${file}: a plain GET entry sets a method or a body`);

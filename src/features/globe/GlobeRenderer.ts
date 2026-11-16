@@ -163,6 +163,34 @@ interface LabelItem {
   radius: number;
 }
 
+/** One person on a pin: shown as a small icon whose name pops up on hover, focus or tap. */
+export interface PinPerson {
+  name: string;
+  /** The role as it is shown, e.g. "Area Sales Manager". */
+  role: string;
+  /** Icon colour. */
+  colour: string;
+}
+
+/**
+ * A headcount pin at a place: one icon per person (when the names are known), or a count badge (when only the
+ * number is known, e.g. a district seen from the state). `colour` is the staffing colour of the place.
+ */
+export interface Pin {
+  key: string;
+  lng: number;
+  lat: number;
+  title: string;
+  count: number;
+  colour: string;
+  people: PinPerson[] | null;
+}
+
+/** At most this many person icons on one pin; the rest are "+n". */
+const PIN_MAX_ICONS = 8;
+const PERSON_SVG =
+  '<svg viewBox="0 0 16 16" width="11" height="11" aria-hidden="true" fill="currentColor"><circle cx="8" cy="5" r="3"/><path d="M2.5 14.5c.6-3 2.8-4.6 5.5-4.6s4.9 1.6 5.5 4.6z"/></svg>';
+
 export function webglAvailable(): boolean {
   try {
     const canvas = document.createElement("canvas");
@@ -206,6 +234,8 @@ export class GlobeRenderer {
   private readonly resizeObserver: ResizeObserver;
   private readonly intersection: IntersectionObserver;
   private readonly labels: LabelItem[] = [];
+  private readonly pinLayer: HTMLDivElement;
+  private pins: Array<{ pin: Pin; element: HTMLElement }> = [];
 
   /** The validated, joined outlines. Null until the outline file has loaded and passed validation. */
   private overlay: GlobeOverlay | null = null;
@@ -265,6 +295,10 @@ export class GlobeRenderer {
     this.labelLayer.className = "pointer-events-none absolute inset-0 overflow-hidden";
     this.labelLayer.setAttribute("aria-hidden", "true");
     host.appendChild(this.labelLayer);
+    this.pinLayer = document.createElement("div");
+    this.pinLayer.className = "pointer-events-none absolute inset-0 overflow-hidden";
+    this.pinLayer.dataset.testid = "globe-pins";
+    host.appendChild(this.pinLayer);
 
     // Earth.
     const earthMaterial = new ShaderMaterial({
@@ -739,6 +773,83 @@ export class GlobeRenderer {
     this.applyHighlights();
   }
 
+  /**
+   * Headcount pins: one per place, drawn over the globe and kept on their place as it turns. Each person is an icon
+   * whose name and role pop up on hover, keyboard focus or tap. Empty array or null removes them.
+   */
+  setPins(pins: readonly Pin[] | null): void {
+    for (const { element } of this.pins) element.remove();
+    this.pins = [];
+    for (const pin of pins ?? []) {
+      const element = document.createElement("div");
+      element.className = "pointer-events-auto absolute left-0 top-0 z-0 flex items-center gap-px rounded-full bg-white/95 px-1 py-0.5 opacity-0 shadow-float ring-2 transition-opacity duration-300 hover:z-20 focus-within:z-20";
+      element.style.setProperty("--tw-ring-color", pin.colour);
+      element.dataset.pin = pin.key;
+      element.dataset.count = String(pin.count);
+      element.setAttribute("role", "group");
+      element.setAttribute("aria-label", pin.title);
+      const stop = (event: Event) => event.stopPropagation();
+      element.addEventListener("pointerdown", stop);
+      element.addEventListener("click", stop);
+      if (pin.people) {
+        for (const person of pin.people.slice(0, PIN_MAX_ICONS)) {
+          const icon = document.createElement("button");
+          icon.type = "button";
+          icon.className = "group/person relative grid size-[18px] place-items-center rounded-full text-white outline-none focus-visible:ring-2 focus-visible:ring-ink";
+          icon.style.backgroundColor = person.colour;
+          icon.setAttribute("aria-label", `${person.name}, ${person.role}`);
+          icon.dataset.person = person.name;
+          icon.innerHTML = PERSON_SVG;
+          const tip = document.createElement("span");
+          tip.className = "pointer-events-none absolute bottom-full left-1/2 z-10 mb-1.5 hidden -translate-x-1/2 whitespace-nowrap rounded-lg bg-ink px-2 py-1 text-left text-[11px] font-semibold leading-4 text-white shadow-float group-hover/person:block group-focus/person:block";
+          tip.innerHTML = "";
+          tip.append(person.name, document.createElement("br"));
+          const role = document.createElement("span");
+          role.className = "font-normal text-white/75";
+          role.textContent = person.role;
+          tip.append(role);
+          icon.append(tip);
+          element.append(icon);
+        }
+        if (pin.people.length > PIN_MAX_ICONS) {
+          const more = document.createElement("span");
+          more.className = "px-0.5 text-[10px] font-bold text-ink";
+          more.textContent = `+${pin.people.length - PIN_MAX_ICONS}`;
+          element.append(more);
+        }
+      } else {
+        const badge = document.createElement("span");
+        badge.className = "flex items-center gap-0.5 px-1 text-[11px] font-bold leading-4 text-ink";
+        badge.title = pin.title;
+        badge.innerHTML = PERSON_SVG;
+        badge.append(String(pin.count));
+        element.append(badge);
+      }
+      this.pinLayer.appendChild(element);
+      this.pins.push({ pin, element });
+    }
+    this.dirty = true;
+  }
+
+  private updatePinPositions(): void {
+    if (this.pins.length === 0) return;
+    this.earth.getWorldQuaternion(this.tmpQuat);
+    const camera = this.view.position;
+    for (const { pin, element } of this.pins) {
+      const [x, y, z] = lngLatToVector(pin.lng, pin.lat, 1.004);
+      this.tmp.set(x, y, z).applyQuaternion(this.tmpQuat);
+      const facing = this.tmp.clone().normalize().dot(camera.clone().sub(this.tmp).normalize());
+      this.tmp.project(this.view);
+      const sx = (this.tmp.x * 0.5 + 0.5) * this.width;
+      const sy = (-this.tmp.y * 0.5 + 0.5) * this.height;
+      const visible = facing > 0.3 && sx > 8 && sx < this.width - 8 && sy > 8 && sy < this.height - 8 && this.camera.phase !== "flying";
+      // Just below the place's name label, centred on its label point.
+      element.style.transform = `translate(${sx.toFixed(1)}px, ${(sy + 9).toFixed(1)}px) translate(-50%, 0)`;
+      element.style.opacity = visible ? "1" : "0";
+      element.style.visibility = visible ? "visible" : "hidden";
+    }
+  }
+
   /** Names shown next to the outlines of the layer in view. */
   setLabels(mode: "none" | "districts" | "blocks"): void {
     this.labelMode = mode;
@@ -1049,6 +1160,7 @@ export class GlobeRenderer {
 
   private updateLabelPositions(): void {
     this.updateMarkerLabel();
+    this.updatePinPositions();
     if (this.labels.length === 0) return;
     const layer = this.labelMode === "districts" ? this.layers.districts : this.layers.blocks;
     const placed: Array<[number, number, number]> = [];
@@ -1104,6 +1216,7 @@ export class GlobeRenderer {
     canvas.remove();
     this.marker?.label.remove();
     this.labelLayer.remove();
+    this.pinLayer.remove();
   }
 }
 

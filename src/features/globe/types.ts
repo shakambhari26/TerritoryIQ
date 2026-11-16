@@ -72,6 +72,10 @@ export interface OverlayBlock {
   /** Present only with a reviewed source record that confirms "no representative". */
   confirmation?: Confirmation | null;
   contested: boolean;
+  /** Distinct people working here, from the area-mapping sheet (a count, no names). */
+  staff: number;
+  /** Positions the sheet marks "Vacant" here. */
+  vacancies: number;
   /** The workbook rows linked to this block, by row ID (`TU-…`), in the manifest's order. Their names are not here. */
   rowIds: string[];
   geometry: OverlayGeometry | null;
@@ -87,6 +91,9 @@ export interface OverlayDistrict {
   /** Present only with a reviewed source record that confirms "no representative". */
   confirmation?: Confirmation | null;
   blockCount: number;
+  /** Distinct people working in the district's places (a count, no names). */
+  staff: number;
+  vacancies: number;
   representedBlockCount: number;
   drawnBlockCount: number;
   geometry: OverlayGeometry | null;
@@ -123,6 +130,8 @@ export interface GlobeOverlay {
       parentFailures: number;
       duplicateShapes: number;
     };
+    /** Counts from the area-mapping sheet (no names): its rows, the rows placed on the map, and distinct people. */
+    sheet?: { rows: number; mappedRows: number; staff: number };
   };
   state: { id: string; name: string; bbox: BBox | null; centre: readonly [number, number] | null; basis: string };
   districts: OverlayDistrict[];

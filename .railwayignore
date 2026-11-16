@@ -29,3 +29,7 @@ npm-debug.log*
 
 # the Python service deploys separately (services/visit-intel/scripts/deploy_railway.sh)
 /services/
+
+# confidential workbooks dropped at the project root (the build reads data-source/ only)
+/*.xlsx
+/*.xls

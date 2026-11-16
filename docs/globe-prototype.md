@@ -1,5 +1,43 @@
 # Globe prototype
 
+## Current design (2026-11-16): the sales team map
+
+The globe shows **one thing only: the area-mapping sheet** (`data-source/AREA MAPPING.xlsx`). Visits, customers,
+segments, insight cards, the market overview and the "Open in 2D workspace" links have been removed from the globe.
+Dealers, distributors and influencers are planned as later layers. Everything below this section describes the earlier
+prototype and is kept as history; where it disagrees with this section, this section is current.
+
+- **Build:** `npm run data:build` (once, for the LGD codes), then `npm run data:build-globe`
+  (`scripts/globe/build-area-map.mts`). Offline. Writes `data/generated/globe-overlay.json` and `globe-boundaries.json`.
+- **How a sheet row lands on the map:** `scripts/globe/area-mapping.config.ts`. The sheet's DISTRICT column is a sales
+  territory, mapped to an administrative district; the BLOCK label is matched to an OpenStreetMap block outline in that
+  district by normalised name, or by an explicit, reviewed alias (spelling differences, renamed blocks such as
+  Contai-II → Deshapran, blocks listed under another district's territory such as Jangipara and Khanakul under Howrah).
+  Municipal areas and newer blocks with no OpenStreetMap boundary (Kolkata boroughs, Behala, Bidhannagar, Durgapur MC,
+  Siliguri, Chandannagar, Banarhat, Kranti) are placed in their district with their team and shown as "no outline": no
+  shape is invented. The build **fails** if any row is unresolved or matches more than one outline.
+- **Result (current sheet):** 358 rows → 357 on the map (276 by name, 70 by alias, 11 areas without an outline) and 1
+  outside West Bengal (Jharkhand-W, reported, not drawn). 352 places, 341 outlined, in 22 districts; Kalimpong is the one
+  district the sheet does not list. 223 distinct people.
+- **Clicking:** a district shows everyone working there by role (ASM, Primary, Secondary, DSO) with the places each
+  covers; a block shows its team. A place that several sheet rows list (Jangipara, Khanakul-I/II, Ausgram-II,
+  Asansol/Kulti) shows each row as its own team; nothing is merged.
+- **Names stay off the page:** they are fetched for the selected place from `POST /api/globe/block-rows` and for the
+  selected district from `POST /api/globe/district-team`, both through one hardened handler
+  (`src/features/globe/block-rows-route.server.ts`).
+- **Purpose: staffing.** Every block is coloured by how many distinct people work there, every district by the average
+  of its blocks (red 1–2 people: hire here; orange 3; light green 4; dark green 5+; grey: not in the sheet). The panel
+  ranks districts and blocks fewest-people-first. Each block carries one person icon per person (coloured by role); the
+  name and full role pop up on hover or tap. Roles are written in full (Area Sales Manager, Primary Sales Officer,
+  Secondary Sales Officer, Distributor Sales Officer) in `src/features/globe/staffing.ts`.
+- **Cleaning the hand-typed sheet** (all printed by the build): names tidied (title case, doubled surname dropped);
+  within one territory a first name written alone becomes the one full name starting with it (Rakesh → Rakesh Sarkar,
+  Dipankar → Dipankar Paul, Biman → Biman Sanyal) and spellings one letter apart are merged (Shibom → Shibam Dutta).
+  Place names are tidied to one style and corrected through `PLACE_NAME_FIXES` (e.g. Khoribari → Kharibari,
+  Galsi-W → Galsi-I). Jharkhand-W is left out entirely.
+- **Checks:** `tests/unit/globe-overlay.test.mts` checks, row by row against the sheet, that every person is shown in
+  their role for their row's place and that nobody is added.
+
 Status as of 2026-10-17: **merged into `main`** through [pull request #1](https://github.com/shakambhari26/TerritoryIQ/pull/1),
 merge commit `9b5a7f4` (the prototype's own commit is `2c01cee`, PR head `b7dff5e`, built on the 2D map redesign `c4d1b1c`,
 on top of `3acb994`), with a status correction in pull request #2 (`0505fce`). The combined **Phase 1 (navigation

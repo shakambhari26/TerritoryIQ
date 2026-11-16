@@ -118,10 +118,10 @@ describe("what makes a unit white", () => {
 
 describe("a no-representative state is honoured only with such a record", () => {
   const unit = (state: ManifestBlock["state"], confirmation?: ManifestBlock["confirmation"]): ManifestBlock => ({
-    id: UNIT.id, name: "Synthetic block", lgdCode: UNIT.lgdCode, districtId: "GD-SYNTHETIC", state, reason: "r", confirmation, contested: false, rowIds: [], geometry: null, noGeometryReason: "x",
+    id: UNIT.id, name: "Synthetic block", lgdCode: UNIT.lgdCode, districtId: "GD-SYNTHETIC", state, reason: "r", confirmation, contested: false, staff: 0, vacancies: 0, rowIds: [], geometry: null, noGeometryReason: "x",
   });
   const district = (confirmation?: Confirmation) => ({
-    id: "GD-SYNTHETIC", name: "Synthetic district", lgdCode: 900000, state: "no-representative", reason: "r", confirmation, blockCount: 1, representedBlockCount: 0, drawnBlockCount: 0, geometry: null, noGeometryReason: null,
+    id: "GD-SYNTHETIC", name: "Synthetic district", lgdCode: 900000, state: "no-representative", reason: "r", confirmation, blockCount: 1, staff: 0, vacancies: 0, representedBlockCount: 0, drawnBlockCount: 0, geometry: null, noGeometryReason: null,
   });
   const base = (blocks: ManifestBlock[], districts = [district()]) =>
     ({ meta: { counts: { blocksNoRepresentativeConfirmed: 1, blocksUnresolved: 0 } }, districts, blocks }) as unknown as GlobeManifest;
@@ -172,7 +172,7 @@ describe("a no-representative state is honoured only with such a record", () => 
 describe("the repository today: nothing is white, nothing is read from a local log, no record is fabricated", () => {
   const generated = join(ROOT, "data", "generated", "globe-overlay.json");
 
-  it("the built manifest holds no no-representative unit and no confirmation", { skip: existsSync(generated) ? false : "run python -I scripts/globe/build_overlay.py first" }, () => {
+  it("the built manifest holds no no-representative unit and no confirmation", { skip: existsSync(generated) ? false : "run npm run data:build-globe first" }, () => {
     const manifest = JSON.parse(readFileSync(generated, "utf8")) as GlobeManifest;
     assert.equal(manifest.meta.counts.blocksNoRepresentativeConfirmed, 0);
     for (const unit of [...manifest.districts, ...manifest.blocks]) {
@@ -194,14 +194,14 @@ describe("the repository today: nothing is white, nothing is read from a local l
     const code = (text: string) => text.replace(/\/\*[\s\S]*?\*\//g, "").replace(/^\s*(?:\/\/|#).*$/gm, "").replace(/"""[\s\S]*?"""/g, "");
     const globe = [...files(join(ROOT, "src", "features", "globe")), ...files(join(ROOT, "src", "app", "globe"))];
     for (const file of globe) assert.doesNotMatch(code(readFileSync(file, "utf8")), /\b(?:localStorage|sessionStorage|indexedDB)\b/, rel(file));
-    const builder = code(read("scripts/globe/build_overlay.py"));
+    const builder = code(read("scripts/globe/build-area-map.mts"));
     assert.doesNotMatch(builder, /localStorage|sessionStorage|unallocated|change[ _-]?log/i);
-    assert.doesNotMatch(builder, /return\s+"no-representative"|"state":\s*"no-representative"|state\s*=\s*"no-representative"/);
+    assert.doesNotMatch(builder, /no-representative/, "the builder never emits the state");
   });
 });
 
 describe("colours and wording that stay as approved", () => {
-  it("royal blue for a district with a provisional representative-linked block, orange for such a block, grey for unresolved", () => {
+  it("royal blue for a district in the sheet, orange for a block in the sheet, grey for one it does not list", () => {
     assert.equal(ROYAL_BLUE, "#4169e1");
     assert.equal(ORANGE, "#f5821f");
     assert.equal(NEUTRAL, "#8796b0");
@@ -211,17 +211,17 @@ describe("colours and wording that stay as approved", () => {
     assert.equal(BLOCK_STYLE.unresolved.fill, NEUTRAL);
   });
 
-  it("the royal-blue wording says it implies neither complete nor officially verified coverage", () => {
-    assert.match(DISTRICT_STYLE.represented.description, /does not mean the district is completely covered/);
-    assert.match(DISTRICT_STYLE.represented.description, /no link is officially verified/);
-    assert.match(read("src/features/globe/components/GlobeExperience.tsx"), /Not complete or officially verified coverage/);
+  it("the colour wording says the area-mapping sheet is where it comes from, and the legend explains the headcount colours", () => {
+    assert.match(DISTRICT_STYLE.represented.description, /area-mapping sheet lists at least one place/);
+    assert.match(BLOCK_STYLE.represented.description, /area-mapping sheet lists this block/);
+    const experience = read("src/features/globe/components/GlobeExperience.tsx");
+    assert.match(experience, /People per block/);
+    assert.match(experience, /Not in the sheet/);
   });
 
-  it("white stays in the legend only, with its reason; the state is never produced by the build", () => {
-    const experience = read("src/features/globe/components/GlobeExperience.tsx");
-    assert.match(experience, /Confirmed: no representative/);
-    assert.match(experience, /none yet; needs a reviewed source record/);
-    assert.match(read("src/features/globe/styles.ts"), /"no-representative": \{/);
+  it("white is not offered in the legend, and the state is never produced by the build", () => {
+    assert.doesNotMatch(read("src/features/globe/components/GlobeExperience.tsx"), /no representative/i);
+    assert.match(read("src/features/globe/styles.ts"), /"no-representative": \{/, "the style stays defined for the reviewed-record rule");
   });
 
   it("colour never uses the allocation names, and unresolved is never worded as vacant or unallocated", () => {
