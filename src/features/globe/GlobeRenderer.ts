@@ -174,6 +174,10 @@ export interface PinPerson {
 
 /** A pop-up card at a place listing its people by name. `colour` is the staffing colour of the place. */
 export interface Pin {
+  /** "card": a list of names under a place (hover). "person": one map pin for one person (a selected block). */
+  kind?: "card" | "person";
+  /** Pop-in delay in milliseconds, so a block's pins drop one after another. */
+  delay?: number;
   key: string;
   lng: number;
   lat: number;
@@ -273,7 +277,7 @@ export class GlobeRenderer {
     this.host = host;
     this.renderer = renderer;
     this.events = events;
-    this.view = new PerspectiveCamera(FOV, 1, 0.01, 200);
+    this.view = new PerspectiveCamera(FOV, 1, 0.002, 200);
     this.textures.push(textures.day, textures.ocean, textures.clouds);
     this.camera = new CameraController({ lng: 40, lat: IDLE_POSE_LAT, dist: homeDistance(FOV, 1.4) }, { reducedMotion: options.reducedMotion });
     this.info.textureSize = textureSize;
@@ -775,6 +779,36 @@ export class GlobeRenderer {
     for (const { element } of this.pins) element.remove();
     this.pins = [];
     for (const pin of pins ?? []) {
+      if (pin.kind === "person" && pin.people?.[0]) {
+        const person = pin.people[0];
+        const element = document.createElement("div");
+        element.className = "pointer-events-none absolute left-0 top-0 opacity-0 transition-opacity duration-200";
+        element.dataset.pin = pin.key;
+        element.dataset.person = person.name;
+        element.setAttribute("role", "note");
+        element.setAttribute("aria-label", `${person.name}, ${person.role}`);
+        const inner = document.createElement("div");
+        inner.className = "globe-pin-pop flex flex-col items-center";
+        inner.style.animationDelay = `${pin.delay ?? 0}ms`;
+        const label = document.createElement("div");
+        label.className = "whitespace-nowrap rounded-lg bg-white px-2 py-1 text-center shadow-float ring-2";
+        label.style.setProperty("--tw-ring-color", person.colour);
+        const name = document.createElement("p");
+        name.className = "text-[12px] font-bold leading-4 text-ink";
+        name.textContent = person.name;
+        const role = document.createElement("p");
+        role.className = "text-[10px] leading-3 text-ink-muted";
+        role.textContent = person.role;
+        label.append(name, role);
+        const marker = document.createElement("span");
+        marker.className = "block leading-none";
+        marker.innerHTML = `<svg viewBox="0 0 24 32" width="24" height="32" aria-hidden="true"><path d="M12 31s10-11.2 10-19A10 10 0 0 0 2 12c0 7.8 10 19 10 19z" fill="${person.colour}" stroke="#fff" stroke-width="2"/><circle cx="12" cy="9" r="3" fill="#fff"/><path d="M6.5 17c.8-2.6 2.9-3.9 5.5-3.9s4.7 1.3 5.5 3.9z" fill="#fff"/></svg>`;
+        inner.append(label, marker);
+        element.append(inner);
+        this.pinLayer.appendChild(element);
+        this.pins.push({ pin, element });
+        continue;
+      }
       // A small card that pops up under the place: each person's name, with a dot in their role's colour. It never takes
       // the pointer, so hovering the place under it keeps working.
       const element = document.createElement("div");
@@ -826,8 +860,9 @@ export class GlobeRenderer {
       const sx = (this.tmp.x * 0.5 + 0.5) * this.width;
       const sy = (-this.tmp.y * 0.5 + 0.5) * this.height;
       const visible = facing > 0.3 && sx > 8 && sx < this.width - 8 && sy > 8 && sy < this.height - 8 && this.camera.phase !== "flying";
-      // Just below the place's name label, centred on its label point.
-      element.style.transform = `translate(${sx.toFixed(1)}px, ${(sy + 12).toFixed(1)}px) translate(-50%, 0)`;
+      // A person pin stands on its point (the marker's tip); a card hangs just below the place's name label.
+      element.style.transform =
+        pin.kind === "person" ? `translate(${sx.toFixed(1)}px, ${sy.toFixed(1)}px) translate(-50%, -100%)` : `translate(${sx.toFixed(1)}px, ${(sy + 12).toFixed(1)}px) translate(-50%, 0)`;
       element.style.opacity = visible ? "1" : "0";
       element.style.visibility = visible ? "visible" : "hidden";
     }
@@ -1160,19 +1195,20 @@ export class GlobeRenderer {
       const sx = (this.tmp.x * 0.5 + 0.5) * this.width;
       const sy = (-this.tmp.y * 0.5 + 0.5) * this.height;
       const inside = sx > 8 && sx < this.width - 8 && sy > 8 && sy < this.height - 8;
-      let visible = facing > 0.3 && inside && layer.progress > 0.55 && !label.feature.muted;
+      // Every name is always shown. A name that would overlap one already placed is nudged up or down to the nearest
+      // free line instead of being hidden; if no line is free it is drawn in place anyway.
+      const visible = facing > 0.3 && inside && layer.progress > 0.55;
+      let labelY = sy;
       if (visible) {
         const width = label.feature.name.length * 6.2 + 10;
-        for (const [px, py, pw] of placed) {
-          if (Math.abs(px - sx) < (pw + width) / 2 && Math.abs(py - sy) < 16) {
-            visible = false;
-            break;
-          }
-        }
-        if (visible) placed.push([sx, sy, width]);
+        const clear = (cy: number) => placed.every(([px, py, pw]) => Math.abs(px - sx) >= (pw + width) / 2 || Math.abs(py - cy) >= 13);
+        const offset = [0, 13, -13, 26, -26, 39, -39].find((dy) => clear(sy + dy)) ?? 0;
+        labelY = sy + offset;
+        placed.push([sx, labelY, width]);
       }
-      label.element.style.transform = `translate(${sx.toFixed(1)}px, ${sy.toFixed(1)}px) translate(-50%, -50%)`;
-      label.element.style.opacity = visible ? "1" : "0";
+      label.element.style.transform = `translate(${sx.toFixed(1)}px, ${labelY.toFixed(1)}px) translate(-50%, -50%)`;
+      // A block faded by the filter keeps its name, dimmed.
+      label.element.style.opacity = visible ? (label.feature.muted ? "0.45" : "1") : "0";
     }
   }
 

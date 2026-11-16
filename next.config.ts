@@ -13,7 +13,7 @@ const FRAME_ORIGINS = embedOrigins();
  * use inline `style` attributes, and a nonce cannot be added to prerendered HTML, so a restrictive policy would break
  * the app until it is designed and tested for the globe renderer too. The CSP below only holds directives that cannot
  * affect scripts, styles, images or requests. `Permissions-Policy` switches off the features the app never uses (it
- * uses WebGL and same-origin fetches only), and HSTS is left out because the prototype is plain http on loopback.
+ * uses WebGL and same-origin fetches; the globe's voice assistant uses this site's microphone and plays its spoken answers), and HSTS is left out because the prototype is plain http on loopback.
  */
 const BASELINE_HEADERS = [
   { key: "X-Content-Type-Options", value: "nosniff" },
@@ -31,7 +31,7 @@ const BASELINE_HEADERS = [
   {
     key: "Permissions-Policy",
     value:
-      "accelerometer=(), autoplay=(), bluetooth=(), camera=(), display-capture=(), fullscreen=(), geolocation=(), gyroscope=(), hid=(), magnetometer=(), microphone=(), midi=(), payment=(), serial=(), usb=(), xr-spatial-tracking=()",
+      "accelerometer=(), autoplay=(self), bluetooth=(), camera=(), display-capture=(), fullscreen=(), geolocation=(), gyroscope=(), hid=(), magnetometer=(), microphone=(self), midi=(), payment=(), serial=(), usb=(), xr-spatial-tracking=()",
   },
 ];
 

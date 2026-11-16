@@ -76,6 +76,8 @@ export interface OverlayBlock {
   staff: number;
   /** Of those, the people who are not the ASM (Primary, Secondary, DSO): the field staff. */
   fieldStaff: number;
+  /** Distinct people per role here (counts, no names). */
+  roleCounts: { ASM: number; PRIMARY: number; SECONDARY: number; DSO: number };
   /** Positions the sheet marks "Vacant" here. */
   vacancies: number;
   /** The workbook rows linked to this block, by row ID (`TU-…`), in the manifest's order. Their names are not here. */
@@ -133,7 +135,7 @@ export interface GlobeOverlay {
       duplicateShapes: number;
     };
     /** Counts from the area-mapping sheet (no names): its rows, the rows placed on the map, and distinct people. */
-    sheet?: { rows: number; mappedRows: number; staff: number };
+    sheet?: { rows: number; mappedRows: number; staff: number; spread?: number[] };
   };
   state: { id: string; name: string; bbox: BBox | null; centre: readonly [number, number] | null; basis: string };
   districts: OverlayDistrict[];

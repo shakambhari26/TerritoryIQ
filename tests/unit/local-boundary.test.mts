@@ -201,9 +201,12 @@ describe("outbound network", () => {
     // lookups (a POST of `{ blockId }` and a POST of `{ districtId }`). A fifth place, or a file asking for another's URL,
     // fails here (rule and its negative tests: globe-network-guard.test.mts).
     assert.deepEqual(offenders, [
+      "src/features/globe/ask-client.ts",
       "src/features/globe/block-rows-client.ts",
       "src/features/globe/district-team-client.ts",
       "src/features/globe/layer-client.ts",
+      "src/features/globe/speak-client.ts",
+      "src/features/globe/voice-client.ts",
       "src/features/territory/components/Workspace.tsx",
     ]);
     const expected: Record<string, string> = {
@@ -211,10 +214,16 @@ describe("outbound network", () => {
       "src/features/globe/layer-client.ts": "/geo/globe-boundaries.json",
       "src/features/globe/block-rows-client.ts": "/api/globe/block-rows",
       "src/features/globe/district-team-client.ts": "/api/globe/district-team",
+      "src/features/globe/ask-client.ts": "/api/globe/ask",
+      "src/features/globe/voice-client.ts": "/api/globe/ask-voice",
+      "src/features/globe/speak-client.ts": "/api/globe/speak",
     };
     const constants: Record<string, string> = {
       "src/features/globe/block-rows-client.ts": "BLOCK_ROWS_URL",
       "src/features/globe/district-team-client.ts": "DISTRICT_TEAM_URL",
+      "src/features/globe/ask-client.ts": "ASK_URL",
+      "src/features/globe/voice-client.ts": "VOICE_URL",
+      "src/features/globe/speak-client.ts": "SPEAK_URL",
     };
     for (const file of offenders) {
       const text = read(file);

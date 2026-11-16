@@ -25,10 +25,12 @@ export interface StaffBand {
 
 /** Lowest first. A value belongs to the last band whose `from` it reaches. */
 export const STAFF_BANDS: readonly StaffBand[] = [
-  { key: "low", from: 0, label: "1–2 people · hire here", colour: "#e5484d" },
-  { key: "few", from: 2.5, label: "3 people", colour: "#f59e0b" },
-  { key: "good", from: 3.5, label: "4 people", colour: "#84cc16" },
-  { key: "many", from: 4.5, label: "5 or more people", colour: "#15803d" },
+  // Warm = short of people, cool = well staffed; stepped in lightness too. Validated colour-blind safe with the dataviz
+  // validator (adjacent CVD ΔE ≥ 18); always shown with a text label.
+  { key: "low", from: 0, label: "1–2 people · hire here", colour: "#c62828" },
+  { key: "few", from: 2.5, label: "3 people", colour: "#eb8c3f" },
+  { key: "good", from: 3.5, label: "4 people", colour: "#5598e7" },
+  { key: "many", from: 4.5, label: "5 or more people", colour: "#184f95" },
 ];
 
 /** Grey for a district the sheet does not list. */
@@ -54,11 +56,12 @@ export const ROLE_NAME: Record<string, string> = {
   DSO: "Distributor Sales Officer",
 };
 export const ROLE_ORDER = ["ASM", "PRIMARY", "SECONDARY", "DSO"] as const;
+/** Validated categorical slots (all pairs pass the CVD check); a role is always also written next to its colour. */
 export const ROLE_COLOUR: Record<string, string> = {
-  ASM: "#1d4ed8",
-  PRIMARY: "#7c3aed",
-  SECONDARY: "#0891b2",
-  DSO: "#db2777",
+  ASM: "#2a78d6",
+  PRIMARY: "#008300",
+  SECONDARY: "#e87ba4",
+  DSO: "#eda100",
 };
 
 /** The filter under the map: a headcount band (or "ASM only": no field staff), and optionally one district. */

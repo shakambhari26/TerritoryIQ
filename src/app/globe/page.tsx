@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { GlobeLoader } from "@/features/globe/components/GlobeLoader";
+import { aiConfigured } from "@/features/globe/ask.server";
 import { getGlobeManifest } from "@/features/globe/overlay.server";
 
 export const metadata: Metadata = {
@@ -27,7 +28,7 @@ export default function GlobePage() {
       </div>
       <div className="mt-3">
         {manifest ? (
-          <GlobeLoader manifest={manifest} />
+          <GlobeLoader manifest={manifest} aiEnabled={aiConfigured()} />
         ) : (
           <div className="rounded-card bg-surface p-6 shadow-card" role="alert">
             <p className="text-base font-semibold text-ink">The globe data has not been built</p>

@@ -29,9 +29,12 @@ describe("globe prototype: the browser makes no outbound request", () => {
   it("the only requests are the same-origin layer fetch and the two team POSTs; no XHR, socket, beacon or geolocation anywhere", () => {
     const fetches = /\bfetch\s*\(/;
     assert.deepEqual(GLOBE_SOURCES.filter((f) => fetches.test(readFileSync(f, "utf8"))).map(rel).sort(), [
+      "src/features/globe/ask-client.ts",
       "src/features/globe/block-rows-client.ts",
       "src/features/globe/district-team-client.ts",
       "src/features/globe/layer-client.ts",
+      "src/features/globe/speak-client.ts",
+      "src/features/globe/voice-client.ts",
     ]);
     const other = /XMLHttpRequest|\bWebSocket\b|\bEventSource\b|sendBeacon|navigator\.geolocation/;
     assert.deepEqual(GLOBE_SOURCES.filter((f) => other.test(readFileSync(f, "utf8"))).map(rel), []);
@@ -148,7 +151,7 @@ describe("globe prototype: three.js stays inside one lazy, browser-only folder",
       // The globe's own outline and team routes are part of the globe; the workspace's route (geo/boundaries.json) is not.
       .filter(
         (f) =>
-          !["src/app/geo/globe-boundaries.json/route.ts", "src/app/api/globe/block-rows/route.ts", "src/app/api/globe/district-team/route.ts"].includes(rel(f)),
+          !["src/app/geo/globe-boundaries.json/route.ts", "src/app/api/globe/block-rows/route.ts", "src/app/api/globe/district-team/route.ts", "src/app/api/globe/ask/route.ts", "src/app/api/globe/ask-voice/route.ts", "src/app/api/globe/speak/route.ts"].includes(rel(f)),
       )
       .filter((f) => /features\/globe|globe-prototype/.test(readFileSync(f, "utf8")))
       .map(rel);

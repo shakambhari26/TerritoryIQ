@@ -10,6 +10,8 @@ import { arrivalWithoutOutlines, canReveal } from "../outline-gate";
 import { HOVER_COLOUR, SELECTED_COLOUR } from "../styles";
 import { bandFor, NO_FILTER, NOT_IN_SHEET, ROLE_COLOUR, ROLE_NAME, ROLE_ORDER, STAFF_BANDS, staffPaint, type StaffFilter } from "../staffing";
 import { StaffFilterPanel } from "./StaffFilter";
+import { TeamChat } from "./TeamChat";
+import { TeamInsights } from "./TeamInsights";
 import { buildTargets, pickableRefs, type Target } from "../targets";
 import type { GlobeManifest, Level, Phase } from "../types";
 import { GlobeFallback } from "./GlobeFallback";
@@ -165,9 +167,10 @@ interface StageProps {
   manifest: GlobeManifest;
   layer: LayerState;
   onRetryLayer: () => void;
+  aiEnabled: boolean;
 }
 
-function GlobeStage({ manifest, layer, onRetryLayer }: StageProps) {
+function GlobeStage({ manifest, layer, onRetryLayer, aiEnabled }: StageProps) {
   const reducedMotion = usePrefersReducedMotion();
   const hostRef = useRef<HTMLDivElement>(null);
   const stageRef = useRef<HTMLDivElement>(null);
@@ -237,19 +240,50 @@ function GlobeStage({ manifest, layer, onRetryLayer }: StageProps) {
 
   // The pop-up card: the people of the block under the pointer, or else of the selected block. Names come from the open
   // district's team, so a card shows only once a district is open; nothing is shown on the map otherwise.
-  const pinBlockId = hover?.kind === "block" ? hover.id : selection.level === "block" ? selection.blockId : null;
+  // A selected block gets one map pin per person, spread around its centre; another block under the pointer gets a card.
+  const selectedBlockId = selection.level === "block" ? selection.blockId : null;
+  const hoverBlockId = hover?.kind === "block" && hover.id !== selectedBlockId ? hover.id : null;
   const pins = useMemo((): Pin[] => {
-    const b = pinBlockId ? view.blocks.find((x) => x.id === pinBlockId) : undefined;
-    if (!b?.geometry?.anchor || districtTeam.state !== "ready") return [];
-    const rows = districtTeam.data.blocks.find((x) => x.blockId === b.id)?.rows ?? [];
-    const seen = new Set<string>();
-    const people = ROLE_ORDER.flatMap((role) => rows.flatMap((r) => r.people.filter((p) => p.role === role && p.name && !seen.has(p.name.toLowerCase()) && seen.add(p.name.toLowerCase())))).map((p) => ({
-      name: p.name!,
-      role: ROLE_NAME[p.role] ?? p.role,
-      colour: ROLE_COLOUR[p.role] ?? "#64748b",
-    }));
-    return [{ key: b.id, lng: b.geometry.anchor[0], lat: b.geometry.anchor[1], title: `${b.name} · ${b.staff} ${b.staff === 1 ? "person" : "people"}`, count: b.staff, colour: bandFor(b.staff).colour, people }];
-  }, [pinBlockId, view.blocks, districtTeam]);
+    if (districtTeam.state !== "ready") return [];
+    const peopleOf = (blockId: string) => {
+      const rows = districtTeam.data.blocks.find((x) => x.blockId === blockId)?.rows ?? [];
+      const seen = new Set<string>();
+      return ROLE_ORDER.flatMap((role) => rows.flatMap((r) => r.people.filter((p) => p.role === role && p.name && !seen.has(p.name.toLowerCase()) && seen.add(p.name.toLowerCase())))).map((p) => ({
+        name: p.name!,
+        role: ROLE_NAME[p.role] ?? p.role,
+        colour: ROLE_COLOUR[p.role] ?? "#64748b",
+      }));
+    };
+    const out: Pin[] = [];
+    const selected = selectedBlockId ? view.blocks.find((x) => x.id === selectedBlockId) : undefined;
+    if (selected?.geometry?.anchor) {
+      const people = peopleOf(selected.id);
+      const [w, s, e, n] = selected.geometry.bbox;
+      const [lng, lat] = selected.geometry.anchor;
+      // On a ring around the label point, a fifth of the block's size out, so every pin stays inside the block.
+      const radius = Math.min(e - w, n - s) * 0.2;
+      people.forEach((person, i) => {
+        const angle = -Math.PI / 2 + (2 * Math.PI * i) / Math.max(people.length, 1);
+        const r = people.length === 1 ? 0 : radius;
+        out.push({
+          kind: "person",
+          delay: i * 120,
+          key: `${selected.id}:${i}`,
+          lng: lng + r * Math.cos(angle) / Math.cos((lat * Math.PI) / 180),
+          lat: lat + r * Math.sin(angle) * 0.8,
+          title: person.name,
+          count: 1,
+          colour: person.colour,
+          people: [person],
+        });
+      });
+    }
+    const hovered = hoverBlockId ? view.blocks.find((x) => x.id === hoverBlockId) : undefined;
+    if (hovered?.geometry?.anchor) {
+      out.push({ kind: "card", key: hovered.id, lng: hovered.geometry.anchor[0], lat: hovered.geometry.anchor[1], title: `${hovered.name} · ${hovered.staff} ${hovered.staff === 1 ? "person" : "people"}`, count: hovered.staff, colour: bandFor(hovered.staff).colour, people: peopleOf(hovered.id) });
+    }
+    return out;
+  }, [selectedBlockId, hoverBlockId, view.blocks, districtTeam]);
   useEffect(() => {
     rendererRef.current?.setPins(pins);
   }, [pins, status]);
@@ -427,7 +461,7 @@ function GlobeStage({ manifest, layer, onRetryLayer }: StageProps) {
         const target = blocksById.get(next.blockId);
         const own = target?.geometry?.bbox;
         box = own ?? (next.districtId ? districtsById.get(next.districtId)?.geometry?.bbox : null) ?? box;
-        fill = own ? 0.5 : 0.68;
+        fill = own ? 0.8 : 0.68;
         // A block with no outline: look at its district and say so; nothing is drawn for it.
         if (!own) commit({ ...next, level: "block" });
       }
@@ -806,6 +840,15 @@ function GlobeStage({ manifest, layer, onRetryLayer }: StageProps) {
           attribution={`${ATTRIBUTION_EARTH} Outlines: ${view.meta.attribution}, ODbL (not official boundaries).`}
         />
       </div>
+      <TeamChat aiEnabled={aiEnabled} />
+      <TeamInsights
+        manifest={view}
+        disabled={status !== "ready" || flying}
+        onSelectDistrict={(id) => {
+          stageRef.current?.scrollIntoView({ behavior: reducedMotion ? "auto" : "smooth", block: "center" });
+          goTo({ level: "district", districtId: id, blockId: null });
+        }}
+      />
       <StaffFilterPanel
         blocks={view.blocks}
         districts={view.districts}
@@ -837,7 +880,7 @@ const CODE_REASON: Record<string, string> = {
  * if the textures fail, the globe shows its own error and retry, and the outline status is unaffected. Without
  * WebGL there is nothing to draw on, so the list-only view is shown and the outline file is not requested.
  */
-export default function GlobeExperience({ manifest }: { manifest: GlobeManifest }) {
+export default function GlobeExperience({ manifest, aiEnabled = false }: { manifest: GlobeManifest; aiEnabled?: boolean }) {
   const [webgl] = useState(() => webglAvailable());
   const [attempt, setAttempt] = useState(0);
   const [layer, setLayer] = useState<LayerState>({ status: "loading" });
@@ -866,5 +909,5 @@ export default function GlobeExperience({ manifest }: { manifest: GlobeManifest 
   }, []);
 
   if (!webgl) return <GlobeFallback overlay={manifest} reason="WebGL is not available in this browser, so the 3D globe cannot run." />;
-  return <GlobeStage manifest={manifest} layer={layer} onRetryLayer={retry} />;
+  return <GlobeStage manifest={manifest} layer={layer} onRetryLayer={retry} aiEnabled={aiEnabled} />;
 }

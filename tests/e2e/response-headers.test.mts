@@ -41,9 +41,11 @@ describe("response headers on the production server", { skip }, () => {
     const csp = headers.get("content-security-policy") ?? "";
     assert.match(csp, /(^|;\s*)frame-ancestors 'none'(;|$)/, `${label}: frame-ancestors`);
     const permissions = headers.get("permissions-policy") ?? "";
-    for (const feature of ["camera", "microphone", "geolocation", "payment", "usb"]) {
+    for (const feature of ["camera", "geolocation", "payment", "usb"]) {
       assert.match(permissions, new RegExp(`(^|, )${feature}=\\(\\)`), `${label}: permissions policy turns off ${feature}`);
     }
+    // The globe's voice assistant: microphone for this site only.
+    assert.match(permissions, /(^|, )microphone=\(self\)/, `${label}: microphone for this site only`);
   }
 
   /** No shared-cache lifetime of any kind, and an explicit refusal to store. */

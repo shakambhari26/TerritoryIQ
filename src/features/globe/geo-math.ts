@@ -61,7 +61,8 @@ export interface Pose {
   dist: number;
 }
 
-export const MIN_DIST = 1.06;
+/** About 75 km above the ground: close enough that one block fills the view. */
+export const MIN_DIST = 1.012;
 export const MAX_DIST = 9;
 
 /**

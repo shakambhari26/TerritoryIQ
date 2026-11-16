@@ -33,10 +33,10 @@ class LoadBoundary extends Component<{ children: ReactNode }, { failed: boolean 
   }
 }
 
-export function GlobeLoader({ manifest }: { manifest: GlobeManifest }) {
+export function GlobeLoader({ manifest, aiEnabled = false }: { manifest: GlobeManifest; aiEnabled?: boolean }) {
   return (
     <LoadBoundary>
-      <GlobeExperience manifest={manifest} />
+      <GlobeExperience manifest={manifest} aiEnabled={aiEnabled} />
     </LoadBoundary>
   );
 }

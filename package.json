@@ -25,6 +25,7 @@
     "data:build-globe": "node scripts/globe/build-area-map.mts"
   },
   "dependencies": {
+    "@google/genai": "2.32.0",
     "@supabase/supabase-js": "2.118.0",
     "next": "16.4.1",
     "react": "19.3.0",

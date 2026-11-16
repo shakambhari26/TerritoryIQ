@@ -118,7 +118,7 @@ describe("what makes a unit white", () => {
 
 describe("a no-representative state is honoured only with such a record", () => {
   const unit = (state: ManifestBlock["state"], confirmation?: ManifestBlock["confirmation"]): ManifestBlock => ({
-    id: UNIT.id, name: "Synthetic block", lgdCode: UNIT.lgdCode, districtId: "GD-SYNTHETIC", state, reason: "r", confirmation, contested: false, staff: 0, fieldStaff: 0, vacancies: 0, rowIds: [], geometry: null, noGeometryReason: "x",
+    id: UNIT.id, name: "Synthetic block", lgdCode: UNIT.lgdCode, districtId: "GD-SYNTHETIC", state, reason: "r", confirmation, contested: false, staff: 0, fieldStaff: 0, roleCounts: { ASM: 0, PRIMARY: 0, SECONDARY: 0, DSO: 0 }, vacancies: 0, rowIds: [], geometry: null, noGeometryReason: "x",
   });
   const district = (confirmation?: Confirmation) => ({
     id: "GD-SYNTHETIC", name: "Synthetic district", lgdCode: 900000, state: "no-representative", reason: "r", confirmation, blockCount: 1, staff: 0, vacancies: 0, representedBlockCount: 0, drawnBlockCount: 0, geometry: null, noGeometryReason: null,

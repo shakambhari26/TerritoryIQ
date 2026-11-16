@@ -34,6 +34,7 @@ function projectBlock(block: ServerBlock): ManifestBlock {
     contested: block.contested,
     staff: block.staff,
     fieldStaff: block.fieldStaff,
+    roleCounts: { ASM: block.roleCounts.ASM, PRIMARY: block.roleCounts.PRIMARY, SECONDARY: block.roleCounts.SECONDARY, DSO: block.roleCounts.DSO },
     vacancies: block.vacancies,
     rowIds: block.records.map((record) => record.unitId),
     geometry: geometry(block.geometry),
@@ -100,7 +101,7 @@ export function projectManifest(server: ServerManifest): GlobeManifest {
         parentFailures: counts.parentFailures,
         duplicateShapes: counts.duplicateShapes,
       },
-      ...(meta.sheet === undefined ? {} : { sheet: { rows: meta.sheet.rows, mappedRows: meta.sheet.mappedRows, staff: meta.sheet.staff } }),
+      ...(meta.sheet === undefined ? {} : { sheet: { rows: meta.sheet.rows, mappedRows: meta.sheet.mappedRows, staff: meta.sheet.staff, ...(meta.sheet.spread ? { spread: meta.sheet.spread.map(Number) } : {}) } }),
     },
     state: {
       id: state.id,

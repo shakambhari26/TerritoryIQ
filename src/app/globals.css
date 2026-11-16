@@ -182,3 +182,12 @@ body {
 .earth-preview {
   background: url(/overview/earth-preview.webp) center / cover no-repeat;
 }
+
+/* Globe: a person pin drops in when a block is opened (GlobeRenderer.setPins). */
+@keyframes globe-pin-pop {
+  0% { opacity: 0; transform: translateY(-14px) scale(0.6); }
+  70% { opacity: 1; transform: translateY(2px) scale(1.04); }
+  100% { opacity: 1; transform: translateY(0) scale(1); }
+}
+.globe-pin-pop { animation: globe-pin-pop 0.45s cubic-bezier(0.2, 0.8, 0.3, 1.2) both; transform-origin: 50% 100%; }
+@media (prefers-reduced-motion: reduce) { .globe-pin-pop { animation: none; } }

@@ -419,6 +419,9 @@ const outBlocks = sortedUnits.map((unit) => {
     reason: unit.mappingNotes.length ? `${reason} Map note: ${unit.mappingNotes.join("; ")}.` : reason,
     contested: false,
     staff: staffOf(unit.rows),
+    roleCounts: Object.fromEntries(
+      ["ASM", "PRIMARY", "SECONDARY", "DSO"].map((role) => [role, new Set(unit.rows.flatMap((r) => r.people.filter((p) => p.name && p.role === role).map((p) => p.name!.toLowerCase()))).size]),
+    ) as Record<"ASM" | "PRIMARY" | "SECONDARY" | "DSO", number>,
     fieldStaff: new Set(unit.rows.flatMap((r) => r.people.filter((p) => p.name && p.role !== "ASM").map((p) => p.name!.toLowerCase()))).size,
     vacancies: vacanciesOf(unit.rows),
     records: unit.rows.map((r) => ({
@@ -504,6 +507,18 @@ const counts = {
   duplicateShapes: 0,
 };
 
+/** How many field staff (not ASMs) cover 1, 2, 3, ... places: index = number of places, value = people. Counts only. */
+function spreadOf(blocks: typeof outBlocks): number[] {
+  const places = new Map<string, number>();
+  for (const b of blocks) {
+    const here = new Set(b.records.flatMap((r) => r.people.filter((p) => p.name && p.role !== "ASM").map((p) => p.name!.toLowerCase())));
+    for (const name of here) places.set(name, (places.get(name) ?? 0) + 1);
+  }
+  const out: number[] = [];
+  for (const n of places.values()) out[n] = (out[n] ?? 0) + 1;
+  return Array.from(out, (v) => v ?? 0);
+}
+
 const manifest = {
   meta: {
     schema: 2,
@@ -524,7 +539,7 @@ const manifest = {
       block: "orange: a place from the sheet, with its team",
     },
     counts,
-    sheet: { rows: sheet.units.length, mappedRows: sheet.units.length - outside.length, staff: people.size },
+    sheet: { rows: sheet.units.length, mappedRows: sheet.units.length - outside.length, staff: people.size, spread: spreadOf(outBlocks) },
   },
   state: {
     id: "WB",

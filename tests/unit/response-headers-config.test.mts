@@ -83,8 +83,22 @@ describe("next.config.ts response-header rules", async () => {
     assert.doesNotMatch(csp, /\b(default-src|script-src|style-src|img-src|connect-src|worker-src|font-src)\b/);
   });
 
+  it("microphone and autoplay are allowed for this site only, and only the voice assistant (voice.ts) uses them", () => {
+    const policy = valuesFor("/:path*", "Permissions-Policy")[0] ?? "";
+    assert.match(policy, /(^|, )microphone=\(self\)(,|$)/);
+    assert.match(policy, /(^|, )autoplay=\(self\)(,|$)/);
+    const sources = (dir: string): string[] =>
+      readdirSync(dir, { withFileTypes: true }).flatMap((entry) =>
+        entry.isDirectory() ? sources(path.join(dir, entry.name)) : /\.(ts|tsx)$/.test(entry.name) ? [path.join(dir, entry.name)] : [],
+      );
+    const users = sources(path.join(ROOT, "src"))
+      .filter((file) => /getUserMedia|\.play\(/.test(readFileSync(file, "utf8")))
+      .map((file) => path.relative(ROOT, file).split(path.sep).join("/"));
+    assert.deepEqual(users, ["src/features/globe/voice.ts"]);
+  });
+
   it("every feature Permissions-Policy switches off is one the source never uses", () => {
-    const used = /geolocation|getUserMedia|requestFullscreen|DeviceOrientation|DeviceMotion|navigator\.(?:bluetooth|usb|serial|hid|xr)|PaymentRequest|MIDIAccess|getDisplayMedia|\.requestPictureInPicture|\.play\(/;
+    const used = /geolocation|requestFullscreen|DeviceOrientation|DeviceMotion|navigator\.(?:bluetooth|usb|serial|hid|xr)|PaymentRequest|MIDIAccess|getDisplayMedia|\.requestPictureInPicture/;
     const sources = (dir: string): string[] =>
       readdirSync(dir, { withFileTypes: true }).flatMap((entry) =>
         entry.isDirectory() ? sources(path.join(dir, entry.name)) : /\.(ts|tsx)$/.test(entry.name) ? [path.join(dir, entry.name)] : [],
