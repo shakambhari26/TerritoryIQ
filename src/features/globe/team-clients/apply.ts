@@ -1,14 +1,17 @@
-/** Apply an uploaded sheet as the new team version. A same-origin POST of `{ file }` to the literal `/api/globe/team/apply`. */
+/**
+ * Apply an uploaded sheet as the new team version. A same-origin POST of `{ upload: { file, fileName, by } }` to the
+ * literal `/api/globe/team/apply`.
+ */
 
 import type { VersionMeta } from "../team-types";
 
 const APPLY_URL = "/api/globe/team/apply";
 
-export async function applySheet(file: string, signal?: AbortSignal): Promise<VersionMeta> {
+export async function applySheet(upload: { file: string; fileName: string; by: string }, signal?: AbortSignal): Promise<VersionMeta> {
   const response = await fetch(APPLY_URL, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ file }),
+    body: JSON.stringify({ upload }),
     signal,
     cache: "no-store",
   });

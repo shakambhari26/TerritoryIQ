@@ -154,3 +154,26 @@ export type GlobeManifest = Omit<GlobeOverlay, "districts" | "blocks"> & {
 /** What the camera is looking at. `globe` is the rotating whole Earth. */
 export type Level = "globe" | "state" | "district" | "block";
 export type Phase = "idle" | "flying" | "arrived";
+
+/**
+ * One line of the "Data sources" card: where a layer's data comes from, when it was last updated, and how to check it.
+ * `kind` says how it arrived: an Excel sheet uploaded in the app, the sheet the app was built with, or an outside API.
+ */
+export interface DataSource {
+  id: string;
+  layer: string;
+  kind: "upload" | "built-in" | "api";
+  /** Plain words: "Excel sheet uploaded in the app", "Fetched from the Frontier app's API", … */
+  from: string;
+  /** When the data was last uploaded or fetched (ISO time), or null when not known. */
+  at: string | null;
+  /** Who uploaded it, as they typed their name. */
+  by?: string;
+  fileName?: string;
+  /** When someone last changed it in the app after that upload (one person added or removed, or a restore). */
+  changedAt?: string;
+  /** What it holds, in numbers: "219 people · 357 places". */
+  detail: string;
+  /** How to check it against the original. */
+  verify: string;
+}

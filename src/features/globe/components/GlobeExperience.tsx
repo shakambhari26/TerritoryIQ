@@ -13,6 +13,7 @@ import { StaffFilterPanel } from "./StaffFilter";
 import { TeamChat } from "./TeamChat";
 import { TeamInsights } from "./TeamInsights";
 import { TeamManager } from "./TeamManager";
+import { DataSources, TeamUpdatePopup, useTeamUpdates } from "./TeamUpdates";
 import { buildTargets, pickableRefs, type Target } from "../targets";
 import type { GlobeManifest, Level, Phase } from "../types";
 import { GlobeFallback } from "./GlobeFallback";
@@ -202,6 +203,7 @@ function GlobeStage({ manifest, layer, onRetryLayer, aiEnabled }: StageProps) {
   const teamDistrictId = selection.level === "district" || selection.level === "block" ? selection.districtId : null;
   const teamBlocks = useMemo(() => (teamDistrictId ? view.blocks.filter((b) => b.districtId === teamDistrictId) : []), [view.blocks, teamDistrictId]);
   const districtTeam = useDistrictTeam(teamDistrictId, teamBlocks, view.meta.teamVersion ?? 0);
+  const updates = useTeamUpdates(view.meta.teamVersion ?? 0);
 
   // The pop-up card: the people of the block under the pointer, or else of the selected block. Names come from the open
   // district's team, so a card shows only once a district is open; nothing is shown on the map otherwise.
@@ -804,6 +806,7 @@ function GlobeStage({ manifest, layer, onRetryLayer, aiEnabled }: StageProps) {
           drawn={{ districts: view.meta.counts.districtsDrawn, blocks: view.meta.counts.blocksDrawn }}
           attribution={`${ATTRIBUTION_EARTH} Outlines: ${view.meta.attribution}, ODbL (not official boundaries).`}
         />
+        <DataSources sources={updates.latest?.sources ?? null} />
       </div>
       <TeamChat aiEnabled={aiEnabled} />
       <TeamInsights
@@ -829,7 +832,17 @@ function GlobeStage({ manifest, layer, onRetryLayer, aiEnabled }: StageProps) {
           goTo({ level: "block", districtId: blocksById.get(id)?.districtId ?? null, blockId: id });
         }}
       />
-      <TeamManager teamVersion={view.meta.teamVersion ?? 0} />
+      <TeamManager teamVersion={view.meta.teamVersion ?? 0} blocks={view.blocks} districts={view.districts} />
+      {updates.popup ? (
+        <TeamUpdatePopup
+          update={updates.popup}
+          onClose={updates.dismiss}
+          onShowPlace={(id) => {
+            stageRef.current?.scrollIntoView({ behavior: reducedMotion ? "auto" : "smooth", block: "center" });
+            goTo({ level: "block", districtId: blocksById.get(id)?.districtId ?? null, blockId: id });
+          }}
+        />
+      ) : null}
     </>
   );
 }
