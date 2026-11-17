@@ -161,6 +161,8 @@ interface LabelItem {
   element: HTMLElement;
   feature: FeatureObject;
   radius: number;
+  /** Measured size on screen (px), read once the label is laid out. */
+  size: [number, number] | null;
 }
 
 /** One person on a pop-up card. */
@@ -885,11 +887,11 @@ export class GlobeRenderer {
         // A small white tag: dark text on a soft, slightly translucent pill, readable on every fill colour and on imagery.
         element.className =
           this.labelMode === "districts"
-            ? "absolute left-0 top-0 whitespace-nowrap rounded-md bg-white/90 px-2 py-[3px] text-[12px] font-bold leading-[14px] tracking-[0.01em] text-ink opacity-0 shadow-[0_1px_3px_rgba(16,24,40,0.25)] ring-1 ring-black/5 backdrop-blur-sm transition-opacity duration-300"
+            ? "absolute left-0 top-0 whitespace-nowrap rounded-full bg-white/85 px-2 py-[2px] text-[11px] font-semibold leading-[13px] text-ink opacity-0 shadow-[0_1px_2px_rgba(16,24,40,0.2)] backdrop-blur-sm transition-opacity duration-200"
             : "absolute left-0 top-0 whitespace-nowrap rounded-md bg-white/90 px-1.5 py-[2px] text-[11px] font-semibold leading-[13px] text-ink opacity-0 shadow-[0_1px_3px_rgba(16,24,40,0.25)] ring-1 ring-black/5 backdrop-blur-sm transition-opacity duration-300";
         element.textContent = feature.name;
         this.labelLayer.appendChild(element);
-        this.labels.push({ element, feature, radius: Math.hypot(feature.bbox[2] - feature.bbox[0], feature.bbox[3] - feature.bbox[1]) });
+        this.labels.push({ element, feature, radius: Math.hypot(feature.bbox[2] - feature.bbox[0], feature.bbox[3] - feature.bbox[1]), size: null });
       }
       // Larger areas claim label space first.
       this.labels.sort((a, b) => b.radius - a.radius);
@@ -1185,7 +1187,7 @@ export class GlobeRenderer {
     this.updatePinPositions();
     if (this.labels.length === 0) return;
     const layer = this.labelMode === "districts" ? this.layers.districts : this.layers.blocks;
-    const placed: Array<[number, number, number]> = [];
+    const placed: Array<[number, number, number, number]> = [];
     this.earth.getWorldQuaternion(this.tmpQuat);
     const camera = this.view.position;
     for (const label of this.labels) {
@@ -1199,18 +1201,28 @@ export class GlobeRenderer {
       const sx = (this.tmp.x * 0.5 + 0.5) * this.width;
       const sy = (-this.tmp.y * 0.5 + 0.5) * this.height;
       const inside = sx > 8 && sx < this.width - 8 && sy > 8 && sy < this.height - 8;
-      // Every name is always shown. A name that would overlap one already placed is nudged up or down to the nearest
-      // free line instead of being hidden; if no line is free it is drawn in place anyway.
-      const visible = facing > 0.3 && inside && layer.progress > 0.55;
+      let visible = facing > 0.3 && inside && layer.progress > 0.55;
       let labelY = sy;
+      let labelX = sx;
       if (visible) {
-        const width = label.feature.name.length * 6.4 + 16;
-        const clear = (cy: number) => placed.every(([px, py, pw]) => Math.abs(px - sx) >= (pw + width) / 2 + 2 || Math.abs(py - cy) >= 19);
-        const offset = [0, 19, -19, 38, -38, 57, -57].find((dy) => clear(sy + dy)) ?? 0;
-        labelY = sy + offset;
-        placed.push([sx, labelY, width]);
+        if (!label.size || label.size[0] === 0) label.size = [label.element.offsetWidth, label.element.offsetHeight];
+        const [width, height] = label.size[0] ? label.size : [label.feature.name.length * 6.4 + 16, 18];
+        const clear = (cx: number, cy: number) => placed.every(([px, py, pw, ph]) => Math.abs(px - cx) >= (pw + width) / 2 + 3 || Math.abs(py - cy) >= (ph + height) / 2 + 2);
+        if (this.labelMode === "districts") {
+          // District names stay on their district: a name that would overlap a larger district's name moves a little
+          // (up, down or sideways) at most, otherwise it waits until the view is closer (or the district is hovered).
+          const nudge = width / 3;
+          const offset = ([[0, 0], [0, -9], [0, 9], [-nudge, 0], [nudge, 0], [-nudge, -9], [nudge, 9]] as const).find(([dx, dy]) => clear(sx + dx, sy + dy));
+          if (offset === undefined) visible = false;
+          else [labelX, labelY] = [sx + offset[0], sy + offset[1]];
+        } else {
+          // Every block name is always shown: one that would overlap is nudged to the nearest free line.
+          const offset = [0, 17, -17, 34, -34, 51, -51].find((dy) => clear(sx, sy + dy)) ?? 0;
+          labelY = sy + offset;
+        }
+        if (visible) placed.push([labelX, labelY, width, height]);
       }
-      label.element.style.transform = `translate(${sx.toFixed(1)}px, ${labelY.toFixed(1)}px) translate(-50%, -50%)`;
+      label.element.style.transform = `translate(${labelX.toFixed(1)}px, ${labelY.toFixed(1)}px) translate(-50%, -50%)`;
       // A block faded by the filter keeps its name, dimmed.
       label.element.style.opacity = visible ? (label.feature.muted ? "0.45" : "1") : "0";
     }
