@@ -157,6 +157,11 @@ interface Layer {
   dimTarget: number;
 }
 
+/** The white glow behind map lettering: crisp near the letters, soft further out. */
+const LABEL_HALO = "0 0 1px #fff, 0 0 2px #fff, 0 0 2px #fff, 0 0 4px rgba(255,255,255,0.85)";
+/** A name in a faded (filtered-out) area: quiet light lettering on the dimmed ground, no glow. */
+const LABEL_MUTED_SHADOW = "0 1px 2px rgba(15,23,42,0.55)";
+
 interface LabelItem {
   element: HTMLElement;
   feature: FeatureObject;
@@ -372,7 +377,7 @@ export class GlobeRenderer {
     this.highlights = {
       hover: makeHighlight(HOVER_COLOUR, 2.5, 6),
       focus: makeHighlight(HOVER_COLOUR, 3.5, 6.1),
-      selected: makeHighlight(SELECTED_COLOUR, 3.5, 6.2),
+      selected: makeHighlight(SELECTED_COLOUR, 2.5, 6.2),
     };
 
     // Events and observers.
@@ -884,11 +889,13 @@ export class GlobeRenderer {
       for (const feature of layer.features) {
         if (!feature.anchor) continue;
         const element = document.createElement("span");
-        // A small white tag: dark text on a soft, slightly translucent pill, readable on every fill colour and on imagery.
+        // Map lettering, not tags: dark text with a soft white glow, readable on every fill colour and on imagery.
+        // District names are small capitals, spaced out; block names are plain and a little lighter.
         element.className =
           this.labelMode === "districts"
-            ? "absolute left-0 top-0 whitespace-nowrap rounded-full bg-white/85 px-2 py-[2px] text-[11px] font-semibold leading-[13px] text-ink opacity-0 shadow-[0_1px_2px_rgba(16,24,40,0.2)] backdrop-blur-sm transition-opacity duration-200"
-            : "absolute left-0 top-0 whitespace-nowrap rounded-md bg-white/90 px-1.5 py-[2px] text-[11px] font-semibold leading-[13px] text-ink opacity-0 shadow-[0_1px_3px_rgba(16,24,40,0.25)] ring-1 ring-black/5 backdrop-blur-sm transition-opacity duration-300";
+            ? "absolute left-0 top-0 whitespace-nowrap text-[10.5px] font-bold uppercase leading-none tracking-[0.06em] text-ink opacity-0 transition-[opacity,color] duration-200"
+            : "absolute left-0 top-0 whitespace-nowrap text-[11.5px] font-semibold leading-none tracking-[0.01em] text-ink opacity-0 transition-[opacity,color] duration-200";
+        element.style.textShadow = LABEL_HALO;
         element.textContent = feature.name;
         this.labelLayer.appendChild(element);
         this.labels.push({ element, feature, radius: Math.hypot(feature.bbox[2] - feature.bbox[0], feature.bbox[3] - feature.bbox[1]), size: null });
@@ -1207,7 +1214,9 @@ export class GlobeRenderer {
       if (visible) {
         if (!label.size || label.size[0] === 0) label.size = [label.element.offsetWidth, label.element.offsetHeight];
         const [width, height] = label.size[0] ? label.size : [label.feature.name.length * 6.4 + 16, 18];
-        const clear = (cx: number, cy: number) => placed.every(([px, py, pw, ph]) => Math.abs(px - cx) >= (pw + width) / 2 + 3 || Math.abs(py - cy) >= (ph + height) / 2 + 2);
+        // Without boxes, names need clear space around them to read as separate names.
+        const [gapX, gapY] = this.labelMode === "districts" ? [14, 6] : [8, 3];
+        const clear = (cx: number, cy: number) => placed.every(([px, py, pw, ph]) => Math.abs(px - cx) >= (pw + width) / 2 + gapX || Math.abs(py - cy) >= (ph + height) / 2 + gapY);
         if (this.labelMode === "districts") {
           // District names stay on their district: a name that would overlap a larger district's name moves a little
           // (up, down or sideways) at most, otherwise it waits until the view is closer (or the district is hovered).
@@ -1223,8 +1232,11 @@ export class GlobeRenderer {
         if (visible) placed.push([labelX, labelY, width, height]);
       }
       label.element.style.transform = `translate(${labelX.toFixed(1)}px, ${labelY.toFixed(1)}px) translate(-50%, -50%)`;
-      // A block faded by the filter keeps its name, dimmed.
-      label.element.style.opacity = visible ? (label.feature.muted ? "0.45" : "1") : "0";
+      // A block faded by the filter keeps its name, in a quieter grey.
+      label.element.style.opacity = visible ? "1" : "0";
+      label.element.style.color = label.feature.muted ? "rgba(255, 255, 255, 0.82)" : "";
+      label.element.style.textShadow = label.feature.muted ? LABEL_MUTED_SHADOW : LABEL_HALO;
+      label.element.style.fontWeight = label.feature.muted ? "500" : "";
     }
   }
 
