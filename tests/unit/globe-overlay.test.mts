@@ -151,13 +151,13 @@ describe("globe overlay manifest", { skip: ready ? false : "run npm run data:bui
     }
   });
 
-  it("a district is coloured only when the sheet lists a place in it; Kalimpong, which the sheet does not list, is not", () => {
+  it("a district is coloured only when the sheet lists a place in it; Kalimpong and Kolkata, which the sheet does not list, are not", () => {
     for (const district of overlay.districts) {
       const places = overlay.blocks.filter((b) => b.districtId === district.id).length;
       assert.equal(district.state, places > 0 ? "represented" : "unresolved", district.name);
       assert.equal(district.blockCount, places, district.name);
     }
-    assert.deepEqual(overlay.districts.filter((d) => d.state !== "represented").map((d) => d.name), ["Kalimpong"]);
+    assert.deepEqual(overlay.districts.filter((d) => d.state !== "represented").map((d) => d.name), ["Kalimpong", "Kolkata"]);
   });
 
   it("a place several sheet rows list keeps each row as its own team, never merged", () => {
@@ -177,7 +177,8 @@ describe("globe overlay manifest", { skip: ready ? false : "run npm run data:bui
       assert.ok(block.districtId, block.name);
     }
     assert.deepEqual(
-      without.filter((b) => b.districtId === overlay.districts.find((d) => d.name === "Kolkata")!.id).map((b) => b.name).sort(),
+      // The sheet lists the Kolkata boroughs and Behala under South 24 PGS; with no outline, they stay there.
+      without.filter((b) => b.districtId === overlay.districts.find((d) => d.name === "South 24 Parganas")!.id).map((b) => b.name).sort(),
       ["Behala", "Kolkata Borough 10", "Kolkata Borough 11", "Kolkata Borough 12", "Kolkata Borough 7"],
     );
   });

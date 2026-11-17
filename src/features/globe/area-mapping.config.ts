@@ -18,6 +18,10 @@
  *   5. OUTSIDE_STATE       Rows that are not in West Bengal at all (Jharkhand-W). Left out of the globe and all counts.
  *
  * The build fails if any sheet row is not resolved by exactly one of these rules.
+ *
+ * GUARDRAIL: a row stays in the district its own DISTRICT column names. The only exception is a row whose block has a
+ * real outline in another district (map evidence, e.g. Binpur-I under WEST MIDNAPORE is a Jhargram block), and every
+ * such row must be listed in MOVED_BY_OUTLINE below. An area without an outline is NEVER moved: there is no evidence.
  */
 
 /** Sheet DISTRICT label → administrative district name (as in the LGD / OpenStreetMap district list). */
@@ -150,6 +154,20 @@ export const ALIASES: Readonly<Record<string, OutlineTarget>> = {
   "Malda|Harishchandrapur-II": spelling("Malda", "Harischandrapur - II"),
 };
 
+/**
+ * The ONLY sheet rows shown in a different district than their DISTRICT column, each because its block's real outline
+ * lies there. The build fails if any other row changes district, or if a row listed here does not.
+ */
+export const MOVED_BY_OUTLINE: readonly string[] = [
+  "WEST MIDNAPORE|Binpur-I",
+  "WEST MIDNAPORE|Binpur-II",
+  "WEST BURDWAN|Ausgram-II",
+  "WEST BURDWAN|Galsi-W",
+  "Howrah|Jangipara",
+  "Howrah|Khanakul-I",
+  "Howrah|Khanakul-II",
+];
+
 /** An area the sheet lists that has no boundary on the map. Placed in its district, never given an invented shape. */
 export interface AreaWithoutOutline {
   /** A stable key for the area; rows with the same key are one area. */
@@ -169,11 +187,11 @@ const municipal = (key: string, name: string, district: string): AreaWithoutOutl
 export const AREAS_WITHOUT_OUTLINE: Readonly<Record<string, AreaWithoutOutline>> = {
   "WEST BURDWAN|Durgapur Municipal Corporation": municipal("durgapur-mc", "Durgapur Municipal Corporation", "Paschim Bardhaman"),
   "North 24 PGS|Bidhannagar Municipality": municipal("bidhannagar", "Bidhannagar Municipality", "North 24 Parganas"),
-  "South 24 PGS|Borough 7": municipal("kmc-borough-7", "Kolkata Borough 7", "Kolkata"),
-  "South 24 PGS|Borough 10": municipal("kmc-borough-10", "Kolkata Borough 10", "Kolkata"),
-  "South 24 PGS|Borough 11": municipal("kmc-borough-11", "Kolkata Borough 11", "Kolkata"),
-  "South 24 PGS|BOROUGH 12": municipal("kmc-borough-12", "Kolkata Borough 12", "Kolkata"),
-  "South 24 PGS|Behala municipality": municipal("behala", "Behala", "Kolkata"),
+  "South 24 PGS|Borough 7": municipal("kmc-borough-7", "Kolkata Borough 7", "South 24 Parganas"),
+  "South 24 PGS|Borough 10": municipal("kmc-borough-10", "Kolkata Borough 10", "South 24 Parganas"),
+  "South 24 PGS|Borough 11": municipal("kmc-borough-11", "Kolkata Borough 11", "South 24 Parganas"),
+  "South 24 PGS|BOROUGH 12": municipal("kmc-borough-12", "Kolkata Borough 12", "South 24 Parganas"),
+  "South 24 PGS|Behala municipality": municipal("behala", "Behala", "South 24 Parganas"),
   "Hooghly|Chandanagar": municipal("chandannagar", "Chandannagar", "Hooghly"),
   "Darjeeling|Siliguri": municipal("siliguri", "Siliguri", "Darjeeling"),
   "Jalpaiguri|Banarhat": { key: "banarhat", name: "Banarhat", district: "Jalpaiguri", note: "newer block (carved from Dhupguri): OpenStreetMap has no boundary for it yet" },

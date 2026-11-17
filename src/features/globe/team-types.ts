@@ -34,7 +34,7 @@ export interface ImportReport {
   placed: number;
   outside: Array<{ row: number; territory: string; label: string; note: string }>;
   unplaced: Array<{ row: number; territory: string; label: string; reason: string }>;
-  /** Rows placed by a close spelling or in another district: shown so a person can check them. */
+  /** Rows placed by a close spelling inside their own district: shown so a person can check them. */
   guessed: Array<{ row: number; label: string; place: string; district: string; how: string }>;
   corrections: Array<{ from: string; to: string }>;
 }

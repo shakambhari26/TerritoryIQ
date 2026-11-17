@@ -24,7 +24,7 @@
 import { createHash } from "node:crypto";
 import { readFile, readdir, writeFile } from "node:fs/promises";
 import path from "node:path";
-import { ALIASES, AREAS_WITHOUT_OUTLINE, OUTSIDE_STATE, TERRITORY_DISTRICT } from "../../src/features/globe/area-mapping.config.ts";
+import { ALIASES, AREAS_WITHOUT_OUTLINE, MOVED_BY_OUTLINE, OUTSIDE_STATE, TERRITORY_DISTRICT } from "../../src/features/globe/area-mapping.config.ts";
 import { buildCanonical, matchKey, placeName, tidyName } from "../../src/features/globe/roster/sheet-clean.ts";
 import { districtOfBlock, osmName, relationToGeometry, type OsmRelation } from "../../src/features/geo/osm.ts";
 import type { Polygon as GeoPolygon } from "../../src/features/geo/geometry.ts";
@@ -172,6 +172,22 @@ for (const unit of sheet.units) {
   }
   resolutions.set(unit.id, { kind: "outline", block: candidates[0], rule: alias ? "alias" : "automatic", note: alias?.note ?? null });
 }
+// GUARDRAIL: every row stays in the district its own DISTRICT column names, unless its block's real outline is in
+// another district AND the row is listed in MOVED_BY_OUTLINE. An area without an outline never changes district.
+for (const unit of sheet.units) {
+  const res = resolutions.get(unit.id);
+  if (!res || res.kind === "outside") continue;
+  const territory = territoryLabel.get(unit.salesTerritoryId)!;
+  const ruleKey = `${territory}|${unit.blockLabel.trim()}`;
+  const sheetDistrict = TERRITORY_DISTRICT[territory];
+  const shownDistrict = res.kind === "area" ? res.district.name : districtByCode.get(res.block.districtCode)?.name;
+  const moved = shownDistrict !== sheetDistrict;
+  const allowed = MOVED_BY_OUTLINE.includes(ruleKey);
+  if (moved && res.kind === "area") problems.push(`row ${unit.sourceRow} (${ruleKey}): has no outline but is shown in ${shownDistrict}, not the sheet's ${sheetDistrict}`);
+  else if (moved && !allowed) problems.push(`row ${unit.sourceRow} (${ruleKey}): shown in ${shownDistrict}, not the sheet's ${sheetDistrict}; list it in MOVED_BY_OUTLINE only if its outline really lies there`);
+  else if (!moved && allowed) problems.push(`row ${unit.sourceRow} (${ruleKey}): listed in MOVED_BY_OUTLINE but not moved`);
+}
+for (const key of MOVED_BY_OUTLINE) if (!sheet.units.some((u) => `${territoryLabel.get(u.salesTerritoryId)}|${u.blockLabel.trim()}` === key)) problems.push(`MOVED_BY_OUTLINE "${key}" matches no sheet row`);
 for (const key of [...Object.keys(ALIASES), ...Object.keys(AREAS_WITHOUT_OUTLINE), ...Object.keys(OUTSIDE_STATE)]) {
   if (!usedRules.has(key)) problems.push(`area-mapping.config.ts rule "${key}" matches no sheet row`);
 }

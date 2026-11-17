@@ -4,6 +4,7 @@ import type { ServerManifest } from "./server-types";
 import { currentTeam } from "./team-data.server";
 import { SUGGESTED_QUESTIONS, TRANSCRIPT_MARK } from "./ask-questions";
 import { ROLE_NAME, ROLE_ORDER } from "./staffing";
+import { verifyNote, type KnownNames } from "./ask-verify";
 
 /**
  * The globe's team assistant. Server only. It answers questions about the sales team from the area-mapping sheet and
@@ -113,6 +114,16 @@ function buildFacts(server: ServerManifest): Facts {
         `${d.name} | ${d.places.length} | ${d.staff} | ${d.average.toFixed(2)} | ${d.noField} | ${d.vacant} | ${Math.round(d.roleShare.PRIMARY * 100)}% / ${Math.round(d.roleShare.SECONDARY * 100)}% / ${Math.round(d.roleShare.DSO * 100)}%`,
     ),
     "",
+    "DISTRICT HEADCOUNT BANDS (number of places in each band): district | 1-2 people (hire here) | 3 people | 4 people | 5 or more | places with no field staff (names)",
+    ...districts.map((d) => {
+      const band = (lo: number, hi: number) => d.places.filter((p) => p.staff >= lo && p.staff <= hi).length;
+      const none = d.places.filter((p) => p.field === 0).map((p) => p.name);
+      return `${d.name} | ${band(1, 2)} | ${band(3, 3)} | ${band(4, 4)} | ${band(5, 999)} | ${none.length}${none.length ? ` (${none.join(", ")})` : ""}`;
+    }),
+    "",
+    "PEOPLE (most places first): name | roles | number of places | districts | places",
+    ...people.map((p) => `${p.name} | ${p.roles.join(", ")} | ${p.places.length} | ${[...new Set(p.places.map((x) => x.district))].sort().join(", ")} | ${p.places.map((x) => x.name).sort().join(", ")}`),
+    "",
     "PLACES: district | place | people | team (role: name) | vacant positions",
     ...[...places]
       .sort((a, b) => a.district.localeCompare(b.district) || a.name.localeCompare(b.name))
@@ -123,6 +134,14 @@ function buildFacts(server: ServerManifest): Facts {
 
 /** The facts for the team as it is now (team-data.server.ts), rebuilt only when the team version changes. */
 let cached: { versionId: number; facts: Facts } | null = null;
+/** The names the sheet has: what an AI answer is checked against (ask-verify.ts). */
+const knownOf = (f: Facts): KnownNames => ({
+  people: f.people.map((p) => p.name),
+  places: f.places.map((p) => p.name),
+  districts: f.districts.map((d) => d.name),
+  placesPerPerson: Object.fromEntries(f.people.map((p) => [p.name, p.places.length])),
+});
+
 async function facts(): Promise<Facts | null> {
   const team = await currentTeam();
   if (!team) return null;
@@ -265,6 +284,7 @@ const SYSTEM = `You are the sales-team assistant inside TerritoryIQ, used by the
 
 Rules:
 - Use only the fact sheet. If it does not contain the answer, say so plainly. Never guess names, numbers or places.
+- Never count or add up yourself. Every number you give must be copied from the fact sheet exactly as written (a person's number of places from PEOPLE, a district's band counts from DISTRICT HEADCOUNT BANDS, totals from the first line). If the number you need is not written there, list the items instead of giving a count.
 - The sheet has no sales figures. If asked about sales performance, explain that you can only speak to staffing and coverage, and answer that.
 - Be short and practical: a one-line answer first, then at most 6 bullet points, then one recommendation line when useful. Use **bold** for key names and numbers. No tables, no headings.
 - "Field staff" means everyone except the Area Sales Manager. Fewer people per place means a place to hire.
@@ -297,15 +317,17 @@ export async function* answer(question: string): AsyncGenerator<string> {
         maxOutputTokens: 4000,
       },
     });
-    let any = false;
+    let full = "";
     for await (const chunk of stream) {
       const text = chunk.text;
       if (text) {
-        any = true;
+        full += text;
         yield text;
       }
     }
-    if (!any) yield "I can't answer that one. Try one of the suggested questions.";
+    if (!full) yield "I can't answer that one. Try one of the suggested questions.";
+    // GUARDRAIL: any name in the answer that the sheet does not have is called out under it.
+    else yield verifyNote(full, knownOf(f));
   } catch (error) {
     const status = error instanceof ApiError ? error.status : 0;
     if (status === 400 || status === 401 || status === 403) yield "The AI key was refused. Ask the admin to check GEMINI_API_KEY.";
@@ -346,7 +368,16 @@ export async function* answerFromAudio(wavBase64: string): AsyncGenerator<string
       ],
       config: { systemInstruction: `${SYSTEM}\n\nFACT SHEET:\n${f.text}`, temperature: 0.2, thinkingConfig: { thinkingLevel: THINKING }, maxOutputTokens: 4000 },
     });
-    for await (const chunk of stream) if (chunk.text) yield chunk.text;
+    let full = "";
+    for await (const chunk of stream) {
+      if (chunk.text) {
+        full += chunk.text;
+        yield chunk.text;
+      }
+    }
+    // GUARDRAIL: check the answer (not the transcript of the question) against the sheet's names.
+    const answerPart = full.includes("\n") ? full.slice(full.indexOf("\n") + 1) : "";
+    yield verifyNote(answerPart, knownOf(f));
   } catch (error) {
     const status = error instanceof ApiError ? error.status : 0;
     yield status === 429 ? "The AI is busy right now. Try again in a minute." : "The AI could not hear the question. Try again, or type it.";

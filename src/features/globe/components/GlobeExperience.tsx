@@ -7,8 +7,8 @@ import { GlobeRenderer, webglAvailable, type FeatureRef, type Pin } from "../Glo
 import { fetchBoundaryLayer, LayerRequestError } from "../layer-client";
 import { mergeLayer, type MergeOutcome } from "../layer-merge";
 import { arrivalWithoutOutlines, canReveal } from "../outline-gate";
-import { HOVER_COLOUR, SELECTED_COLOUR } from "../styles";
-import { bandFor, NO_FILTER, NOT_IN_SHEET, ROLE_COLOUR, ROLE_NAME, ROLE_ORDER, STAFF_BANDS, staffPaint, type StaffFilter } from "../staffing";
+import { bandFor, NO_FILTER, ROLE_COLOUR, ROLE_NAME, ROLE_ORDER, staffPaint, type StaffFilter } from "../staffing";
+import { MapGuide } from "./MapGuide";
 import { StaffFilterPanel } from "./StaffFilter";
 import { TeamChat } from "./TeamChat";
 import { TeamInsights } from "./TeamInsights";
@@ -46,42 +46,6 @@ function placeName(view: GlobeManifest, s: Selection): string {
   if (s.level === "block") return view.blocks.find((b) => b.id === s.blockId)?.name ?? "";
   if (s.level === "district") return view.districts.find((d) => d.id === s.districtId)?.name ?? "";
   return "the globe";
-}
-
-/** How many people work in a place, as a colour; and what the person icons' colours mean. Always open: it is the key. */
-function Legend() {
-  return (
-    <div aria-label="Legend" className="pointer-events-auto w-56 rounded-xl bg-white/95 p-3 shadow-float ring-1 ring-line" data-testid="globe-legend">
-      <p className="text-xs font-semibold text-ink">People per block</p>
-      <p className="text-[0.6875rem] leading-4 text-ink-muted">District: average of its blocks</p>
-      <ul className="mt-1.5 space-y-1">
-        {STAFF_BANDS.map((band) => (
-          <li key={band.key} className="flex items-center gap-2 text-xs text-ink">
-            <span aria-hidden="true" className="size-3 shrink-0 rounded-sm" style={{ backgroundColor: band.colour }} />
-            {band.label}
-          </li>
-        ))}
-        <li className="flex items-center gap-2 text-xs text-ink">
-          <span aria-hidden="true" className="size-3 shrink-0 rounded-sm" style={{ backgroundColor: NOT_IN_SHEET }} />
-          Not in the sheet
-        </li>
-      </ul>
-      <ul className="mt-2 space-y-0.5 border-t border-line pt-2">
-        {ROLE_ORDER.map((role) => (
-          <li key={role} className="flex items-center gap-2 text-[0.6875rem] text-ink">
-            <span aria-hidden="true" className="size-2.5 shrink-0 rounded-full" style={{ backgroundColor: ROLE_COLOUR[role] }} />
-            {ROLE_NAME[role]}
-          </li>
-        ))}
-      </ul>
-      <p className="mt-2 flex items-center gap-2 border-t border-line pt-1.5 text-[0.6875rem] text-ink-muted">
-        <span aria-hidden="true" className="h-1 w-3 shrink-0 rounded ring-1 ring-ink/60" style={{ backgroundColor: SELECTED_COLOUR }} />
-        Selected
-        <span aria-hidden="true" className="ml-1 h-1 w-3 shrink-0 rounded" style={{ backgroundColor: HOVER_COLOUR }} />
-        Hover
-      </p>
-    </div>
-  );
 }
 
 /** Where the outline data is, always on screen, whatever the textures are doing; with the credits the data and the Earth owe. */
@@ -741,7 +705,7 @@ function GlobeStage({ manifest, layer, onRetryLayer, aiEnabled }: StageProps) {
               </menu>
 
               <div className="pointer-events-none absolute bottom-[4.25rem] left-3 z-10 md:bottom-3">
-                <Legend />
+                <MapGuide blocks={view.blocks} filter={staffFilter} onFilter={setStaffFilter} level={selection.level} />
               </div>
               {hoverName || focusName ? (
                 <p className="pointer-events-none absolute bottom-3 left-1/2 z-10 max-w-[40%] -translate-x-1/2 truncate rounded-full bg-white/95 px-3 py-1.5 text-xs font-medium text-ink shadow-float md:max-w-[min(40%,16rem)]" data-testid="globe-hover">

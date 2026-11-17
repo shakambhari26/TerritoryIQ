@@ -12,7 +12,8 @@ import { buildCanonical, editDistance, matchKey, placeName, tidyName } from "./s
  * Reads an uploaded area-mapping sheet (.xlsx, the same layout as the original: DISTRICT, BLOCK, ASM, PRIMARY ×3,
  * SECONDARY ×5, DSO ×3) into a roster, placing every row the way the build does: the reviewed rules in
  * area-mapping.config.ts first, then the row's name inside its district, then a close spelling (at most two letters
- * different) inside its district. A row that still matches no place, or more than one, is reported, never guessed.
+ * different) inside its district, shown in the preview for a person to check. A row that still matches no place, or
+ * more than one, is reported as not placed: it is never moved to another district or guessed.
  * Names are cleaned exactly as the build cleans them (sheet-clean.ts).
  */
 
@@ -35,7 +36,8 @@ export function importSheet(bytes: Buffer, base: ServerManifest): ImportResult {
   const districtIdByName = new Map(base.districts.map((d) => [d.name.toLowerCase(), d.id]));
   const districtName = new Map(base.districts.map((d) => [d.id, d.name]));
   const territoryDistrict = new Map(Object.entries(TERRITORY_DISTRICT).map(([k, v]) => [k.toLowerCase(), v]));
-  const blocksIn = (districtId: string | undefined) => base.blocks.filter((b) => !districtId || b.districtId === districtId);
+  // Only ever the blocks of one named district: an unknown district matches nothing (it is reported, never searched state-wide).
+  const blocksIn = (districtId: string | undefined) => (districtId ? base.blocks.filter((b) => b.districtId === districtId) : []);
 
   const canonical = buildCanonical(sheet.units.flatMap((u) => u.slots.flatMap((s) => s.names.map((raw) => ({ territory: territoryOf.get(u.salesTerritoryId)!, raw })))));
   const corrections = new Map<string, string>();
@@ -77,14 +79,9 @@ export function importSheet(bytes: Buffer, base: ServerManifest): ImportResult {
         if (districtId && hits.length === 1) {
           blockId = hits[0].id;
           report.guessed.push({ row, label, place: hits[0].name, district: districtName.get(hits[0].districtId ?? "") ?? "", how: "close spelling" });
-        } else if (hits.length === 0) {
-          // The exact name in another district (a place listed under a neighbouring territory).
-          const elsewhere = exact(blocksIn(undefined));
-          if (elsewhere.length === 1) {
-            blockId = elsewhere[0].id;
-            report.guessed.push({ row, label, place: elsewhere[0].name, district: districtName.get(elsewhere[0].districtId ?? "") ?? "", how: "found in another district" });
-          }
         }
+        // GUARDRAIL: a row is never moved to a district its DISTRICT column does not name (that would be a guess). The
+        // only cross-district rows are the reviewed ones in area-mapping.config.ts (ALIASES / MOVED_BY_OUTLINE).
       }
       if (!blockId) {
         report.unplaced.push({ row, territory, label, reason: districtId ? (hits.length > 1 ? "matches more than one place" : "no place with this name in the district") : `unknown district "${territory}"` });

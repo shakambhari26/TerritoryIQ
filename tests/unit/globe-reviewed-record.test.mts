@@ -214,13 +214,13 @@ describe("colours and wording that stay as approved", () => {
   it("the colour wording says the area-mapping sheet is where it comes from, and the legend explains the headcount colours", () => {
     assert.match(DISTRICT_STYLE.represented.description, /area-mapping sheet lists at least one place/);
     assert.match(BLOCK_STYLE.represented.description, /area-mapping sheet lists this block/);
-    const experience = read("src/features/globe/components/GlobeExperience.tsx");
-    assert.match(experience, /People per block/);
-    assert.match(experience, /Not in the sheet/);
+    const guide = read("src/features/globe/components/MapGuide.tsx");
+    assert.match(guide, /Colour = people working in a block/);
+    assert.match(guide, /Not in the sheet/);
   });
 
   it("white is not offered in the legend, and the state is never produced by the build", () => {
-    assert.doesNotMatch(read("src/features/globe/components/GlobeExperience.tsx"), /no representative/i);
+    for (const file of ["GlobeExperience.tsx", "MapGuide.tsx"]) assert.doesNotMatch(read(`src/features/globe/components/${file}`), /no representative/i, file);
     assert.match(read("src/features/globe/styles.ts"), /"no-representative": \{/, "the style stays defined for the reviewed-record rule");
   });
 

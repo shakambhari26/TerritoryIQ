@@ -22,7 +22,8 @@
     "data:verify": "node scripts/verify-sources.mts",
     "data:fetch-osm": "node scripts/fetch-osm.mts",
     "data:build": "node scripts/build-data.mts",
-    "data:build-globe": "node scripts/globe/build-area-map.mts"
+    "data:build-globe": "node scripts/globe/build-area-map.mts && python3 -I scripts/globe/audit_sheet.py",
+    "data:audit-globe": "python3 -I scripts/globe/audit_sheet.py"
   },
   "dependencies": {
     "@google/genai": "2.32.0",
